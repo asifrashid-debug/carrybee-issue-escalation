@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import IssueDrawer from '../components/IssueDrawer';
 import CopyButton from '../components/CopyButton';
 import { useAnalytics } from '../components/useAnalytics';
-import { PageHead, Kpi, LiveChip, PriPill, SlaPill, StatusPill, Zc, fmtN } from '../components/demo';
+import { PageHead, Kpi, LiveChip, PriPill, SlaPill, StatusPill, Zc, Bar, fmtN } from '../components/demo';
 import { formatDhaka, hoursSince } from '../lib/time';
 
 const PAGE = 20;
@@ -286,6 +286,8 @@ export default function Tracker() {
         <Kpi label={`Resolved this week${weekLabel ? ` (${weekLabel})` : ''}`} value={fmtN(resolvedWeek)} sub="Ops status Resolved this week" icon="check" tone="g" />
       </div>
 
+      <div className="trk-layout">
+        <div className="trk-main">
       <div className="card" style={{ padding: '12px 14px', marginBottom: 12 }}>
         <div className="views" role="group" aria-label="Tracker views">
           <span className="lb">Views:</span>
@@ -456,6 +458,52 @@ export default function Tracker() {
           </div>
         </div>
       )}
+
+        </div>
+
+        {stats && (
+          <aside className="trk-side only-desk" aria-label="Queue context">
+            <div className="card">
+              <div className="ph"><div><h3>Open by Zone</h3><small>Share of open queue</small></div></div>
+              <div className="lst">
+                {stats.zones.map((z) => (
+                  <div key={z.zone}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{z.zone}</span><b>{fmtN(z.open)}</b></div>
+                    <Bar pct={stats.kpi.open ? (z.open / stats.kpi.open) * 100 : 0} color={{ ISD: '#F8C800', OSD: '#3B9CFF', CTG: '#A78BFA' }[z.zone]} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <div className="ph"><div><h3>Priority Mix</h3><small>Open issues by priority</small></div></div>
+              <div className="lst">
+                {stats.priorities.map((p) => {
+                  const openAll = stats.priorities.reduce((a, x) => a + x.open, 0);
+                  return (
+                    <div key={p.label}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{p.label}</span><b>{fmtN(p.open)}</b></div>
+                      <Bar pct={openAll ? (p.open / openAll) * 100 : 0} color={{ P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' }[p.label]} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="card">
+              <div className="ph"><div><h3>Top Categories</h3><small>All issues · top 5</small></div></div>
+              {stats.categories.length === 0 ? <div className="empty">No categories yet</div> : (
+                <div className="lst">
+                  {stats.categories.slice(0, 5).map((c) => (
+                    <div key={c.label}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{c.label}</span><b>{fmtN(c.count)}</b></div>
+                      <Bar pct={(c.count / Math.max(1, stats.categories[0].count)) * 100} color="#F8C800" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+      </div>
 
       <p className="note2">Paged on the server, 20 per page, newest first. Click a row for the issue detail. Times are Asia/Dhaka. Exports include every row in the current view.</p>
 
