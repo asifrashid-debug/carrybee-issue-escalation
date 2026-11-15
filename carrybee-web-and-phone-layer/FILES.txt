@@ -1,0 +1,1 @@
+Web and phone layer for CarryBee Issue Escalation Tracker. Base: GitHub main 6e80577. Files: app/layout.js app/design-v3.css app/dashboard/page.js app/analytics/page.js app/hubs/page.js app/teams/page.js app/page.js app/sync/page.js app/admin/page.js components/demo.js components/EscalationForm.js components/MobileTables.js

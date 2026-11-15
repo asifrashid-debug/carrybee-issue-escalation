@@ -1,0 +1,544 @@
+/* CarryBee design v3, applied to every tracker page.
+   Loaded last (after globals.css and demo.css), so its rules win.
+   Colours, type, header, tabs and the core components follow the approved demos in /home/user/demo.
+   The older dark "supernova" effects (glows, 3D tilt, pressed buttons) are switched off below. */
+
+/* ---------- 1. Tokens ---------- */
+:root,
+html[data-theme="light"],
+html[data-theme="light"] .dm {
+  color-scheme: light;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --hdr: 72px;
+  --y: #F8C800;
+  --yh: #FFE35A;
+  --bg: #F4F3EF;
+  --ink: #17171C;
+  --ink2: #3A3A42;
+  --mut: #6A6A74;
+  --glass: #FFFFFF;
+  --glass2: #FFFFFF;
+  --surface-2: #EFEEE9;
+  --line: #E3E1DA;
+  --line-strong: #D2CFC6;
+  --wrgb: 23 23 28;
+  --shadow: rgba(20, 20, 30, .14);
+  --hover: rgba(248, 200, 0, .10);
+  --good: #11704A; --good-bg: #E5F3EC;
+  --warn: #8A5300; --warn-bg: #FFF3D6;
+  --bad: #B42339; --bad-bg: #FBE8EB;
+  --blue: #2B63D9; --info-bg: #E7EEFC;
+  --purple: #6D4AE0; --purple-bg: #EEE9FD;
+  --orange: #B45309;
+  --fieldBg: #FFFFFF;
+  --track: #E9E8E3;
+  --tblHead: #F7F6F2;
+  --tagBg: #EFEEE9;
+  --chipOn: #17171C;
+  --chipOnText: #FFFFFF;
+  --goodSoft: #11704A; --warnSoft: #8A5300; --badSoft: #B42339;
+  --orb: 0;
+}
+html[data-theme="dark"],
+html[data-theme="dark"] .dm {
+  color-scheme: dark;
+  --hdr: 72px;
+  --y: #F8C800;
+  --yh: #FFE35A;
+  --bg: #0E0F12;
+  --ink: #F3F3F5;
+  --ink2: #C9CAD1;
+  --mut: #9597A2;
+  --glass: #16171C;
+  --glass2: #1B1C22;
+  --surface-2: #1F2128;
+  --line: #2A2C35;
+  --line-strong: #383B46;
+  --wrgb: 243 243 245;
+  --shadow: rgba(0, 0, 0, .6);
+  --hover: rgba(248, 200, 0, .08);
+  --good: #5CD39C; --good-bg: rgba(92, 211, 156, .12);
+  --warn: #F5C451; --warn-bg: rgba(245, 196, 81, .12);
+  --bad: #FF7A8A; --bad-bg: rgba(255, 122, 138, .12);
+  --blue: #7FA8FF; --info-bg: rgba(127, 168, 255, .14);
+  --purple: #B49CFF; --purple-bg: rgba(180, 156, 255, .14);
+  --orange: #FFA04D;
+  --fieldBg: #1B1C22;
+  --track: rgba(255, 255, 255, .09);
+  --tblHead: rgba(255, 255, 255, .03);
+  --tagBg: rgba(255, 255, 255, .07);
+  --chipOn: #F3F3F5;
+  --chipOnText: #0E0F12;
+  --goodSoft: #5CD39C; --warnSoft: #F5C451; --badSoft: #FF7A8A;
+  --orb: 0;
+}
+
+/* ---------- 2. Neutralise the old glow, 3D and pressed-button effects ---------- */
+.dm .btn, .btn, .btn-primary, .btn-ghost,
+.dm .card, .kpi, .card-i, .zone-card, .glass,
+.seg, .dm .seg, .chip, .dm .chip, .views button, .dm .views button {
+  text-shadow: none !important;
+  transform: none !important;
+}
+/* The issue drawer must keep its slide transform (closed = off-screen). Only the shadow is neutralised here. */
+.dm .drawer, .drawer { text-shadow: none !important; }
+.dm .btn:hover, .btn:hover, .btn-primary:hover,
+.dm .card:hover, .kpi:hover, .card-i:hover, .zone-card:hover {
+  transform: none !important;
+}
+.dm .btn, .btn, .btn-primary, .btn-ghost { box-shadow: none !important; }
+.dm .card, .kpi, .card-i, .zone-card, .glass {
+  box-shadow: 0 1px 2px rgba(20, 20, 30, .06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html[data-theme="dark"] .dm .card, html[data-theme="dark"] .kpi, html[data-theme="dark"] .card-i,
+html[data-theme="dark"] .zone-card, html[data-theme="dark"] .glass { box-shadow: none !important; }
+.dm .head h1, .dm .kv, .dm .dc-v, .dm .zone-card .v, .k-v, .dm .ring span { text-shadow: none !important; }
+.dm .seg, .dm .chip, .dm .views button, .inp, .dm .inp, select.inp, .dm select.inp { box-shadow: none !important; }
+
+/* ---------- 3. Base ---------- */
+html, body { background: var(--bg); }
+body { font-family: var(--font-sans); color: var(--ink); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 2000px; padding: 0 24px 48px; }
+.glass { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; }
+:focus-visible { outline: 2px solid var(--y); outline-offset: 2px; }
+
+/* ---------- 4. Top bar: logo and name left, tools right ---------- */
+.topbar {
+  position: relative; z-index: 60;
+  display: flex; align-items: center; gap: 20px;
+  height: var(--hdr); flex-wrap: nowrap;
+  margin: 0 -24px; padding: 0 24px;
+  background: var(--glass);
+  border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+  box-shadow: none;
+}
+.topbar .brand { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 0 1 auto; }
+.topbar .logo-link { display: inline-flex; align-items: center; flex: none; background: none; border: 0; padding: 0; box-shadow: none; border-radius: 0; }
+.topbar .logo-link img { height: 30px; width: auto; display: block; }
+html[data-theme="dark"] .topbar .logo-link { background: #fff; border-radius: 10px; padding: 5px 9px; }
+.topbar .divider { width: 1px; height: 28px; background: var(--line); flex: none; }
+.topbar .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.topbar .avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--line-strong);
+  font-size: 12px; font-weight: 700; color: var(--ink2);
+}
+.topbar .who-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.topbar .tools { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; }
+.topbar .live {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 12px; margin-right: 6px; border-radius: 999px;
+  background: var(--good-bg); color: var(--good);
+  font-size: 12px; font-weight: 600; white-space: nowrap; border: 0;
+}
+.topbar .live .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; box-shadow: none; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 currentColor; } 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.topbar .ibtn {
+  width: 40px; height: 40px; padding: 0; display: grid; place-items: center; cursor: pointer;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--glass); color: var(--ink2);
+}
+.topbar .ibtn:hover { background: var(--surface-2); color: var(--ink); border-color: var(--line-strong); }
+.topbar .signout {
+  height: 40px; display: inline-flex; align-items: center; gap: 10px; padding: 0 14px 0 12px; cursor: pointer;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--glass); color: var(--ink); font-family: inherit;
+}
+.topbar .signout:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.topbar .signout svg { color: var(--mut); }
+.topbar .signout .txt { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; text-align: left; }
+.topbar .signout .txt b { font-size: 13px; font-weight: 700; }
+.topbar .signout .txt small { font-size: 11px; color: var(--mut); font-family: var(--font-mono); margin-top: 2px; }
+/* Notification bell: same 40px size as the other header buttons */
+.topbar .bell-btn { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass); color: var(--ink2); }
+.topbar .bell-btn:hover { background: var(--surface-2); color: var(--ink); }
+.topbar .bell-badge { top: -5px; right: -5px; border: 2px solid var(--glass); }
+
+/* ---------- 5. Tabs: centred row under the top bar ---------- */
+.tabs {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 2px;
+  width: max-content; max-width: 100%;
+  margin: 20px auto 26px; padding: 4px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px;
+}
+.tabs a {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 38px; height: 38px; padding: 0 16px; border-radius: 10px;
+  border: 0; background: transparent; color: var(--mut);
+  font-size: 13.5px; font-weight: 600; white-space: nowrap; text-decoration: none;
+  transition: color .15s, background .15s;
+}
+.tabs a:hover { color: var(--ink); background: transparent; }
+.tabs a.on, .tabs a[aria-current="page"] {
+  background: var(--glass); color: var(--ink);
+  box-shadow: 0 8px 20px -14px rgba(20, 20, 30, .45);
+}
+.tabs a.on::before, .tabs a[aria-current="page"]::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--y); box-shadow: 0 0 0 3px rgba(248, 200, 0, .22);
+}
+
+/* ---------- 6. Page heading ---------- */
+.dm .head { margin: 28px 2px 22px; align-items: flex-end; }
+.dm .head h1 { font-size: 30px; line-height: 1.15; font-weight: 700; letter-spacing: -.02em; }
+.dm .head p { font-size: 14px; color: var(--mut); max-width: 640px; margin-top: 8px; }
+.dm .head .tools { gap: 10px; }
+
+/* ---------- 7. Cards and KPIs ---------- */
+.dm .card { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+.dm .card.hot { border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
+.dm .card.ok { border-color: color-mix(in srgb, var(--good) 35%, var(--line)); }
+.dm .ph h3 { font-size: 15px; font-weight: 700; }
+.dm .ph small { font-size: 12.5px; }
+.dm .kl { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); font-weight: 700; }
+.dm .kv { font-size: 34px; font-weight: 700; letter-spacing: -.025em; margin-top: 10px; line-height: 1; }
+.dm .ks { font-size: 12.5px; color: var(--mut); margin-top: 10px; line-height: 1.45; }
+.dm .kpi-meta, .dm .ks { font-variant-numeric: tabular-nums; }
+.dm .ico-badge { width: 30px; height: 30px; border-radius: 9px; background: var(--surface-2); color: var(--ink2); }
+.dm .ico-badge.r { background: var(--bad-bg); color: var(--bad); }
+.dm .ico-badge.g { background: var(--good-bg); color: var(--good); }
+.dm .ico-badge.b { background: var(--info-bg); color: var(--blue); }
+.dm .ico-badge.p { background: var(--purple-bg); color: var(--purple); }
+.dm .ico-badge.y { background: rgba(248, 200, 0, .18); color: var(--ink); }
+.dm .bad { color: var(--bad) !important; }
+.dm .good { color: var(--good) !important; }
+.dm .warn { color: var(--warn) !important; }
+.dm .y { color: var(--ink); }
+.dm .up { color: var(--good); }
+.dm .bar, .dm .track { height: 6px; border-radius: 999px; background: var(--track); }
+.dm .bar i, .dm .track i { border-radius: 999px; }
+.dm .lst { gap: 10px; }
+.dm .lrow { border-radius: 12px; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 10px 2px; }
+.dm .lrow:last-child { border-bottom: 0; }
+.dm .lrow .n { font-size: 13.5px; font-weight: 700; }
+.dm .lrow .s { font-size: 12px; color: var(--mut); }
+.dm .zc { background: var(--surface-2); color: var(--ink2); font-weight: 700; font-size: 11.5px; border-radius: 8px; padding: 3px 8px; }
+
+/* ---------- 8. Pills and tags ---------- */
+.dm .pillc, .pillc {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap;
+}
+.dm .p-ok, .pillc.p-ok { background: var(--good-bg); color: var(--good); }
+.dm .p-br, .pillc.p-br { background: var(--bad-bg); color: var(--bad); }
+.dm .p-risk, .pillc.p-risk { background: var(--warn-bg); color: var(--warn); }
+.dm .p-open, .pillc.p-open { background: var(--info-bg); color: var(--blue); }
+.dm .p-re, .pillc.p-re { background: var(--warn-bg); color: var(--orange); }
+.dm .p-res, .pillc.p-res { background: var(--good-bg); color: var(--good); }
+.dm .p-crit, .pillc.p-crit { background: var(--bad-bg); color: var(--bad); }
+.dm .p-urg, .pillc.p-urg { background: var(--warn-bg); color: var(--warn); }
+.dm .p-reg, .pillc.p-reg { background: var(--surface-2); color: var(--ink2); }
+.dm .p-A { background: var(--good-bg); color: var(--good); }
+.dm .p-B { background: rgba(248, 200, 0, .2); color: var(--ink); }
+.dm .p-C { background: var(--warn-bg); color: var(--orange); }
+.dm .p-D { background: var(--bad-bg); color: var(--bad); }
+.dm .dup { background: var(--warn-bg); color: var(--warn); border-radius: 6px; }
+.tag { border-radius: 999px; font-size: 12px; font-weight: 600; }
+.tag-neutral { background: var(--surface-2); color: var(--ink2); }
+.tag-good { background: var(--good-bg); color: var(--good); }
+.tag-warn { background: var(--warn-bg); color: var(--warn); }
+.tag-bad { background: var(--bad-bg); color: var(--bad); }
+html:not([data-theme="light"]) .tag-good, html:not([data-theme="light"]) .tag-warn, html:not([data-theme="light"]) .tag-bad { box-shadow: none; }
+
+/* ---------- 9. Buttons ---------- */
+.dm .btn, .btn, .btn-ghost, .btn-primary {
+  height: 38px; padding: 0 14px; border-radius: 12px;
+  border: 1px solid var(--line-strong); background: var(--glass); color: var(--ink);
+  font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.dm .btn:hover, .btn:hover, .btn-ghost:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.dm .btn.sm, .btn-sm { height: 32px; padding: 0 11px; font-size: 12.5px; }
+/* Primary action: ink fill (dark text on dark mode is inverted automatically) */
+.dm .btn.y, .btn-primary {
+  background: var(--ink); border-color: var(--ink); color: var(--surface-ink, #FFFFFF); font-weight: 700;
+}
+html[data-theme="dark"] .dm .btn.y, html[data-theme="dark"] .btn-primary { color: #0E0F12; }
+.dm .btn.g { background: var(--good-bg); border-color: transparent; color: var(--good); }
+.dm .btn.b { background: var(--purple-bg); border-color: transparent; color: var(--purple); }
+.dm .btn:disabled, .btn:disabled, .btn-primary:disabled, .btn-ghost:disabled { opacity: .45; cursor: not-allowed; }
+.linkbtn { color: var(--ink); }
+.dm .seg { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 2px; }
+.dm .seg button { height: 32px; padding: 0 12px; border-radius: 9px; color: var(--mut); font-size: 13px; font-weight: 600; }
+.dm .seg button.on { background: var(--glass); color: var(--ink); box-shadow: 0 8px 18px -14px rgba(20, 20, 30, .45); }
+.dm .live { background: var(--good-bg); color: var(--good); border-radius: 999px; height: 34px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; letter-spacing: 0; padding: 0 12px; }
+
+/* Filter chips and view buttons */
+.dm .views button, .dm .chip { border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink2); font-size: 12.5px; font-weight: 600; padding: 7px 12px; }
+.dm .views button:hover, .dm .chip:hover { border-color: var(--line-strong); color: var(--ink); }
+.dm .views button.on, .dm .chip.on { background: var(--chipOn); color: var(--chipOnText); border-color: var(--chipOn); }
+.dm .views .lb { color: var(--mut); font-weight: 700; font-size: 12.5px; }
+.dm .views .sv { color: var(--ink); }
+.chip { border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink2); }
+.chip.on { background: var(--chipOn); color: var(--chipOnText); border-color: var(--chipOn); }
+
+/* ---------- 10. Tables ---------- */
+.dm .tbl { font-size: 13.5px; }
+.dm .tbl th { font-size: 11px; letter-spacing: .06em; padding: 12px 14px; background: var(--tblHead); }
+.dm .tbl td { padding: 13px 14px; }
+.dm .tbl-wrap { border-radius: 16px; border: 1px solid var(--line); background: var(--glass); }
+.dm .tbl tr.rw:hover td { background: var(--hover); }
+.dm .idc { color: var(--ink); font-family: var(--font-mono); font-weight: 600; font-size: 12.5px; border-bottom: 1px dashed var(--line-strong); text-decoration: none; }
+.dm .idc:hover { border-bottom-color: var(--ink); }
+.dm .sla-bad, .sla-bad { color: var(--bad); font-weight: 700; }
+.dm .sla-warn, .sla-warn { color: var(--warn); font-weight: 700; }
+.dm .sla-ok, .sla-ok { color: var(--good); font-weight: 700; }
+.dm .pagebar .btn { height: 34px; }
+
+/* ---------- 11. Forms ---------- */
+.dm .inp, .inp {
+  border-radius: 12px; border: 1px solid var(--line-strong); background: var(--fieldBg); color: var(--ink);
+  font-size: 14px; min-height: 42px; padding: 0 12px;
+}
+.dm textarea.inp, textarea.inp { padding: 10px 12px; min-height: 90px; }
+.dm .inp:focus, .inp:focus { outline: 2px solid var(--y); outline-offset: 1px; border-color: var(--y); }
+.dm .field, .field { color: var(--ink2); font-size: 12.5px; font-weight: 600; letter-spacing: 0; }
+.dm .search { background: var(--fieldBg); border: 1px solid var(--line-strong); border-radius: 12px; min-height: 42px; }
+
+/* ---------- 12. Drawer (issue details) ---------- */
+.dm .drawer, .drawer {
+  background: var(--glass2); border-left: 1px solid var(--line);
+  box-shadow: -24px 0 60px -20px rgba(20, 20, 30, .28);
+  top: var(--hdr); height: calc(100% - var(--hdr)); bottom: 0;
+}
+/* Closed drawer: slid off-screen (demo.css / globals.css transform) and removed from view and focus order */
+.dm .drawer:not(.on), .drawer:not(.on) { visibility: hidden; pointer-events: none; }
+.dm .drawer, .drawer { transition: transform .25s ease, visibility .25s; }
+html[data-theme="dark"] .dm .drawer, html[data-theme="dark"] .drawer { box-shadow: -24px 0 60px -20px rgba(0, 0, 0, .7); }
+.dm .dh { padding: 20px 24px 0; }
+.dm .dtabs button { font-size: 13px; font-weight: 700; }
+.dm .dtabs button.on { border-bottom-color: var(--y); color: var(--ink); }
+.dm .xb { font-size: 22px; }
+.dm .scrim { background: rgba(14, 15, 18, .38); }
+
+/* ---------- 13. Toasts, notifications panel ---------- */
+.bell-panel { border-radius: 16px; border: 1px solid var(--line); background: var(--glass2); box-shadow: 0 24px 50px -20px rgba(20, 20, 30, .3); }
+.dm .toast, .toast { background: var(--glass2); border: 1px solid var(--line); border-radius: 14px; }
+
+/* ---------- 14. Phones (under 700px) ---------- */
+@media (max-width: 700px) {
+  :root, html[data-theme="light"], html[data-theme="dark"] { --hdr: 64px; }
+  .wrap { padding: 0 16px 40px; }
+  .topbar { margin: 0 -16px; padding: 0 16px; gap: 10px; height: var(--hdr); }
+  .topbar .brand { gap: 10px; }
+  .topbar .logo-link img { height: 24px; }
+  .topbar .divider { display: none; }
+  .topbar .who-name { font-size: 13px; max-width: 120px; }
+  .topbar .avatar { display: none; }
+  .topbar .live { display: none; }
+  .topbar .tools { gap: 6px; }
+  .topbar .signout { padding: 0 10px; }
+  .topbar .signout .txt { display: none; }
+  .topbar .ibtn, .topbar .bell-btn, .topbar .signout { min-height: 40px; }
+  .tabs {
+    width: 100%; max-width: none; justify-content: flex-start; flex-wrap: nowrap;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    margin: 14px -16px 18px; padding: 0 16px 2px; background: none; border: 0; border-radius: 0; gap: 6px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a { height: 44px; min-height: 44px; padding: 0 16px; border: 1px solid var(--line); background: var(--glass); font-size: 14px; flex: 0 0 auto; }
+  .tabs a.on, .tabs a[aria-current="page"] { border-color: var(--y); box-shadow: none; }
+  .dm .head { margin: 22px 2px 16px; }
+  .dm .head h1 { font-size: 24px; }
+  .dm .kv { font-size: 28px; }
+  .dm .drawer, .drawer { top: var(--hdr); height: calc(100% - var(--hdr)); border-radius: 18px 18px 0 0; }
+}
+
+/* ---------- 15. Typography rules for the Inter system ---------- */
+/* Inter is capped at 700 here. Its 800 weight reads heavy next to the flat cards. */
+h1, h2, h3, h4, .head-row h1, .kv, .k-v, .dm .kv, .dm .head h1 { font-weight: 700 !important; }
+/* Numbers in KPIs, tables, SLA and rings line up in columns and do not jump when values refresh */
+.kv, .k-v, .dm .kv, .dm .kl, .tbl td, .tbl th, .dm .tbl td, .dm .tbl th, .dm .ring, .dm .bar, .sla-bad, .sla-warn, .sla-ok,
+.dm .sla-bad, .dm .sla-warn, .dm .sla-ok, .topbar .live, .dm .ks { font-variant-numeric: tabular-nums; }
+/* IDs stay in JetBrains Mono with a slashed zero so 0 and O cannot be confused */
+.dm .idc, .idc, .topbar .signout .txt small, .dm .mono { font-variant-numeric: slashed-zero tabular-nums; }
+
+/* =====================================================================
+   20. Folder tabs, phone bottom bar, More sheet, issue drawer (timeline)
+   Applied from the approved demos: folder-tabs v5 header, iPhone app shell,
+   issue drawer v2 timeline. Tabs never wrap; on phones the bar scrolls sideways.
+   ===================================================================== */
+
+/* Sign out: icon, initials, and the role tag inside the button. Full name is never printed. */
+.topbar .signout { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass); color: var(--ink); font: inherit; cursor: pointer; }
+.topbar .signout:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.topbar .signout .ini { font-size: 13px; font-weight: 700; letter-spacing: .3px; }
+.topbar .signout .role { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--mut); background: var(--surface-2); border-radius: 6px; padding: 2px 6px; }
+.topbar .signout svg { color: var(--mut); }
+
+/* Folder tabs under the header (desktop and tablet). Active tab joins the sheet with a yellow top edge. */
+.folders { display: flex; align-items: flex-end; gap: 4px; margin: 14px 0 0; padding: 0 6px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+.folders::-webkit-scrollbar { display: none; }
+.folders a { position: relative; flex: 0 0 auto; height: 42px; display: inline-flex; align-items: center; padding: 0 18px; margin-bottom: -1px; border: 1px solid var(--line); border-bottom: 0; border-radius: 12px 12px 0 0; background: var(--surface-2); color: var(--mut); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.folders a:hover { color: var(--ink); }
+.folders a.on, .folders a[aria-current="page"] { background: var(--glass); color: var(--ink); border-top: 3px solid var(--y); height: 43px; }
+.folders a:focus-visible, .bottombar a:focus-visible, .bottombar button:focus-visible, .more-list a:focus-visible, .more-list button:focus-visible { outline: 3px solid var(--y); outline-offset: 2px; }
+.bottombar { display: none; }
+
+/* Drawer: header with title, three stats, pinned next step, Case / Activity tabs */
+.dm .dh .dtitle, .drawer .dtitle { font-size: 20px; font-weight: 700; letter-spacing: -.3px; margin: 10px 0 2px; color: var(--ink); }
+.drawer .stats3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.drawer .stats3 > div { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.drawer .stats3 small { display: block; font-size: 11px; font-weight: 600; color: var(--mut); }
+.drawer .stats3 b { display: block; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer .stats3 b.bad { color: var(--bad); }
+.drawer .stats3 b.good { color: var(--good); }
+.drawer .nextstep { border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; background: var(--surface-2); border-left: 4px solid var(--line-strong); }
+.drawer .nextstep.warn { border-left-color: var(--y); background: var(--hover); }
+.drawer .nextstep.bad { border-left-color: var(--bad); background: var(--bad-bg); }
+.drawer .nextstep small { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); }
+.drawer .nextstep p { margin: 4px 0 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.drawer .tl-h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); margin: 18px 0 10px; }
+.drawer .tl-list { list-style: none; margin: 0; padding: 0; position: relative; }
+.drawer .tl-list::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: var(--line); }
+.drawer .tl { position: relative; padding: 0 0 18px 32px; }
+.drawer .tl:last-child { padding-bottom: 0; }
+.drawer .tl-dot { position: absolute; left: 0; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--glass); border: 2px solid var(--line-strong); box-sizing: border-box; }
+.drawer .tl.done .tl-dot { background: var(--ink); border-color: var(--ink); }
+.drawer .tl.due .tl-dot { background: var(--y); border-color: var(--y); }
+.drawer .tl.late .tl-dot { background: var(--bad); border-color: var(--bad); }
+.drawer .tl.locked .tl-dot, .drawer .tl.hidden .tl-dot { background: var(--surface-2); }
+.drawer .tl-main { min-width: 0; }
+.drawer .tl-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.drawer .tl-top b { font-size: 14px; color: var(--ink); }
+.drawer .tl-state { font-size: 11.5px; font-weight: 700; color: var(--mut); white-space: nowrap; }
+.drawer .tl.done .tl-state { color: var(--good); }
+.drawer .tl.due .tl-state { color: var(--warn); }
+.drawer .tl.late .tl-state { color: var(--bad); }
+.drawer .tl-meta { font-size: 12.5px; color: var(--mut); margin-top: 2px; }
+.drawer .tl-body { font-size: 13.5px; margin: 6px 0 0; white-space: pre-wrap; color: var(--ink2); }
+.drawer .tl-act { margin-top: 8px; }
+
+@media (max-width: 700px) {
+  .folders { display: none; }
+  .wrap { padding-bottom: 96px; }
+  .topbar .signout .role { font-size: 10.5px; }
+  .bottombar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: calc(64px + env(safe-area-inset-bottom, 0px)); padding: 6px 6px env(safe-area-inset-bottom, 0px); display: flex; background: var(--glass); border-top: 1px solid var(--line); }
+  .bottombar > a, .bottombar > button { flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: none; border: 0; color: var(--mut); font: 600 11px var(--font-sans); text-decoration: none; cursor: pointer; }
+  .bottombar .bb-ic { width: 46px; height: 28px; border-radius: 14px; display: grid; place-items: center; }
+  .bottombar .on { color: var(--ink); }
+  .bottombar .on .bb-ic { background: var(--y); color: var(--ink); }
+  .more-wrap { position: fixed; inset: 0; z-index: 60; }
+  .more-scrim { position: absolute; inset: 0; width: 100%; background: rgba(0, 0, 0, .35); border: 0; cursor: pointer; }
+  .more-sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--glass); border-radius: 18px 18px 0 0; padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgba(0, 0, 0, .2); max-height: 86vh; overflow-y: auto; }
+  .more-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line-strong); margin: 0 auto 12px; }
+  .more-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .more-av { width: 40px; height: 40px; border-radius: 50%; background: var(--y); color: var(--ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+  .more-who b { display: block; font-size: 14px; font-family: var(--font-mono); }
+  .more-who span { font-size: 12px; color: var(--mut); }
+  .more-list { background: var(--surface-2); border-radius: 14px; overflow: hidden; margin-bottom: 12px; }
+  .more-list > a, .more-list > button { display: flex; align-items: center; width: 100%; min-height: 48px; padding: 0 16px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); text-align: left; text-decoration: none; font: 600 15px var(--font-sans); cursor: pointer; }
+  .more-list > :last-child { border-bottom: 0; }
+  .more-list .on { background: var(--hover); }
+  .more-list .danger { color: var(--bad); }
+  .drawer .stats3 b { font-size: 13px; }
+}
+
+/* =====================================================================
+   21. All pages: iPhone app layer and desktop-only content
+   Under 700px the tracker reads like an installed iPhone app (Add to Home Screen, full screen):
+   safe areas for the notch and home indicator, large titles, grouped cards, 2-up KPIs,
+   table rows as cards, 44px tap targets, and 16px inputs so iOS does not zoom when a field is focused.
+   Desktop layout is unchanged.
+   ===================================================================== */
+
+html, body { -webkit-tap-highlight-color: transparent; }
+
+/* Content that only suits one screen size */
+@media (min-width: 701px) { .only-phone { display: none !important; } }
+@media (max-width: 700px) { .only-desk { display: none !important; } }
+
+@media (max-width: 700px) {
+  /* Header clears the status bar when the app is opened from the home screen */
+  .topbar {
+    height: calc(var(--hdr) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .wrap {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  /* Large iOS-style title with the actions below it */
+  .dm .head { flex-direction: column; align-items: stretch; gap: 12px; margin: 18px 2px 14px; }
+  .dm .head h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.6px; font-weight: 700; }
+  .dm .head p { font-size: 13.5px; line-height: 1.45; }
+  .dm .head .tools { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .dm .head .tools > * { flex: 0 0 auto; }
+
+  /* Grouped cards: one column, 2-up KPI tiles */
+  .dm .grid { gap: 10px; margin-bottom: 10px; }
+  .dm .g5, .dm .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .dm .g3, .dm .g2, .dm .g2e { grid-template-columns: minmax(0, 1fr) !important; }
+  .dm .card { border-radius: 16px; padding: 14px; }
+  .dm .card .ph { flex-wrap: wrap; gap: 8px; }
+  .dm .kv { font-size: 24px; }
+
+  /* Tables become stacked cards (labels come from MobileTables.js) */
+  .dm .tbl-wrap { border: 0; background: none; overflow: visible; }
+  .dm .tbl-stack tr.rw {
+    background: var(--glass); border: 1px solid var(--line); border-radius: 16px;
+    margin: 0 0 10px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(20, 20, 30, .04);
+  }
+  .dm .tbl-stack td { border-bottom: 0; }
+
+  /* Forms: one column, 16px text so iOS does not zoom */
+  .dm .fgrid { grid-template-columns: minmax(0, 1fr) !important; }
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Segmented controls scroll sideways instead of wrapping */
+  .dm .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .dm .seg::-webkit-scrollbar { display: none; }
+  .dm .seg button { min-height: 44px; flex: 0 0 auto; }
+
+  /* Touch targets: at least 44px */
+  .dm .btn, .dm .submit { min-height: 44px; }
+  .dm select.fctl, .dm .flabel + select { min-height: 44px; }
+
+  /* Form footer stays above the phone tab bar, so Submit is always in reach (safe area respected) */
+  .dm .ffoot {
+    position: sticky; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); z-index: 5;
+    background: var(--glass); border-top: 1px solid var(--line); padding: 10px 0;
+  }
+}
+
+/* =====================================================================
+   22. Desktop web layout: page kicker, KPI strip, form side panel
+   Matches the approved complete web view: a kicker above each page title, one KPI strip per page
+   (a single bordered band with dividers), and the intake form with a "what happens next" panel beside it.
+   Phone rules are in section 21.
+   ===================================================================== */
+
+/* Page kicker: small label with a yellow rule */
+.dm .head .kicker { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 8px; color: var(--mut); }
+.dm .head .kicker::before { content: ""; width: 18px; height: 2px; border-radius: 2px; background: var(--y); flex: none; }
+
+/* KPI strip: one bordered band with dividers */
+.dm .grid.kpi-strip { gap: 0; margin-bottom: 16px; background: var(--glass); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(20, 20, 30, .04); }
+.dm .grid.kpi-strip > .card { border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; padding: 18px 20px; min-width: 0; }
+.dm .grid.kpi-strip > .card:last-child { border-right: 0; }
+.dm .grid.kpi-strip > .card.hot { box-shadow: inset 0 3px 0 var(--bad); }
+
+/* Intake forms: form on the left, "what happens next" panel on the right */
+.dm .kform-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.dm .kform-layout > .fwrap { min-width: 0; }
+.dm .kform-side { position: sticky; top: calc(var(--hdr) + 16px); display: grid; gap: 12px; }
+.dm .kside-card { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+.dm .kside-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.dm .kside-steps { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 13px; line-height: 1.5; color: var(--ink2); }
+.dm .kside-steps b { color: var(--ink); }
+.dm .kside-defs { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; margin: 0; font-size: 13px; }
+.dm .kside-defs dt { color: var(--mut); }
+.dm .kside-defs dd { margin: 0; font-family: var(--font-mono); font-weight: 600; color: var(--ink); text-align: right; }
+.dm .kside-note { font-size: 12.5px; color: var(--mut); background: var(--surface-2); }
+@media (max-width: 1100px) {
+  .dm .kform-layout { grid-template-columns: minmax(0, 1fr); }
+  .dm .kform-side { position: static; }
+}
+
+/* Phone: the KPI strip becomes separate tiles again */
+@media (max-width: 700px) {
+  .dm .grid.kpi-strip { background: none; border: 0; border-radius: 0; overflow: visible; box-shadow: none; gap: 10px; }
+  .dm .grid.kpi-strip > .card { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: 0 1px 2px rgba(20, 20, 30, .04); }
+  .dm .grid.kpi-strip > .card.hot { box-shadow: inset 0 3px 0 var(--bad), 0 1px 2px rgba(20, 20, 30, .04); }
+}
