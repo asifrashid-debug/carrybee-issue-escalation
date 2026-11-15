@@ -1,175 +1,465 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import IssueDrawer from '../components/IssueDrawer';
+import CopyButton from '../components/CopyButton';
+import { useAnalytics } from '../components/useAnalytics';
+import { PageHead, Kpi, LiveChip, PriPill, SlaPill, StatusPill, Zc, fmtN } from '../components/demo';
 import { formatDhaka, hoursSince } from '../lib/time';
 
-const VIEWS = [
-  { id: '', label: 'All Issues' }, { id: 'mine', label: 'My Escalations' }, { id: 'unpicked', label: 'Unpicked' },
-  { id: 'awaiting', label: 'Awaiting First Response' }, { id: 'resolved_week', label: 'Resolved This Week' },
-  { id: 'ISD', label: 'ISD Queue' }, { id: 'OSD', label: 'OSD Queue' }, { id: 'CTG', label: 'CTG Queue' }
+const PAGE = 20;
+const ZONES = ['ISD', 'OSD', 'CTG'];
+const LIST_VIEWS = ['mine', 'unpicked', 'awaiting', 'resolved_week'];
+const OPS_STATUSES = ['New', 'Picked', 'In Progress', 'On Hold', 'Resolved', 'Unresolved'];
+const COLUMNS = [
+  { key: 'pick', title: 'Needs pick', params: { view: 'unpicked' }, listView: 'unpicked' },
+  { key: 'await', title: 'Awaiting first comment', params: { view: 'awaiting' }, listView: 'awaiting' },
+  { key: 'prog', title: 'In progress', params: { ops_issue_status: 'In Progress' }, listView: 'all' },
+  { key: 'done', title: 'Resolved this week', params: { view: 'resolved_week' }, listView: 'resolved_week' },
+];
+// Optional columns are switched on from the Columns panel. The nine base columns always show.
+const OPTIONAL = [
+  { key: 'prio', label: 'Priority' },
+  { key: 'ops', label: 'Ops Status' },
+  { key: 'raiser', label: 'Raised by' },
 ];
 
-export default function Tracker() {
-  const [rows, setRows] = useState([]);
-  const [count, setCount] = useState(0);
-  const [page, setPage] = useState(1);
-  const [view, setView] = useState('');
-  const [f, setF] = useState({ zone: '', channel: '', issue_status: '', ops_issue_status: '', ops_status: '', validation: '', priority_scale: '', week: '', search: '', mine: '' });
-  const [user, setUser] = useState({ email: 'asif.rashid@carrybee.com', role: 'admin' });
-  const [users, setUsers] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [audit, setAudit] = useState([]);
-  const [sla, setSla] = useState({ pick_hours: 4, first_response_hours: 24, resolution_hours: 72 });
-  const [msg, setMsg] = useState('');
+// Hours as "3d 2h" for longer spans, "5h" for short ones.
+function spanText(h) {
+  const x = Math.max(0, Math.round(h));
+  return x >= 24 ? `${Math.floor(x / 24)}d ${x % 24}h` : `${x}h`;
+}
 
-  async function load() {
-    const p = new URLSearchParams({ page, pageSize: '25', ...Object.fromEntries(Object.entries(f).filter(([,v])=>v)) });
-    if (view === 'mine') p.set('mine', user.email);
-    else if (view === 'unpicked' || view === 'awaiting' || view === 'resolved_week') p.set('view', view);
-    else if (['ISD','OSD','CTG'].includes(view)) p.set('zone', view);
-    const r = await fetch('/api/escalations?' + p.toString());
-    const j = await r.json();
-    setRows(j.data||[]); setCount(j.count||0);
-  }
-  useEffect(()=>{ load(); }, [page, view, f]);
-  useEffect(()=>{ fetch('/api/masters').then(r=>r.json()).then(j=>{ setUsers(j.users||[]); const c=j.config?.find(x=>x.key==='sla'); if(c) setSla(c.value); }); }, []);
-  useEffect(()=>{ const t=setInterval(load, 30000); return ()=>clearInterval(t); }, [page, view, f, user]);
+// SLA state per row. Breach rules: no first comment more than 2h after being raised;
+// unpicked past 4h; open past the category resolution SLA (days per zone, from the API).
+function sla(e) {
+  const age = hoursSince(e.submitted_at);
+  if (e.ops_issue_status === 'Resolved') return { state: 'ok', text: 'Resolved' };
+  if (!e.issue_response_datetime && age > 2) return { state: 'br', text: `No comment · ${fmtN(Math.round(age - 2))}h over` };
+  if (!e.issue_pick_time && age > 4) return { state: 'br', text: `Unpicked · ${Math.round(age)}h` };
+  if (!e.issue_response_datetime) return { state: 'risk', text: `${Math.max(0, 2 - age).toFixed(1)}h to limit` };
+  const limitH = (e.resolution_days || 3) * 24;
+  if (e.resolution_breach) return { state: 'br', text: `Resolution overdue · ${spanText(age - limitH)}` };
+  const left = limitH - age;
+  return { state: left < limitH * 0.2 ? 'risk' : 'ok', text: `Resolve in ${spanText(left)} · ${e.resolution_days || 3}d SLA` };
+}
 
-  async function openDetail(id) {
-    const r = await fetch(`/api/escalations/${id}`); const j = await r.json();
-    setSelected(j.data); setAudit(j.audit||[]);
+// CM pick SLA line (only CM-assigned MX issues). Deadline is pick_due_at from the API.
+function pickLine(e) {
+  if (!e.cm_assigned) return null;
+  if (e.issue_pick_time) {
+    return e.pick_missed ? { cls: 'sla-bad', text: 'Picked late · justification' } : { cls: 'sla-ok', text: 'Picked on time' };
   }
-  async function pick(id) {
-    const r = await fetch(`/api/escalations/${id}/pick`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ actor_email: user.email }) });
-    const j = await r.json(); setMsg(r.ok ? `Picked ${id} at ${formatDhaka(j.data.issue_pick_time)}` : j.error); load(); if(selected) openDetail(id);
+  const left = (new Date(e.pick_due_at).getTime() - Date.now()) / 60e3;
+  if (left > 0) return { cls: 'sla-warn', text: `Pick due in ${Math.ceil(left)} min` };
+  if (e.pick_phase === 'escalated') return { cls: 'sla-bad', text: 'Pick failure · CM Lead' };
+  return { cls: 'sla-bad', text: `Pick overdue · ${Math.round(-left)} min` };
+}
+
+// KAM feedback line per row (phase comes from the API).
+function fbText(e) {
+  if (e.feedback_phase === 'escalated') return { cls: 'sla-bad', text: 'Feedback failure · Team Lead' };
+  if (e.feedback_phase === 'justification_due') return { cls: 'sla-bad', text: 'Feedback overdue · justification due' };
+  if (e.feedback_phase === 'pending') {
+    const left = Math.max(0, (new Date(e.feedback_due_at).getTime() - Date.now()) / 3600e3);
+    return { cls: 'sla-warn', text: `Feedback due in ${left.toFixed(1)}h` };
   }
-  async function patch(id, body) {
-    const r = await fetch(`/api/escalations/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ ...body, actor_email: user.email, actor_role: user.role }) });
-    const j = await r.json(); setMsg(r.ok ? 'Saved & queued to sheet ≤60s' : j.error); load(); if(selected) openDetail(id);
-  }
-  function slaFlags(e) {
-    const flags = [];
-    const sinceSubmit = hoursSince(e.submitted_at);
-    if (!e.issue_pick_time && sinceSubmit > sla.pick_hours) flags.push(`⚠️ Pick breach (${sinceSubmit.toFixed(1)}h)`);
-    if (!e.issue_response_datetime && sinceSubmit > sla.first_response_hours) flags.push(`⚠️ No response (${sinceSubmit.toFixed(1)}h)`);
-    if (e.issue_response_datetime && e.ops_issue_status !== 'Resolved' && hoursSince(e.issue_response_datetime) > sla.resolution_hours) flags.push('⚠️ Resolution overdue');
-    return flags;
-  }
-  const tiles = {
-    open: rows.filter(r=>r.issue_status!=='Closed').length,
-    unpicked: rows.filter(r=>!r.issue_pick_time).length,
-    awaiting: rows.filter(r=>!r.issue_response_datetime).length,
-    resolvedWeek: rows.filter(r=>r.ops_issue_status==='Resolved').length
+  return { cls: 'sla-ok', text: `Feedback: ${e.kam_feedback_status}` };
+}
+
+// Query string for /api/escalations. Filters and view come from state; extra overrides (page, board columns).
+function buildQuery(f, extra = {}) {
+  const p = new URLSearchParams();
+  if (f.zone) p.set('zone', f.zone);
+  const listView = LIST_VIEWS.includes(f.view) ? f.view : '';
+  const base = {
+    view: listView,
+    search: f.search,
+    priority_scale: f.prio,
+    channel: f.channel,
+    issue_status: f.istat,
+    ops_issue_status: f.ostat,
+    feedback: f.view === 'failures' ? 'failure' : '',
+    pick: f.view === 'pick_failures' ? 'failure' : '',
+    page: f.page,
+    pageSize: PAGE,
   };
-  const setF2 = (k,v)=>setF(s=>({...s,[k]:v}));
+  Object.entries({ ...base, ...extra }).forEach(([k, v]) => { if (v) p.set(k, String(v)); });
+  return p.toString();
+}
+
+// Export helpers. Excel is written as SpreadsheetML (.xml), which Excel opens directly.
+function download(name, text, mime) {
+  const blob = new Blob([text], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const EXPORT_HEAD = ['Issue ID', 'Timestamp (Dhaka)', 'Channel', 'Zone', 'Concern Hub', 'Consignment ID', 'Merchant', 'Category', 'Issue Status', 'Ops Status', 'Priority', 'Raised by', 'Age (h)', 'SLA'];
+function exportRow(e) {
+  return [e.issue_id, formatDhaka(e.submitted_at), e.channel || '', e.zone || '', e.concern_hub || '', e.consignment_id || '', e.merchant_name || '', e.issue_category || '', e.issue_status || '', e.ops_issue_status || '', e.priority_scale || '', e.email || '', hoursSince(e.submitted_at).toFixed(1), sla(e).text];
+}
+function toCsv(rows) {
+  return [EXPORT_HEAD, ...rows.map(exportRow)].map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+function toSpreadsheetML(rows) {
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+  const cell = (v) => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`;
+  const body = [EXPORT_HEAD, ...rows.map(exportRow)].map((r) => `<Row>${r.map(cell).join('')}</Row>`).join('');
+  return `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Escalations"><Table>${body}</Table></Worksheet></Workbook>`;
+}
+
+// First hub layer response on the issue, shortened for the list (full text in the cell tooltip).
+function hubText(e) {
+  const t = [e.layer1_response, e.layer2_response, e.layer3_response].map((v) => String(v || '').trim()).find(Boolean) || '';
+  return t.length > 90 ? `${t.slice(0, 87)}...` : t;
+}
+
+export default function Tracker() {
+  const analytics = useAnalytics();
+  const { data: stats } = analytics;
+  const [me, setMe] = useState(null);
+  const [view, setView] = useState('all');
+  const [zone, setZone] = useState('');
+  const [search, setSearch] = useState('');
+  const [prio, setPrio] = useState('');
+  const [channel, setChannel] = useState('');
+  const [istat, setIstat] = useState('');
+  const [ostat, setOstat] = useState('');
+  const [panel, setPanel] = useState(null); // null | 'filters' | 'columns'
+  const [extraCols, setExtraCols] = useState({});
+  const [page, setPage] = useState(1);
+  const [board, setBoard] = useState(null);
+  const [list, setList] = useState({ rows: [], count: 0 });
+  const [resolvedWeek, setResolvedWeek] = useState(null);
+  const [openId, setOpenId] = useState(null);
+  const [error, setError] = useState(null);
+  const [updated, setUpdated] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState(null);
+
+  const user = me || { email: '', role: '—' };
+  const canSeeFailures = ['team_lead', 'cm_lead', 'admin', 'management'].includes(user.role);
+  const canSeePickFailures = ['cm_lead', 'admin', 'management'].includes(user.role);
+  const isLead = user.role === 'team_lead'; // bulk KAM feedback is for team leads only
+  const filterCount = [prio, channel, istat, ostat].filter(Boolean).length;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const f = { zone, view, search, prio, channel, istat, ostat, page };
+    try {
+      if (view === 'board') {
+        const res = await Promise.all(COLUMNS.map((c) =>
+          fetch(`/api/escalations?${buildQuery({ zone }, { ...c.params, pageSize: 6 })}`, { cache: 'no-store' }).then((r) => r.json())));
+        const failed = res.find((r) => r.error);
+        if (failed) throw new Error(failed.error);
+        const b = {};
+        COLUMNS.forEach((c, i) => { b[c.key] = { count: res[i].count || 0, rows: res[i].data || [] }; });
+        setBoard(b);
+        setResolvedWeek(b.done?.count ?? null);
+      } else {
+        const j = await fetch(`/api/escalations?${buildQuery(f)}`, { cache: 'no-store' }).then((r) => r.json());
+        if (j.error) throw new Error(j.error);
+        setList({ rows: j.data || [], count: j.count || 0 });
+        // Resolved-this-week count for the KPI card comes back with the list (same scope), one request not two
+        if (j.resolved_week != null) setResolvedWeek(j.resolved_week);
+      }
+      setError(null);
+      setUpdated(new Date());
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setLoading(false);
+    }
+  }, [zone, view, search, prio, channel, istat, ostat, page]);
+
+  useEffect(() => {
+    fetch('/api/me', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {});
+    const o = new URLSearchParams(window.location.search).get('open');
+    if (o) setOpenId(o);
+  }, []);
+
+  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]);
+  useEffect(() => { setPage(1); }, [search, prio, channel, istat, ostat, zone, view]);
+  useEffect(() => { setSelected(new Set()); }, [zone, view, page, search, prio, channel, istat, ostat]);
+
+  // Views bar: zone chips set the zone; the other views set the view. Zone and view stay in step.
+  const views = [
+    { key: 'all', label: 'All Escalations' },
+    { key: 'mine', label: 'My Escalations' },
+    { key: 'unpicked', label: 'Unpicked Queue' },
+    { key: 'awaiting', label: 'Awaiting 1st Response' },
+    { key: 'resolved_week', label: 'Resolved This Week' },
+    ...ZONES.map((z) => ({ key: z, label: `${z} Zone` })),
+    { key: 'board', label: 'Board' },
+    ...(canSeePickFailures ? [{ key: 'pick_failures', label: 'Pick Failures' }] : []),
+    ...(canSeeFailures ? [{ key: 'failures', label: 'Feedback Failures' }] : []),
+  ];
+  const activeKey = ZONES.includes(zone) ? zone : view;
+  function chooseView(key) {
+    if (ZONES.includes(key)) { setZone(key); setView('all'); return; }
+    setZone(''); setView(key);
+  }
+
+  // Export the same rows the list shows (all pages, capped at 1,000).
+  async function exportRows() {
+    const out = [];
+    for (let p = 1; p <= 10; p++) {
+      const j = await fetch(`/api/escalations?${buildQuery({ zone, view, search, prio, channel, istat, ostat, page: p }, { pageSize: 100 })}`, { cache: 'no-store' }).then((r) => r.json());
+      if (j.error) throw new Error(j.error);
+      out.push(...(j.data || []));
+      if ((j.data || []).length < 100) break;
+    }
+    return out;
+  }
+  async function doExport(kind) {
+    setExporting(true);
+    try {
+      const rows = await exportRows();
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (kind === 'csv') download(`escalations-${stamp}.csv`, toCsv(rows), 'text/csv');
+      else download(`escalations-${stamp}.xml`, toSpreadsheetML(rows), 'application/vnd.ms-excel');
+      if (rows.length >= 1000) setError('Export stopped at 1,000 rows. Narrow the filters to get the rest.');
+    } catch (e) {
+      setError(`Export failed: ${e.message || e}`);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  const pageIds = list.rows.map((r) => r.issue_id);
+  const pageAllSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  function toggleSel(id) {
+    setSelected((cur) => { const n = new Set(cur); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  function togglePage() {
+    setSelected((cur) => { const n = new Set(cur); pageIds.forEach((id) => { if (pageAllSelected) n.delete(id); else n.add(id); }); return n; });
+  }
+  // Team lead: set KAM feedback on the selected issues (server checks team scope and skips any already set).
+  async function bulkFeedback(outcome) {
+    const ids = [...selected];
+    if (!ids.length) return;
+    setBulkBusy(true);
+    setBulkMsg(null);
+    try {
+      const r = await fetch('/api/escalations/bulk-feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ issue_ids: ids, outcome }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Bulk update failed');
+      const parts = [`${j.updated.length} set to ${outcome}`];
+      if (j.skipped.length) parts.push(`${j.skipped.length} skipped`);
+      if (j.failed.length) parts.push(`${j.failed.length} failed`);
+      setBulkMsg(`${parts.join(' · ')}.`);
+      setSelected(new Set());
+      load();
+    } catch (e) {
+      setBulkMsg(`Could not update: ${e.message || e}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  const pages = Math.max(1, Math.ceil(list.count / PAGE));
+  const k = stats?.kpi;
+  const zoneOpen = stats ? stats.zones.map((z) => `${z.zone}: ${fmtN(z.open)}`).join(' · ') : '';
+  const weekLabel = stats?.weeks?.[1] || '';
+  const lastSynced = updated ? formatDhaka(updated.toISOString()) : '—';
+  const visibleExtra = OPTIONAL.filter((c) => extraCols[c.key]);
+  const colCount = 10 + visibleExtra.length + (isLead ? 1 : 0);
+  const showList = ['all', 'mine', 'unpicked', 'awaiting', 'resolved_week', 'failures', 'pick_failures'].includes(view);
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>Tracker</h1>
-        <label style={{ fontSize: 13 }}>Acting as (demo RBAC): <select value={user.email} onChange={e=>{ const u=users.find(x=>x.email===e.target.value); setUser({ email: u.email, role: u.role }); }} style={{ padding: 6, borderRadius: 6 }}>
-          {users.map(u=><option key={u.email} value={u.email}>{u.email} ({u.role})</option>)}
-        </select></label>
-        <span style={{ fontSize: 13, color: '#6b7280' }}>Role: <b>{user.role}</b> • Polls every 30s • {count} total</span>
-        <a href="/api/export" style={{ marginLeft: 'auto', fontSize: 13 }}>Export CSV (filtered)</a>
+    <div className="dm">
+      <PageHead title="Issue Escalation Tracker" sub="Live escalation feed with aging, SLA and per-action audit log. Work the stages in order: pick, first comment, follow-up, resolve. Open any issue for its layers, follow-ups and audit trail.">
+        <LiveChip label={`Live · Asia/Dhaka · synced ${lastSynced}`} />
+      </PageHead>
+
+      <div className="grid g4">
+        <Kpi label="Open escalations" value={fmtN(k?.open)} sub={stats ? zoneOpen : '…'} icon="shield" />
+        <Kpi label="Unpicked queue" value={fmtN(k?.unpicked)} sub="Waiting for hub pick" icon="alert" tone="r" hot />
+        <Kpi label="Awaiting first response" value={fmtN(k?.awaitingResponse)} sub="Open, no first comment yet" icon="clock" tone="b" />
+        <Kpi label={`Resolved this week${weekLabel ? ` (${weekLabel})` : ''}`} value={fmtN(resolvedWeek)} sub="Ops status Resolved this week" icon="check" tone="g" />
       </div>
-      {msg && <div style={{ background: '#eff6ff', padding: 10, borderRadius: 8, marginBottom: 10, fontSize: 14 }}>{msg}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 10, marginBottom: 12 }}>
-        <Tile label="Open (page)" v={tiles.open} /><Tile label="Unpicked" v={tiles.unpicked} /><Tile label="Awaiting Response" v={tiles.awaiting} /><Tile label="Resolved (page)" v={tiles.resolvedWeek} />
-      </div>
-      <div style={{ background: '#fff', padding: 12, borderRadius: 12, marginBottom: 12, display: 'grid', gap: 8 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {VIEWS.map(v=><button key={v.id} onClick={()=>{ setView(v.id); setPage(1); }} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #d1d5db', background: view===v.id ? '#0b2a4a' : '#fff', color: view===v.id ? '#fff' : '#111' }}>{v.label}</button>)}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 8 }}>
-          <Sel label="Zone" v={f.zone} onChange={v=>setF2('zone',v)} opts={['','ISD','OSD','CTG']} />
-          <Sel label="Channel" v={f.channel} onChange={v=>setF2('channel',v)} opts={['','KAM','MX']} />
-          <Sel label="Issue Status" v={f.issue_status} onChange={v=>setF2('issue_status',v)} opts={['','Open','Reopened','Closed']} />
-          <Sel label="ISSUE STATUS (Ops)" v={f.ops_issue_status} onChange={v=>setF2('ops_issue_status',v)} opts={['','New','Picked','In Progress','On Hold','Resolved','Unresolved']} />
-          <Sel label="Ops Status" v={f.ops_status} onChange={v=>setF2('ops_status',v)} opts={['','Pending','In Progress','Completed','Dropped']} />
-          <Sel label="Validation" v={f.validation} onChange={v=>setF2('validation',v)} opts={['','Valid','Invalid','Duplicate','Insufficient Info']} />
-          <Sel label="Priority" v={f.priority_scale} onChange={v=>setF2('priority_scale',v)} opts={['','P1','P2','P3','P4']} />
-          <label style={{ fontSize: 12 }}>Search (ID / Consignment / Merchant)<input value={f.search} onChange={e=>setF2('search', e.target.value)} style={inp} /></label>
+
+      <div className="card" style={{ padding: '12px 14px', marginBottom: 12 }}>
+        <div className="views" role="group" aria-label="Tracker views">
+          <span className="lb">Views:</span>
+          {views.map((v) => (
+            <button key={v.key} type="button" className={activeKey === v.key ? 'on' : ''} aria-pressed={activeKey === v.key} onClick={() => chooseView(v.key)}>{v.label}</button>
+          ))}
         </div>
       </div>
-      <div style={{ background: '#fff', borderRadius: 12, overflow: 'auto', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13, minWidth: 1100 }}>
-          <thead><tr style={{ background: '#0b2a4a', color: '#fff' }}>
-            {['Issue ID','Timestamp (Dhaka)','Consignment / Merchant','Channel','Zone / Hub','Category','Priority','Issue Status','ISSUE STATUS','Ops Status','Pick Time','Response','SLA','Actions'].map(h=><th key={h} style={{ padding: 8, textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>)}
-          </tr></thead>
-          <tbody>
-            {rows.map(e=>(
-              <tr key={e.issue_id} style={{ borderTop: '1px solid #e5e7eb', background: e.priority_scale==='P1' ? '#fef2f2' : '#fff' }}>
-                <td style={{ padding: 8 }}><button onClick={()=>openDetail(e.issue_id)} style={{ color: '#0b2a4a', fontWeight: 700, background: 'none', border: 0, cursor: 'pointer' }}>{e.issue_id}</button></td>
-                <td style={{ padding: 8, whiteSpace: 'nowrap' }}>{formatDhaka(e.submitted_at)}</td>
-                <td style={{ padding: 8 }}>{e.consignment_id||'—'}<br/><span style={{ color: '#6b7280' }}>{e.merchant_name||''}</span></td>
-                <td style={{ padding: 8 }}>{e.channel}</td>
-                <td style={{ padding: 8 }}>{e.zone}<br/><span style={{ color: '#6b7280' }}>{e.concern_hub}</span></td>
-                <td style={{ padding: 8 }}>{e.issue_category}<br/><span style={{ color: '#6b7280' }}>{e.issue_sub_category}</span></td>
-                <td style={{ padding: 8 }}><span style={{ background: e.priority_scale==='P1' ? '#dc2626' : '#e5e7eb', color: e.priority_scale==='P1' ? '#fff' : '#111', padding: '2px 8px', borderRadius: 999 }}>{e.priority_scale}</span></td>
-                <td style={{ padding: 8 }}>{e.issue_status}</td>
-                <td style={{ padding: 8 }}>{e.ops_issue_status}</td>
-                <td style={{ padding: 8 }}>{e.ops_status}</td>
-                <td style={{ padding: 8, whiteSpace: 'nowrap' }}>{e.issue_pick_time ? formatDhaka(e.issue_pick_time) : '—'}</td>
-                <td style={{ padding: 8, whiteSpace: 'nowrap' }}>{e.issue_response_datetime ? formatDhaka(e.issue_response_datetime) : '—'}</td>
-                <td style={{ padding: 8 }}>{slaFlags(e).join(' ')||'—'}</td>
-                <td style={{ padding: 8, whiteSpace: 'nowrap' }}>
-                  {!e.issue_pick_time && <button onClick={()=>pick(e.issue_id)} style={btn}>Pick</button>}
-                  <button onClick={()=>openDetail(e.issue_id)} style={{ ...btn, marginLeft: 6 }}>Details</button>
-                </td>
-              </tr>
+
+      <div className="card" style={{ padding: '12px 14px', marginBottom: 12 }}>
+        <div className="toolbar" style={{ marginBottom: 0 }}>
+          <label className="search">
+            <svg className="ico" viewBox="0 0 24 24" aria-hidden="true" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+            <input type="search" placeholder="Search Issue ID (CB-…), Consignment ID, or Merchant name" aria-label="Search issues" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </label>
+          <button type="button" className="btn" aria-expanded={panel === 'filters'} onClick={() => setPanel(panel === 'filters' ? null : 'filters')}>
+            Filters{filterCount ? ` (${filterCount})` : ''}
+          </button>
+          <button type="button" className="btn" aria-expanded={panel === 'columns'} onClick={() => setPanel(panel === 'columns' ? null : 'columns')}>
+            Columns ({9 + visibleExtra.length}/{9 + OPTIONAL.length})
+          </button>
+          <button type="button" className="btn" onClick={load} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh'}</button>
+          <button type="button" className="btn" disabled={exporting} onClick={() => doExport('csv')}>CSV</button>
+          <button type="button" className="btn g" disabled={exporting} onClick={() => doExport('xls')}>{exporting ? 'Exporting…' : 'Excel (XML)'}</button>
+        </div>
+
+        {panel === 'filters' && (
+          <div className="grid g4" style={{ marginTop: 12, marginBottom: 0 }} role="group" aria-label="Filters">
+            <div><label className="flabel">Priority</label><div className="fctl"><select value={prio} onChange={(e) => setPrio(e.target.value)}><option value="">All priorities</option><option value="P1">P1 · Critical</option><option value="P2">P2 · Urgent</option><option value="P3">P3 · Regular</option><option value="P4">P4</option></select></div></div>
+            <div><label className="flabel">Channel</label><div className="fctl"><select value={channel} onChange={(e) => setChannel(e.target.value)}><option value="">All channels</option><option value="KAM">KAM</option><option value="MX">MX</option></select></div></div>
+            <div><label className="flabel">Issue status</label><div className="fctl"><select value={istat} onChange={(e) => setIstat(e.target.value)}><option value="">Any</option><option>Open</option><option>Reopened</option><option>Resolved</option><option>Closed</option></select></div></div>
+            <div><label className="flabel">Ops status</label><div className="fctl"><select value={ostat} onChange={(e) => setOstat(e.target.value)}><option value="">Any</option>{OPS_STATUSES.map((s) => <option key={s}>{s}</option>)}</select></div></div>
+            <div style={{ gridColumn: '1 / -1' }}><button type="button" className="btn sm" onClick={() => { setPrio(''); setChannel(''); setIstat(''); setOstat(''); }}>Clear filters</button></div>
+          </div>
+        )}
+        {panel === 'columns' && (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 12, fontSize: 13 }} role="group" aria-label="Optional columns">
+            <span style={{ color: 'var(--mut)' }}>Always shown: Issue ID, Aging &amp; SLA, Timestamp, Consignment / Merchant, Channel, Zone, Concern Hub, Issue Status, Category.</span>
+            {OPTIONAL.map((c) => (
+              <label key={c.key} style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
+                <input type="checkbox" checked={!!extraCols[c.key]} onChange={(e) => setExtraCols({ ...extraCols, [c.key]: e.target.checked })} />
+                {c.label}
+              </label>
             ))}
-            {rows.length===0 && <tr><td colSpan={14} style={{ padding: 20, textAlign: 'center', color: '#6b7280' }}>No issues. Submit via KAM/MX form.</td></tr>}
-          </tbody>
-        </table>
+          </div>
+        )}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
-        <button disabled={page<=1} onClick={()=>setPage(p=>p-1)} style={btn}>← Prev</button>
-        <span style={{ fontSize: 13 }}>Page {page} • {count} records</span>
-        <button onClick={()=>setPage(p=>p+1)} style={btn}>Next →</button>
-      </div>
-      {selected && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'flex-end', zIndex: 50 }}>
-          <div style={{ background: '#fff', width: 'min(560px, 95vw)', height: '100%', overflow: 'auto', padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0 }}>{selected.issue_id}</h2>
-              <button onClick={()=>setSelected(null)} style={btn}>Close ✕</button>
+
+      {error && <div className="box box-bad" role="alert">Could not load issues: {error}</div>}
+
+      {view === 'board' && (
+        <div className="board">
+          {COLUMNS.map((c) => {
+            const col = board?.[c.key];
+            return (
+              <section key={c.key} className="card" aria-label={c.title}>
+                <div className="ph" style={{ marginBottom: 10 }}>
+                  <h3>{c.title}</h3>
+                  <span className="zc">{col ? fmtN(col.count) : '…'}</span>
+                </div>
+                {!col && <div className="empty">Loading…</div>}
+                {col && col.rows.length === 0 && <div className="empty">Nothing here right now.</div>}
+                {col && col.rows.map((e) => {
+                  const s = sla(e);
+                  const pl = pickLine(e);
+                  const hot = s.state === 'br';
+                  return (
+                    <button key={e.issue_id} type="button" className={`kcard ${hot ? 'hot' : ''}`} onClick={() => setOpenId(e.issue_id)}>
+                      <span className="id">{e.issue_id}</span>
+                      <span className="cat">{e.issue_category || 'Uncategorised'}</span>
+                      <span className="meta">{e.zone} · {e.concern_hub || '—'}</span>
+                      <span className={pl?.cls || (s.state === 'br' ? 'sla-bad' : s.state === 'risk' ? 'sla-warn' : 'sla-ok')}>{pl?.text || s.text}</span>
+                    </button>
+                  );
+                })}
+                {col && col.count > col.rows.length && (
+                  <button type="button" className="btn" style={{ marginTop: 10 }} onClick={() => chooseView(c.listView)}>Show all {fmtN(col.count)}</button>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {showList && (
+        <div className="card" style={{ padding: 0 }}>
+          {view === 'pick_failures' && <div className="box box-bad" style={{ margin: 14 }}>Pick failures: a CM member missed the pick SLA and did not justify it within 24h, twice. Raised to the CM Lead.</div>}
+          {view === 'failures' && <div className="box box-bad" style={{ margin: 14 }}>Feedback failures: the KAM or CM owner missed the 24h window after 2 justifications. Raised to the Team Lead to record feedback.</div>}
+          {isLead && selected.size > 0 && (
+            <div className="bulk-bar" role="region" aria-label="Bulk KAM feedback">
+              <b>{selected.size} selected</b>
+              <button type="button" className="btn y sm" disabled={bulkBusy} onClick={() => bulkFeedback('Resolved')}>{bulkBusy ? 'Saving…' : 'Mark KAM feedback Resolved'}</button>
+              <button type="button" className="btn sm" disabled={bulkBusy} onClick={() => bulkFeedback('Not Resolved')}>Mark Not Resolved</button>
+              <button type="button" className="btn sm" disabled={bulkBusy} onClick={() => setSelected(new Set())}>Clear</button>
+              <span className="bulk-note">Team leads only · up to 50 at a time</span>
             </div>
-            <p style={{ fontSize: 13, color: '#6b7280' }}>Submitted {formatDhaka(selected.submitted_at)} • Week {selected.week} • {selected.channel} • {selected.zone}</p>
-            <div style={{ display: 'grid', gap: 8, fontSize: 14 }}>
-              <Row k="Consignment / Merchant" v={`${selected.consignment_id||''} / ${selected.merchant_name||''}`} />
-              <Row k="Hub / Lead / Division" v={`${selected.concern_hub} / ${selected.regional_lead||''} / ${selected.division||''}`} />
-              <Row k="Category" v={`${selected.issue_category} → ${selected.issue_sub_category}`} />
-              <Row k="Details" v={selected.issue_details} />
-              <Row k="KAM Name / Priority" v={`${selected.kam_name||''} / ${selected.priority_scale}`} />
-              <Row k="Issue Status / KAM Feedback" v={`${selected.issue_status} / ${selected.kam_feedback_status}`} />
-              <Row k="Pick Time" v={selected.issue_pick_time ? formatDhaka(selected.issue_pick_time) : '—'} />
-              <Row k="Response Stamp" v={selected.issue_response_datetime ? formatDhaka(selected.issue_response_datetime) : '—'} />
-              <Row k="Aging" v={`Since submit: ${hoursSince(selected.submitted_at)?.toFixed(1)}h${selected.issue_pick_time ? ` • Since pick: ${hoursSince(selected.issue_pick_time)?.toFixed(1)}h` : ''}`} />
+          )}
+          {isLead && bulkMsg && <div className="box" role="status" style={{ margin: 14 }}>{bulkMsg}</div>}
+          <div className="tbl-wrap">
+            <table className="tbl tbl-stack">
+              <thead>
+                <tr>
+                  {isLead && <th style={{ width: 36 }}><input type="checkbox" aria-label="Select all on this page" checked={pageAllSelected} onChange={togglePage} /></th>}
+                  <th>Hub response</th><th>Issue ID</th><th>Aging &amp; SLA</th><th>Timestamp (Dhaka) ↓</th><th>Consignment / Merchant</th><th>Channel</th><th>Zone</th><th>Concern Hub</th><th>Issue Status</th><th>Category</th>
+                  {visibleExtra.map((c) => <th key={c.key}>{c.label}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {list.rows.length === 0 && !loading && (
+                  <tr><td colSpan={colCount}><div className="empty">{view === 'failures' ? 'No feedback failures. Every owner is within the window or has given feedback.' : view === 'pick_failures' ? 'No pick failures. Every missed pick is justified or within its window.' : view === 'mine' ? 'No issues you raised or picked yet.' : 'No issues match this view. Clear a filter to see more.'}</div></td></tr>
+                )}
+                {list.rows.map((e) => {
+                  const s = sla(e);
+                  const fb = fbText(e);
+                  const pl = pickLine(e);
+                  const age = hoursSince(e.submitted_at);
+                  return (
+                    <tr key={e.issue_id} className="rw" onClick={() => setOpenId(e.issue_id)}>
+                      {isLead && (
+                        <td className="sel" data-label="Select" onClick={(ev) => ev.stopPropagation()}>
+                          <input type="checkbox" aria-label={`Select ${e.issue_id}`} checked={selected.has(e.issue_id)} onChange={() => toggleSel(e.issue_id)} />
+                        </td>
+                      )}
+                      <td className="hub-col" data-label="Hub response">
+                        {e.issue_response_datetime ? (
+                          <div className="hub-resp">
+                            <span className="hub-pill">Hub responded</span>
+                            <span className="hub-time">{formatDhaka(e.issue_response_datetime)}</span>
+                            {hubText(e) && <span className="hub-text" title={[e.layer1_response, e.layer2_response, e.layer3_response].filter(Boolean).join(' | ')}>{hubText(e)}</span>}
+                          </div>
+                        ) : <span className="hub-wait">Awaiting hub response</span>}
+                      </td>
+                      <td data-label="Issue ID"><span className="idc">{e.issue_id}</span></td>
+                      <td data-label="Aging & SLA">
+                        <SlaPill state={s.state} /> <span className="mono" style={{ color: 'var(--mut)' }}>{age.toFixed(1)}h</span>
+                        <div className={s.state === 'br' ? 'sla-bad' : s.state === 'risk' ? 'sla-warn' : 'sla-ok'} style={{ fontSize: 11.5 }}>{s.text}</div>
+                        <div className={fb.cls} style={{ fontSize: 11.5 }}>{fb.text}</div>
+                        {pl && <div className={pl.cls} style={{ fontSize: 11.5 }}>{pl.text}</div>}
+                      </td>
+                      <td className="mono" data-label="Timestamp">{formatDhaka(e.submitted_at)}</td>
+                      <td style={{ maxWidth: 300 }} data-label="Consignment / Merchant">
+                        <div className="copy-cell">
+                          <span className="copy-val mono">{e.consignment_id || '—'}</span><CopyButton text={e.consignment_id} label="Copy consignment ID" />
+                          <span className="copy-val" style={{ flexBasis: '100%' }}>{e.merchant_name || '—'}</span>{e.merchant_name && <CopyButton text={e.merchant_name} label="Copy merchant name" />}
+                        </div>
+                      </td>
+                      <td data-label="Channel"><span className={`pillc ${e.channel === 'MX' ? 'p-open' : 'p-B'}`}>{e.channel || '—'}</span></td>
+                      <td data-label="Zone"><Zc z={e.zone} /></td>
+                      <td data-label="Concern Hub">{e.concern_hub || '—'}</td>
+                      <td data-label="Issue Status"><StatusPill s={e.issue_status} /></td>
+                      <td data-label="Category">{e.issue_category || '—'}</td>
+                      {extraCols.prio && <td data-label="Priority"><PriPill p={e.priority_scale} /></td>}
+                      {extraCols.ops && <td data-label="Ops Status">{e.ops_issue_status || '—'}</td>}
+                      {extraCols.raiser && <td data-label="Raised by">{e.email || '—'}</td>}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="pagebar" style={{ padding: '12px 14px' }}>
+            <span aria-live="polite">{list.count ? `Showing ${(page - 1) * PAGE + 1}–${Math.min(list.count, page * PAGE)} of ${fmtN(list.count)} issues` : '0 issues'}</span>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button type="button" className="btn sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</button>
+              <span>Page {page} of {pages}</span>
+              <button type="button" className="btn sm" disabled={page >= pages} onClick={() => setPage((p) => Math.min(pages, p + 1))}>Next</button>
             </div>
-            <h3>Ops editing (syncs to sheet)</h3>
-            <div style={{ display: 'grid', gap: 8 }}>
-              <label>Comments 1<textarea defaultValue={selected.comments_1||''} id="c1" rows={2} style={inp} /></label>
-              <label>Comments 2<textarea defaultValue={selected.comments_2||''} id="c2" rows={2} style={inp} /></label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <Sel2 label="ISSUE STATUS" id="ois" val={selected.ops_issue_status} opts={['New','Picked','In Progress','On Hold','Resolved','Unresolved']} />
-                <Sel2 label="Ops Status" id="os" val={selected.ops_status} opts={['Pending','In Progress','Completed','Dropped']} />
-                <Sel2 label="Validation" id="val" val={selected.validation||''} opts={['','Valid','Invalid','Duplicate','Insufficient Info']} />
-                <Sel2 label="KAM Feedback" id="kf" val={selected.kam_feedback_status} opts={['Not Shared','Shared with Merchant','Merchant Confirmed','Merchant Disputed']} />
-              </div>
-              <label>Remarks<textarea defaultValue={selected.remarks||''} id="rem" rows={2} style={inp} /></label>
-              <button onClick={()=>patch(selected.issue_id, { comments_1: document.getElementById('c1').value, comments_2: document.getElementById('c2').value, ops_issue_status: document.getElementById('ois').value, ops_status: document.getElementById('os').value, validation: document.getElementById('val').value||null, kam_feedback_status: document.getElementById('kf').value, remarks: document.getElementById('rem').value })} style={{ ...btn, background: '#0b2a4a', color: '#fff' }}>Save Ops Block</button>
-            </div>
-            <h3>Change history (audit)</h3>
-            <ul style={{ fontSize: 12, color: '#374151' }}>{audit.map(a=><li key={a.id}>{formatDhaka(a.created_at)} • {a.actor_email} via {a.source}: {a.field_name} {a.old_value||'∅'} → {a.new_value||'∅'}</li>)}</ul>
           </div>
         </div>
       )}
+
+      <p className="note2">Paged on the server, 20 per page, newest first. Click a row for the issue detail. Times are Asia/Dhaka. Exports include every row in the current view.</p>
+
+      <IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={() => { load(); analytics.reload(); }} onOpen={setOpenId} />
     </div>
   );
 }
-function Tile({ label, v }) { return <div style={{ background: '#fff', padding: 12, borderRadius: 12 }}><div style={{ fontSize: 12, color: '#6b7280' }}>{label}</div><div style={{ fontSize: 24, fontWeight: 800 }}>{v}</div></div>; }
-function Sel({ label, v, onChange, opts }) { return <label style={{ fontSize: 12 }}>{label}<select value={v} onChange={e=>onChange(e.target.value)} style={inp}>{opts.map(o=><option key={o} value={o}>{o||'All'}</option>)}</select></label>; }
-function Sel2({ label, id, val, opts }) { return <label style={{ fontSize: 12 }}>{label}<select id={id} defaultValue={val} style={inp}>{opts.map(o=><option key={o} value={o}>{o||'—'}</option>)}</select></label>; }
-function Row({ k, v }) { return <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 8 }}><span style={{ color: '#6b7280' }}>{k}</span><span>{v}</span></div>; }
-const inp = { width: '100%', padding: '7px 9px', border: '1px solid #d1d5db', borderRadius: 8, marginTop: 4, boxSizing: 'border-box' };
-const btn = { padding: '6px 10px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer', fontSize: 13 };

@@ -1,0 +1,842 @@
+[
+ {
+  "category": "Execution Request",
+  "sub_category": "Order Cancellation Request",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Price Updatation Request",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Customer Address Update",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Customer Contact Update",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Payment Info Update",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Profile Info Update",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Profile Password Update",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Store Approval",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Store Info Update",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Hold Request",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Partial delivery request - special instruction",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Uninformed Info change",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Execution Request",
+  "sub_category": "Agent details missing/wrong number",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Forcefully Taken",
+  "sub_category": "Defective Product Sent By Merchant",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Forcefully Taken",
+  "sub_category": "Fraudulent Activity",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Delivery/Return",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Delivery Hold",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Order Info/Status",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Coverage Area",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Feedback/Suggestion",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Courier Service",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Silent Call/Chat",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Merchant Panel/App",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Interested To Join As Agent",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Interested To Join As Merchant",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Other Vertical Transfer",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Payment Process Courier",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Pathao Outbound Call",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Pickup Entry",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Reverse Pickup",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Inquiry",
+  "sub_category": "Return Exchange",
+  "issue_type": "Urgent",
+  "sla_isd": 10,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Charge Extra/Wrong COD",
+  "sub_category": "Extra Charge Offered",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 2,
+  "sla_ctg": 2
+ },
+ {
+  "category": "Charge Extra/Wrong COD",
+  "sub_category": "Extra Charge Demanded",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 2,
+  "sla_ctg": 2
+ },
+ {
+  "category": "Charge Extra/Wrong COD",
+  "sub_category": "Wrong COD Collection",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 2,
+  "sla_ctg": 2
+ },
+ {
+  "category": "Charge Extra/Wrong COD",
+  "sub_category": "Wrong Weight Input",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 2,
+  "sla_ctg": 2
+ },
+ {
+  "category": "Charge Extra/Wrong COD",
+  "sub_category": "Miscalculation Of Weight Charge",
+  "issue_type": "Critical",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Charge Extra/Wrong COD",
+  "sub_category": "Miscalculation Of Delivery/Return Charge",
+  "issue_type": "Critical",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Charge Extra/Wrong COD",
+  "sub_category": "Miscalculation Of COD Charge",
+  "issue_type": "Critical",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Poor Packaging",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Not Processed Under Fragile Category",
+  "issue_type": "Critical",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Act Of God",
+  "issue_type": "Critical",
+  "sla_isd": 4,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Defective Product Sent By Merchant",
+  "issue_type": "Critical",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Liquid Leakage",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 2,
+  "sla_ctg": 2
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Stapler Pin",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 7,
+  "sla_ctg": 7
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Rat Bites",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Damage",
+  "sub_category": "Mishandling",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 7,
+  "sla_ctg": 7
+ },
+ {
+  "category": "Lost",
+  "sub_category": "Trackless",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 7,
+  "sla_ctg": 7
+ },
+ {
+  "category": "Lost",
+  "sub_category": "Parcel Lost By OPS",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 7,
+  "sla_ctg": 7
+ },
+ {
+  "category": "Lost",
+  "sub_category": "Hijacking/Robbery",
+  "issue_type": "Critical",
+  "sla_isd": 7,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Lost",
+  "sub_category": "Poor Packaging",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Lost",
+  "sub_category": "Empty Package/Empty Packet/Empty Box",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 7,
+  "sla_ctg": 7
+ },
+ {
+  "category": "Lost",
+  "sub_category": "Partial Missing",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 7,
+  "sla_ctg": 7
+ },
+ {
+  "category": "No Entry/Cancelled",
+  "sub_category": "Double Entry",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "No Entry/Cancelled",
+  "sub_category": "No Entry",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "No Entry/Cancelled",
+  "sub_category": "Info Mismatch",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "No Entry/Cancelled",
+  "sub_category": "Product Not Given By Merchant",
+  "issue_type": "Critical",
+  "sla_isd": 5,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Unprofessionalism",
+  "sub_category": "Misbehavior By PA",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Unprofessionalism",
+  "sub_category": "Misbehavior By DA",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Unprofessionalism",
+  "sub_category": "Misbehavior By Employee",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Wrong Routing",
+  "sub_category": "Incomplete/ Wrong Info Input On Panel",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Wrong Routing",
+  "sub_category": "Wrong Routing By Processing Team",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Wrong Routing",
+  "sub_category": "Wrong POD Attached",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Wrong Routing",
+  "sub_category": "Technical Error",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Wrong tag/Parcel swapped",
+  "sub_category": "Wrong Tag By LMH",
+  "issue_type": "Critical",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Wrong tag/Parcel swapped",
+  "sub_category": "Wrong Tag By FMH",
+  "issue_type": "Critical",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Wrong tag/Parcel swapped",
+  "sub_category": "Wrong Tag By Processing Team",
+  "issue_type": "Critical",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Wrong tag/Parcel swapped",
+  "sub_category": "Wrong Invoice Attached By Merchant",
+  "issue_type": "Critical",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Breach of CLOSEBOX",
+  "sub_category": "Forcefully Checked By Customer",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Breach of CLOSEBOX",
+  "sub_category": "POD Not Followed By Agent",
+  "issue_type": "Critical",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Panel Status",
+  "sub_category": "Agent/Hub Didn't Update Status Timely",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 2,
+  "sla_ctg": 2
+ },
+ {
+  "category": "Panel Status",
+  "sub_category": "Wrong Status",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Panel Status",
+  "sub_category": "Technical Error",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Complain Why Return",
+  "sub_category": "Improper Delivery Attempt",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Complain Why Return",
+  "sub_category": "Merchant Not Informed Before Returning",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Complain Why Return",
+  "sub_category": "False Return Note",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Complain Why Return",
+  "sub_category": "Reprocess Request by Merchant",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Coverage/Point Delivery",
+  "sub_category": "Remote Area",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Coverage/Point Delivery",
+  "sub_category": "Agent Denies Home Delivery",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "Rescheduled By Customer/Customer Unreachable",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "Remote Area",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "Delivery Not Attempted By Agent",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "False Hold Note",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "Processing Delay",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "Rider Shortage",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "Delivery Delay - On-Demand",
+  "issue_type": "Regular",
+  "sla_isd": 1,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Delivery Delay",
+  "sub_category": "Urgent Delivery",
+  "issue_type": "Urgent",
+  "sla_isd": 1,
+  "sla_osd": 1,
+  "sla_ctg": 1
+ },
+ {
+  "category": "Payment Issue",
+  "sub_category": "Hub Payment Not Submitted",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Payment Issue",
+  "sub_category": "Cash Lost By OPS",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Payment Issue",
+  "sub_category": "Invoice Not Generated",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Payment Issue",
+  "sub_category": "Invoice Generated But Payment Not Disbursed",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Pickup",
+  "sub_category": "Pickup Request",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Pickup",
+  "sub_category": "Rider Shortage",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Pickup",
+  "sub_category": "Pickup Timing Issue",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Pickup",
+  "sub_category": "Pickup Request - On-Demand",
+  "issue_type": "Regular",
+  "sla_isd": 1,
+  "sla_osd": 10,
+  "sla_ctg": 10
+ },
+ {
+  "category": "Pickup",
+  "sub_category": "Pickup Not Attempted By Agent",
+  "issue_type": "Regular",
+  "sla_isd": 1,
+  "sla_osd": 2,
+  "sla_ctg": 2
+ },
+ {
+  "category": "Return Delay",
+  "sub_category": "Processing Delay",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 5,
+  "sla_ctg": 5
+ },
+ {
+  "category": "Return Delay",
+  "sub_category": "Merchant Unreachable/Store Closed",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Return Delay",
+  "sub_category": "Return ID Not Created",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Return Exchange",
+  "sub_category": "POD Not Followed By Agent",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Return Exchange",
+  "sub_category": "Exchange Not Provided By Customer",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Return Exchange",
+  "sub_category": "Return ID Not Created",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Reverse Pickup",
+  "sub_category": "Pickup Agent Not Assigned",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Reverse Pickup",
+  "sub_category": "Pickup Timing Issue",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Reverse Pickup",
+  "sub_category": "Rescheduled By Customer/Customer Unreachable",
+  "issue_type": "Regular",
+  "sla_isd": 2,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ },
+ {
+  "category": "Others",
+  "sub_category": "Tech issue",
+  "issue_type": "Regular",
+  "sla_isd": 3,
+  "sla_osd": 3,
+  "sla_ctg": 3
+ }
+]
