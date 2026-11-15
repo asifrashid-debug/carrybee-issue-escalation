@@ -90,6 +90,37 @@ export default function SyncHealth() {
         </div>
       )}
 
+      {data && (
+        <div className="card" style={{ padding: 0, marginBottom: 14 }}>
+          <div className="ph" style={{ padding: '14px 16px', margin: 0 }}>
+            <div><h3 style={{ fontSize: 14 }}>Sources</h3><small>Status per zone sheet · from the last 100 sync events</small></div>
+          </div>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead><tr><th>Zone sheet</th><th>Last event (Dhaka)</th><th>Last success</th><th>Failures (100)</th><th>Status</th></tr></thead>
+              <tbody>
+                {ZONES.map((z) => {
+                  const rows = recent.filter((r) => r.zone === z);
+                  const last = rows[0];
+                  const okRow = rows.find((r) => r.status === 'success');
+                  const fails = rows.filter((r) => r.status === 'failed' || r.status === 'dead_letter').length;
+                  const st = !last ? ['No events', 'p-reg'] : last.status === 'success' ? ['In sync', 'p-ok'] : fails ? ['Failed · retrying', 'p-br'] : ['In flight', 'p-open'];
+                  return (
+                    <tr key={z}>
+                      <td data-label="Zone sheet"><Zc z={z} /> <b>{z} hub sheet</b></td>
+                      <td data-label="Last event" className="mono">{last ? formatDhaka(last.created_at) : '—'}</td>
+                      <td data-label="Last success" className="mono">{okRow ? formatDhaka(okRow.created_at) : '—'}</td>
+                      <td data-label="Failures" className="mono">{fmtN(fails)}</td>
+                      <td data-label="Status"><span className={`pillc ${st[1]}`}>{st[0]}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="card" style={{ padding: 0 }}>
         <div className="ph" style={{ padding: '14px 16px', margin: 0 }}>
           <div><h3 style={{ fontSize: 14 }}>Recent sync events</h3><small>Last 100 · newest first</small></div>
