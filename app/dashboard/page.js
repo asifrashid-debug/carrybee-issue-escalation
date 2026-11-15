@@ -29,6 +29,10 @@ export default function Dashboard() {
   const standing = guide.standing;
   const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
   const maxFlow = Math.max(4, ...data.trend.flatMap((d) => [d.submitted, d.picked, d.responded]));
+  // Week on week change in submitted escalations, from the live 14-day trend (needs both halves)
+  const wkNow = data.trend.length >= 14 ? data.trend.slice(-7).reduce((a, d) => a + d.submitted, 0) : null;
+  const wkPrev = data.trend.length >= 14 ? data.trend.slice(0, 7).reduce((a, d) => a + d.submitted, 0) : null;
+  const wkPct = wkPrev ? Math.round(((wkNow - wkPrev) / wkPrev) * 100) : null;
   const maxCat = Math.max(1, ...data.categories.map((c) => c.count));
 
   return (
@@ -43,7 +47,7 @@ export default function Dashboard() {
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
       <div className="grid g5 kpi-strip">
-        <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed`} icon="shield" />
+        <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed${wkPct != null ? ` · submitted ${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : ''}`} icon="shield" />
         <Kpi label="Open backlog" value={fmtN(k.open)} sub={`${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`} icon="clock" tone="b" />
         <Kpi label="SLA breaches" value={fmtN(k.breaches)} sub={<><span className="bad">No comment past 2h or resolution past category SLA</span> · comment compliance {fmtPct(k.responseSlaPct)}</>} icon="alert" tone="r" hot={k.breaches > 0} />
         <Kpi label="Median first response" value={<>{fmtH(k.medianResponseHours)}</>} sub={`Median pick ${fmtH(k.medianPickHours)}`} icon="clock" tone="g" />
