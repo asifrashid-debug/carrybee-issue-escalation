@@ -71,7 +71,7 @@ export default function SyncHealth() {
       </div>
 
       {data && (
-        <div className="grid g3">
+        <div className="grid g3 kpi-strip">
           <div className="card">
             <div className="kl">Queue depth</div>
             <div className={`kv ${data.queue_depth ? '' : ''}`} style={{ color: data.queue_depth ? 'var(--warn)' : 'var(--good)' }}>{fmtN(data.queue_depth)}</div>
