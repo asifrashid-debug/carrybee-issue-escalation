@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import IssueDrawer from '../components/IssueDrawer';
 import CopyButton from '../components/CopyButton';
 import { useAnalytics } from '../components/useAnalytics';
-import { PageHead, Kpi, LiveChip, PriPill, SlaPill, StatusPill, Zc, Bar, fmtN } from '../components/demo';
+import { PageHead, Kpi, LiveChip, PriPill, SlaPill, StatusPill, Zc, Bar, Donut, fmtN } from '../components/demo';
+const PRI_COLOR = { P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' };
 import { formatDhaka, hoursSince } from '../lib/time';
 
 const PAGE = 20;
@@ -266,6 +267,15 @@ export default function Tracker() {
 
   const pages = Math.max(1, Math.ceil(list.count / PAGE));
   const k = stats?.kpi;
+  const priOpen = stats ? stats.priorities.reduce((a, x) => a + x.open, 0) : 0;
+  // Pipeline: live stage counts for the whole scope (no separate open-stage series exists yet)
+  const pipe = k ? [
+    { label: 'Submitted', value: k.total },
+    { label: 'Picked', value: k.picked },
+    { label: 'First response', value: k.responded },
+    { label: 'Resolved', value: k.resolved },
+    { label: 'Closed', value: k.closed },
+  ] : [];
   const zoneOpen = stats ? stats.zones.map((z) => `${z.zone}: ${fmtN(z.open)}`).join(' · ') : '';
   const weekLabel = stats?.weeks?.[1] || '';
   const lastSynced = updated ? formatDhaka(updated.toISOString()) : '—';
@@ -464,6 +474,13 @@ export default function Tracker() {
         {stats && (
           <aside className="trk-side only-desk" aria-label="Queue context">
             <div className="card">
+              <div className="ph"><div><h3>At a glance</h3><small>Live counts from the queue</small></div></div>
+              <div className="grid g2" style={{ gap: 12, marginBottom: 0 }}>
+                <div><div className="kl">Open</div><div className="kv" style={{ fontSize: 28 }}>{fmtN(stats.kpi.open)}</div></div>
+                <div><div className="kl">SLA breaches</div><div className="kv" style={{ fontSize: 28, color: 'var(--bad)' }}>{fmtN(stats.kpi.breaches)}</div></div>
+              </div>
+            </div>
+            <div className="card">
               <div className="ph"><div><h3>Open by Zone</h3><small>Share of open queue</small></div></div>
               <div className="lst">
                 {stats.zones.map((z) => (
@@ -476,16 +493,15 @@ export default function Tracker() {
             </div>
             <div className="card">
               <div className="ph"><div><h3>Priority Mix</h3><small>Open issues by priority</small></div></div>
-              <div className="lst">
-                {stats.priorities.map((p) => {
-                  const openAll = stats.priorities.reduce((a, x) => a + x.open, 0);
-                  return (
-                    <div key={p.label}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{p.label}</span><b>{fmtN(p.open)}</b></div>
-                      <Bar pct={openAll ? (p.open / openAll) * 100 : 0} color={{ P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' }[p.label]} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <Donut segments={stats.priorities.map((p) => ({ label: p.label, value: p.open, color: PRI_COLOR[p.label] }))} center={fmtN(priOpen)} sub="open" size={120} stroke={14} />
+                <div className="lst" style={{ flex: 1, minWidth: 120 }}>
+                  {stats.priorities.map((p) => (
+                    <div key={p.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+                      <span><b style={{ color: PRI_COLOR[p.label] }}>●</b> {p.label}</span><b>{fmtN(p.open)}</b>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
             <div className="card">
@@ -504,6 +520,21 @@ export default function Tracker() {
           </aside>
         )}
       </div>
+
+      {k && (
+        <div className="card" style={{ marginTop: 12, padding: 0, overflow: 'hidden' }}>
+          <div className="ph" style={{ padding: '16px 20px 0' }}><div><h3>Pipeline</h3><small>Cases that reached each stage · live</small></div></div>
+          <div className="pipe pipe-grid" style={{ marginTop: 12 }}>
+            {pipe.map((s, i) => (
+              <div key={s.label} style={{ padding: '12px 18px', borderLeft: i ? '1px solid var(--line)' : 'none', minWidth: 0 }}>
+                <div className="muted small">{s.label}</div>
+                <div className="mono" style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{fmtN(s.value)}</div>
+                <div className="muted small">{k.total ? Math.round((s.value / k.total) * 100) : 0}% of submitted</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <p className="note2">Paged on the server, 20 per page, newest first. Click a row for the issue detail. Times are Asia/Dhaka. Exports include every row in the current view.</p>
 
