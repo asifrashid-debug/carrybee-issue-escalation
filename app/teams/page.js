@@ -112,15 +112,6 @@ export default function TeamPerformance() {
         </div>
       )}
 
-      {teams.length === 0 ? (
-        <div className="card"><div className="empty"><b>No teams yet</b>Team membership comes from users_roles.</div></div>
-      ) : (
-        <>
-          <div className="grid g3">{teams.slice(0, 3).map((t, i) => teamCard(t, i))}</div>
-          {teams.length > 3 && <div className="grid tcards">{teams.slice(3).map((t, i) => teamCard(t, i + 3))}</div>}
-        </>
-      )}
-
       <div className="card">
         <div className="ph"><div><h3>Member performance</h3><small>Individual results for each team · issues raised by each member</small></div></div>
         {teams.length === 0 ? <div className="empty">No teams yet.</div> : teams.map((t, i) => (
@@ -154,6 +145,15 @@ export default function TeamPerformance() {
           </div>
         ))}
       </div>
+
+      {teams.length === 0 ? (
+        <div className="card"><div className="empty"><b>No teams yet</b>Team membership comes from users_roles.</div></div>
+      ) : (
+        <>
+          <div className="grid g3">{teams.slice(0, 3).map((t, i) => teamCard(t, i))}</div>
+          {teams.length > 3 && <div className="grid tcards">{teams.slice(3).map((t, i) => teamCard(t, i + 3))}</div>}
+        </>
+      )}
 
       <div className="card">
         <div className="ph"><div><h3>Weekly Submission Matrix</h3><small>Team × ISO week volume (Dhaka time)</small></div></div>

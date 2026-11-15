@@ -106,62 +106,6 @@ export default function HubPerformance() {
         </div>
       </div>
 
-      <div className="grid g3">
-        {ZONES.map((z) => {
-          const zh = hubs.filter((h) => h.zone === z);
-          const scored = zh.filter((h) => h.responseSlaPct != null);
-          const score = scored.length ? Math.round(scored.reduce((a, h) => a + h.responseSlaPct, 0) / scored.length) : null;
-          const open = zh.reduce((a, h) => a + h.open, 0);
-          const br = zh.reduce((a, h) => a + h.breaches, 0);
-          const grades = { A: 0, B: 0, C: 0, D: 0 };
-          zh.forEach((h) => { const g = h.responseSlaPct == null ? null : h.responseSlaPct >= 90 ? 'A' : h.responseSlaPct >= 75 ? 'B' : h.responseSlaPct >= 50 ? 'C' : 'D'; if (g) grades[g]++; });
-          return (
-            <div key={z} className="card" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <Ring pct={score} color={ZONE_COLOR[z]} />
-              <div>
-                <b style={{ fontSize: 15, color: ZONE_COLOR[z] }}>● {z} Zone</b>
-                <div className="ks">{zh.length} hubs · {fmtN(open)} open · {fmtN(br)} breached</div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                  {Object.entries(grades).filter(([, n]) => n > 0).map(([g, n]) => <span key={g} className={`pillc p-${g}`}>{g} × {n}</span>)}
-                  {zh.length === 0 && <span className="muted" style={{ fontSize: 12 }}>No hubs with escalations</span>}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="grid g2e">
-        <div className="card">
-          <div className="ph"><div><h3>Top Performing Hubs</h3><small>Highest first-comment SLA</small></div></div>
-          {topHubs.length === 0 ? <div className="empty">No hub has a first comment yet.</div> : (
-            <div className="lst">
-              {topHubs.map((h, i) => (
-                <div key={h.hub} className="lrow">
-                  <span className="pillc p-ok">#{i + 1}</span>
-                  <div><div className="n">{h.hub}</div><div className="s">{h.zone || '—'} · {fmtN(h.total)} escalations · median comment {fmtH(h.medianResponseHours)}</div></div>
-                  <div className="r" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><GradePill pct={h.responseSlaPct} /><b className="good" style={{ fontSize: 16 }}>{fmtPct(h.responseSlaPct)}</b></div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="card hot">
-          <div className="ph"><div><h3>Attention Required</h3><small>Most breaches (first comment or resolution)</small></div></div>
-          {attention.length === 0 ? <div className="empty"><b>All clear</b>No hub has a breach right now.</div> : (
-            <div className="lst">
-              {attention.map((h) => (
-                <div key={h.hub} className="lrow" style={{ borderColor: 'rgba(255,93,115,.3)' }}>
-                  <div><div className="n">{h.hub}</div><div className="s">{fmtN(h.breaches)} breached · {fmtN(h.open)} open · median comment {fmtH(h.medianResponseHours)}</div></div>
-                  <div className="r" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><GradePill pct={h.responseSlaPct} /><b className="bad" style={{ fontSize: 16 }}>{fmtPct(h.responseSlaPct)}</b></div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="card">
         <div className="ph">
           <div><h3>Hub Scorecard</h3><small>Click a column to sort · filter by name</small></div>
@@ -220,6 +164,63 @@ export default function HubPerformance() {
         </div>
         <div className="note">Hub score = share of first comments within 2 hours of being raised (breaches count against it). Grade: A 90% or more, B 75% or more, C 50% or more, D below 50%.</div>
       </div>
+
+      <div className="grid g3">
+        {ZONES.map((z) => {
+          const zh = hubs.filter((h) => h.zone === z);
+          const scored = zh.filter((h) => h.responseSlaPct != null);
+          const score = scored.length ? Math.round(scored.reduce((a, h) => a + h.responseSlaPct, 0) / scored.length) : null;
+          const open = zh.reduce((a, h) => a + h.open, 0);
+          const br = zh.reduce((a, h) => a + h.breaches, 0);
+          const grades = { A: 0, B: 0, C: 0, D: 0 };
+          zh.forEach((h) => { const g = h.responseSlaPct == null ? null : h.responseSlaPct >= 90 ? 'A' : h.responseSlaPct >= 75 ? 'B' : h.responseSlaPct >= 50 ? 'C' : 'D'; if (g) grades[g]++; });
+          return (
+            <div key={z} className="card" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+              <Ring pct={score} color={ZONE_COLOR[z]} />
+              <div>
+                <b style={{ fontSize: 15, color: ZONE_COLOR[z] }}>● {z} Zone</b>
+                <div className="ks">{zh.length} hubs · {fmtN(open)} open · {fmtN(br)} breached</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                  {Object.entries(grades).filter(([, n]) => n > 0).map(([g, n]) => <span key={g} className={`pillc p-${g}`}>{g} × {n}</span>)}
+                  {zh.length === 0 && <span className="muted" style={{ fontSize: 12 }}>No hubs with escalations</span>}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid g2e">
+        <div className="card">
+          <div className="ph"><div><h3>Top Performing Hubs</h3><small>Highest first-comment SLA</small></div></div>
+          {topHubs.length === 0 ? <div className="empty">No hub has a first comment yet.</div> : (
+            <div className="lst">
+              {topHubs.map((h, i) => (
+                <div key={h.hub} className="lrow">
+                  <span className="pillc p-ok">#{i + 1}</span>
+                  <div><div className="n">{h.hub}</div><div className="s">{h.zone || '—'} · {fmtN(h.total)} escalations · median comment {fmtH(h.medianResponseHours)}</div></div>
+                  <div className="r" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><GradePill pct={h.responseSlaPct} /><b className="good" style={{ fontSize: 16 }}>{fmtPct(h.responseSlaPct)}</b></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card hot">
+          <div className="ph"><div><h3>Attention Required</h3><small>Most breaches (first comment or resolution)</small></div></div>
+          {attention.length === 0 ? <div className="empty"><b>All clear</b>No hub has a breach right now.</div> : (
+            <div className="lst">
+              {attention.map((h) => (
+                <div key={h.hub} className="lrow" style={{ borderColor: 'rgba(255,93,115,.3)' }}>
+                  <div><div className="n">{h.hub}</div><div className="s">{fmtN(h.breaches)} breached · {fmtN(h.open)} open · median comment {fmtH(h.medianResponseHours)}</div></div>
+                  <div className="r" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><GradePill pct={h.responseSlaPct} /><b className="bad" style={{ fontSize: 16 }}>{fmtPct(h.responseSlaPct)}</b></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }
