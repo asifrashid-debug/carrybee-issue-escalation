@@ -1,0 +1,2252 @@
+[
+ {
+  "hub_name": "Uttara",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Mazaharul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Md Radoun Hossain | 1969097656 | mohd.radoun@carrybee.com",
+  "pickup_poc": "Ridoy Hossen | 01671-113575 | h.ridoy@carrybee.com",
+  "inbound_poc": "Ridoy Hossen | 01671-113575 | h.ridoy@carrybee.com"
+ },
+ {
+  "hub_name": "Diabari",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Mazaharul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Ariful islam | 01758-375166 | ariful.i@carrybee.com",
+  "pickup_poc": "Md Nasim Uddin",
+  "inbound_poc": "Md Junaid Ahammad | 0 1799-060620"
+ },
+ {
+  "hub_name": "Khilkhet",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Mazaharul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Shapon Talukder | 01531-950074",
+  "pickup_poc": "Shapon Talukder | 01531-950074",
+  "inbound_poc": "Moududi | 0 1798-653129"
+ },
+ {
+  "hub_name": "Mohakhali",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Mazaharul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Habib | 880 1764-084990 | habibur.rahman@carrybee.com",
+  "pickup_poc": "Md Sojib Hossain | 0 1632-378289",
+  "inbound_poc": "Md Pervez islam | 0 1701-208425"
+ },
+ {
+  "hub_name": "Nadda",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Mazaharul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Jibon | 1648-433454 | syed.jibon@carrybee.com",
+  "pickup_poc": "Hamidul Islam | 01326-884067",
+  "inbound_poc": "Hamidul Islam | 01326-884067"
+ },
+ {
+  "hub_name": "Pallabi",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Nabiul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Md. Rafiur Rahman | 1708360368 | rafiur.rahman@carrybee.com",
+  "pickup_poc": "Hafizul Islam | 1874158882",
+  "inbound_poc": "Md. Atasham Arju | 1827745678"
+ },
+ {
+  "hub_name": "60 Feet",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Nabiul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Md. Rakibul Hassan | 8801701208085 | rakibul.hassan03322@gmail.com",
+  "pickup_poc": "MD Parvez Dawanzi | 1612635797",
+  "inbound_poc": "Pranto Chandra Dey | 1772341119"
+ },
+ {
+  "hub_name": "Mohammadpur",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Nabiul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Fuad Bin Khalid | 1703992331 | fuad.khalid@carrybee.com",
+  "pickup_poc": "Md. Emon Hasan | 1701207873",
+  "inbound_poc": "Md. Faruk Hossain | 1736947554"
+ },
+ {
+  "hub_name": "Kolabagan",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Nabiul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Arif Hossain | 1701207801 | arif.hossain@carrybee.com",
+  "pickup_poc": "Mohammad Shakil Perves | 01682344458",
+  "inbound_poc": "Sojib Talukdar | 1745072149"
+ },
+ {
+  "hub_name": "Lalbagh",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Nabiul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "Md Robiul Islam | 01580-525675, 01701-208167 | robiul.islam@carrybee.com",
+  "pickup_poc": "Sabuj Ahmed | 01796-465204",
+  "inbound_poc": "Sabuj Ahmed | 01796465204"
+ },
+ {
+  "hub_name": "Kamrangirchar",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Nabiul Islam",
+  "cluster_lead": null,
+  "outbound_poc": "ISTIAK UDDIN BHUIYAN | 1892526901 | istiak.uddin@carrybee.com",
+  "pickup_poc": "MD Kamrul Hasan | 01913658282",
+  "inbound_poc": "Md. Shohanur Rahman | 1726676781"
+ },
+ {
+  "hub_name": "Badda",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Sirajul Islam Sohel",
+  "cluster_lead": null,
+  "outbound_poc": "Md. Mushfiqur Rahman Taief | 01629449251 | mdtaief000@gmail.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Jatrabari",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Sirajul Islam Sohel",
+  "cluster_lead": null,
+  "outbound_poc": "Ohidul Islam | 1790-133906 | abdus.rifat@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Khilgaon",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Sirajul Islam Sohel",
+  "cluster_lead": null,
+  "outbound_poc": "+8801581281527 | sunny.ahmed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Dhonia",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Sirajul Islam Sohel",
+  "cluster_lead": null,
+  "outbound_poc": "Md. Shahin Hossain | 1957562900 | shahin.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Demra",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "MD. Sirajul Islam Sohel",
+  "cluster_lead": null,
+  "outbound_poc": "1568317666 | habib.ove@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gazipur-Joydebpur",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md. Yousuf Ali | 1864285587 | yousuf.ali@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gazipur-Kapasiya",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md. Sihab Khan Anam | 01723724935 | sihabkhan.anam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gazipur-Mawna",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Name: Sazibuzzaman | Gmail: sazibuzzaman@carrybee.com | Number: 01345480462",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gazipur-Mouchak",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md Rayhan Siddiquee | 01782572014 | rayhan.siddiquee@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gazipur-Boardbazar",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md Ali Akbor | 01719365620 | ali.akbor@carrybee.com",
+  "pickup_poc": "Motiur Rahman | 01733800079 | motiur.rahman@carrybee.com",
+  "inbound_poc": "Syed Rifat Hossain | syed.rifat@carrybee.com | 01315722755"
+ },
+ {
+  "hub_name": "Gazipur-Kaliganj",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md. Naim Bin Rahman | 01401759683 | md.naim@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Savar",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Shariar Uddin Ifty | 1684452823 | mostafizur.rahman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Savar-Baipail",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md Sobuz Hossain | 01643-489679 | sabuz.hossain@carrybee.com | Raihan Ahmed | raihan.ahmed@carrybee.com | 01701208198",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Savar-Dhamrai",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md. Mirajul Islam | 1775550708 | md.miraj@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gazipur-Rajendrapur",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Md. Nijam",
+  "outbound_poc": "Md. Arif Hosen | 01305968452 | hosen.arif@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Narayanganj",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "Noor Mohammad Khan Tuhin | 1603714006 | noor.tuhin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Sonargaon",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "Abu Saleh | 01917-139991 | rafirabby7890@gmail.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Narayanganj-Bandar",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "MD Zahid Hosen | 01883112388 | md.zahidul@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Narayanganj-Araihazar",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "Md. Aminul Islam Rony | 01788-483332 | abirabnamrony85@gmail.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Rupganj",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "SHAKIL ISLAM | 1744332498 | shakil.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Bhulta-Gawsia",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "Md. Abu Naeem | 01726-332385 | abu.naeem@carrybee.com",
+  "pickup_poc": "mahmudul.ripon@carrybee.com | Mahmudul Hasan Ripon | 01753944871",
+  "inbound_poc": "jahidul.shuvo@carrybee.com | Jahidul Islam Shuvo | 01773724447"
+ },
+ {
+  "hub_name": "Dohar-Nawabganj",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "Safaet Hossain | 01307-612868 | safaet.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Keraniganj-Ati Bazar",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "Rashed Ahmed | 01648-895278 | rashed.ahammed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Siddhirganj",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "RIFAT HOSSAIN | 01624-589548 | rifat.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Keraniganj",
+  "zone": "ISD",
+  "division": "Dhaka",
+  "regional_lead": "Syed Mahmudul Hasan Fahim",
+  "cluster_lead": "Joybroto Das",
+  "outbound_poc": "Md. Masud Rana | 01611-404762 | masud.rana@carrybee.com",
+  "pickup_poc": "Md. Shakib Hossain | md.shakib@carrybee.com | 01886934857",
+  "inbound_poc": "Md. Siam Ferdous Rahat | siam.ferdous@carrybee.com | 01515634562"
+ },
+ {
+  "hub_name": "Jhenaidah-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Faysal Ahammed",
+  "outbound_poc": "Md Al Amin | 1741463609 | al_amin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Jhenaidah-Maheshpur",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Faysal Ahammed",
+  "outbound_poc": "Adnan Fihir Hridoy | 1400022465 | adnan.hridoy@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Satkhira-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Faysal Ahammed",
+  "outbound_poc": "Md. Iqubal Hossain | 1911555158 | iqubal.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Meherpur-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Faysal Ahammed",
+  "outbound_poc": "Md. Nafiur Rahman | 1704413533 | nafiur.rahman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Kushtia-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Faysal Ahammed",
+  "outbound_poc": "Waliul Islam | 1788427464 | waliul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Kushtia-Daulatpur",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Faysal Ahammed",
+  "outbound_poc": "A. K.M Karimul Islam | 1303587098 | karimul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Kushtia-Bheramara",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Faysal Ahammed",
+  "outbound_poc": "Md Rashid Mondoll | 1609170913 | rashid.mondoll@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Jessore-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Nasir Hoshen Patoary",
+  "outbound_poc": "ISTIAK AHAMMED JEWL | 1829355777 | nasir.patoary@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Jessore-Sharsha",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Nasir Hoshen Patoary",
+  "outbound_poc": "Shakim Hossen | 1723361468 | shakim.hossen@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Jessore-Manirampur",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Nasir Hoshen Patoary",
+  "outbound_poc": "Md. Habibur Rahman | 1757955505 | habib.rahman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Khulna-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Nasir Hoshen Patoary",
+  "outbound_poc": "Sohanur Rahman | 1948850423 | sohanur.rahman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Jessore-Abhaynagar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Nasir Hoshen Patoary",
+  "outbound_poc": "Shorif Biswas | 1881681789 | md.shorif@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Bagerhat-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md Sayed Anowar",
+  "outbound_poc": "Sheikh Jewel Rana | 1880403714 | jewel.rana@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Khulna-Paikgacha",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md Sayed Anowar",
+  "outbound_poc": "Md Tamim | 1858673267 | mdtamaim@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Khulna-Dumuria",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md Sayed Anowar",
+  "outbound_poc": "Md Sayed Anowar | 1716916357 | sayed.anowar@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Satkhira-Kaliganj",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md Sayed Anowar",
+  "outbound_poc": "Md. Tanvir Mehedi | 01796-593237 | tanvir.mehedi@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Bagerhat-Mongla",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md Sayed Anowar",
+  "outbound_poc": "Md Nirob Sardar | 1793525237 | nirob.sardar@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Bagerhat-Morrelganj",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md Sayed Anowar",
+  "outbound_poc": "Md. Rethowan Ahmed | 0 1964-936171 | md.rethowan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chuadanga-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Shahriar Ahmad",
+  "outbound_poc": "Md. Mehedi Hasan Bijoy | 1938462446 | mehedi.bijoy@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Magura-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Shahriar Ahmad",
+  "outbound_poc": "Md. Imdadullah | 1302430231 | md.imdadullah@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Narail-Sadar",
+  "zone": "OSD",
+  "division": "Khulna",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Md. Shahriar Ahmad",
+  "outbound_poc": "MD. SOHEL RANA | 1634706922 | rana.sohel@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Barishal-Sadar",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Sayed-Al Sakib",
+  "outbound_poc": "Nazmul Islam | 1785959043 | nazmul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Barisal-Gournadi",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Sayed-Al Sakib",
+  "outbound_poc": "Saddam Hossain | 1712108479 | hossain.saddam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Barisal-Bakerganj",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Sayed-Al Sakib",
+  "outbound_poc": "Md. Al-Amin | 1725280207 | md.al.amin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Bhola-Charfassion",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Belal Hussain",
+  "outbound_poc": "Md Rasel Howlader | 1793213232 | md.howlader@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Bhola-Sadar",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Belal Hussain",
+  "outbound_poc": "Mohamed Hunnan | 1743412008 | md.hunnan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Pirojpur-Sadar",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Belal Hussain",
+  "outbound_poc": "Md Awal Khalifa | 1706134145 | awal.khilfa@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Pirojpur-Mathbaria",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Belal Hussain",
+  "outbound_poc": "Md Hasib | 1790686451 | md.hasib@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Barisal-Muladi",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Sayed-Al Sakib",
+  "outbound_poc": "Md. Mostak Hasan | 1795591333 | mostak.hasan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Jhalokathi-Sadar",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Sayed-Al Sakib",
+  "outbound_poc": "Md.Maruf Ahammad | 01788184221 | maruf.ahammad@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Barguna-Sadar",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Syed Johirul",
+  "outbound_poc": "Md Rasel Mia | 1781490468 | rasel.mia@carrybee,com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Patuakhali-Sadar",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Syed Johirul",
+  "outbound_poc": "Sajib Chandra | 1743066382 | sajib.chandra@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Patuakhali-Galachipa",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Syed Johirul",
+  "outbound_poc": "Md. Nazmul Islam Jibon | 01842490705 | nazmul.jibon@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Patuakhali-Kalapara",
+  "zone": "OSD",
+  "division": "Barishal",
+  "regional_lead": "Md Foysal Molla",
+  "cluster_lead": "Syed Johirul",
+  "outbound_poc": "Md. Sohag Khan | 1710184120 | sohag.khan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Shariatpur-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md Rakib Hossain",
+  "outbound_poc": "Md Rakib Hossain | 1701208061 | rakib.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gopalganj-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md Rakib Hossain",
+  "outbound_poc": "Akib Molla | 1939437472 | Aakib.molla@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Madaripur-Shibchar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md Rakib Hossain",
+  "outbound_poc": "Tanjil Ahmed | 1621939422 | tanjil.ahmed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Madaripur-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md Rakib Hossain",
+  "outbound_poc": "MD. Emon Munshi | 1923201117 | emon.munshi@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Faridpur-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Abdul Momen Pramanik",
+  "outbound_poc": "MD. AZIZUL HAQUE EMON | 1733760253 | azizul.haque@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Gopalganj-Muksudpur",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md Rakib Hossain",
+  "outbound_poc": "Shik Foyzul Korim | 1912327578 | foyzul.karim@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Shariatpur-Damudya",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md Rakib Hossain",
+  "outbound_poc": "MD Shafiqul Islam | 1701208103 | shafiq.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Munshiganj-Sirajdikhan",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": null,
+  "outbound_poc": "Sabbir Hossain | 8801718483938 | hossain.sabbir@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Tangail-Sakhipur",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Md. Sagor Reza | 1780156806 | sagor.reza@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Manikganj-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Md. Khan Zahan Ali Sinbad | 1701207916 | zahan.sinbad@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Manikganj-Singair",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Atikur Rahaman | 01759378122 | atikur.rahman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Munshiganj-Sreenagar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Md Sohel Rana | 1571155170 | md.sohel@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Tangail-Mirzapur",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Imranul Hasan Chowdhury | 1780264777 | imranul.chowdhury@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Munshiganj-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Md Noyon Sarder | 01701207852 | noyon.sarder@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Tangail-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Ratul | 1624647095/01701208106 | tangail-sadar@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Tangail-Ghatail",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Khan Zahan Ali Sinbad",
+  "outbound_poc": "Md. Mehedi Hassan | 01784539557 | m.hassan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Faridpur-Bhanga",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Abdul Momen Pramanik",
+  "outbound_poc": "Juwel Rana | 1732463436 | juwel.rana@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Rajbari-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Abdul Momen Pramanik",
+  "outbound_poc": "Md. Abdul Momen Pramanik | 1701208316 | momen.pramanik@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Faridpur-Boalmari",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Anowar Parveg",
+  "cluster_lead": "Md. Abdul Momen Pramanik",
+  "outbound_poc": "Md. Javed Ovi | 1701207994 | javed.ovi@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Sylhet-Golapganj",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Imran Chowdhury",
+  "outbound_poc": "Amdadul Haq | 1640463161 | amdadul.haq@carrybee.com",
+  "pickup_poc": "Nafi Karim Sany | 1734367198 | nafi.sany@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Beanibazar",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Imran Chowdhury",
+  "outbound_poc": "MD AKTHER HUSSAN | 1745527292 | mohmmad.akther@carrybee.com",
+  "pickup_poc": "Akther Hussen | 1724927400 | aktherhussen400@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Sadar",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Imran Chowdhury",
+  "outbound_poc": "Imran Chowdhury | 1718250934 | imran.chowdhury@carrybee.com",
+  "pickup_poc": "Md Akbor Hossain Rahul | 1580412675 | akbor.rahul@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Jaintiapur",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Imran Chowdhury",
+  "outbound_poc": "EMON KHOYROM | 1902351145 | adikhyriem@gmail.com",
+  "pickup_poc": "Anik Dey | 1968752600 | oniekkumardey77@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Kanaighat",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Imran Chowdhury",
+  "outbound_poc": "Shaykat Ahmed | 1772369353 | shaykat.ahmed@carrybee.com",
+  "pickup_poc": "Md Shorif Uddin | 1785995253 | mdshorifuddin063@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Gowainghat",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Imran Chowdhury",
+  "outbound_poc": "Tufael Ahmed | 1876141926 | atufael142@gmail.com",
+  "pickup_poc": "Belaet Hussen | 1791212362 | belaet.hussen@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Bishwanath",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Samin Irtiza Nahid",
+  "outbound_poc": "Hafijul Islam Tamim | 1781808386 | hafijul.tamim@carrybee.com",
+  "pickup_poc": "MD JONAYED AHMAD | 1764009764 | jonayed.ahmed@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Osmaninagar",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Samin Irtiza Nahid",
+  "outbound_poc": "Md. Jamil Hussain Chowdhury | 1913187261 | jamil.hussain@carrybee.com",
+  "pickup_poc": "Mahmudul Islam Sihab | 1623607774 | mahmudulislamsihab@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Fenchuganj",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Samin Irtiza Nahid",
+  "outbound_poc": "MD TANVIR ANJUM HADI | 1887343009 | mdtanviranjum63@gmail.com",
+  "pickup_poc": "Tanim Anjum Mahdi | 1965115611 | anjummahdi5@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sylhet-Dakshin Surma",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Samin Irtiza Nahid",
+  "outbound_poc": "Samin Irtiza Nahid | 1781420559 | samin.nahid@carrybee.com",
+  "pickup_poc": "Belal Hussain | 1704045619 | belal.hussain@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Habiganj-Sadar",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Md. Abidur Rahman Ashfaque",
+  "outbound_poc": "Md. Abidur Rahman Ashfaque | 1766876762 | abidur.ashfaque@carrybee.com",
+  "pickup_poc": "Md. Mizanur Rahman | 1701208007 | mmrahman661@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Habiganj-Chunarughat",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Md. Abidur Rahman Ashfaque",
+  "outbound_poc": "Sajedul Haque | 1335119846 | sajedul.haque@carrybee.com",
+  "pickup_poc": "Tareq Murshed Sekul | 1789501272 | tareqsekul73585@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Habiganj-Madhabpur",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Md. Abidur Rahman Ashfaque",
+  "outbound_poc": "Rezwan Ahmed Rimon | 1644719607 | rezwan.rimon@carrybee.com",
+  "pickup_poc": "Md. Ariful Islam Sohag | 1721432367 | ariful.sohag@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Habiganj-Nabiganj",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Md. Abidur Rahman Ashfaque",
+  "outbound_poc": "Md Shorif Miah | 1332432713 | shorif.miah@carrybee.com",
+  "pickup_poc": "Nishu Dash | 1726004595 | nishudash26@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Moulvibazar-Barlekha",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "DIPTO DHOR",
+  "outbound_poc": "Joy Kanto Dey | 1639865109 | joy.dey@carrybee.com",
+  "pickup_poc": "Sulthan Mahmud Suvo | 1887884965 | sulthan.suvo@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Moulvibazar-Kulaura",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "DIPTO DHOR",
+  "outbound_poc": "DIPTO DHOR | 1737632804 | dipto.d@carrybee.com",
+  "pickup_poc": "Rajon Datta | 1301080441 | rajon.datta@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Maulvibazar-Sadar",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "DIPTO DHOR",
+  "outbound_poc": "Tamjidur Rahman Khan | 1943529001 | tamjidurrahmankhan74@gmail.com",
+  "pickup_poc": "SYED BURHANUL ISLAM | 1747763082 | syedburhan731@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Moulvibazar-Rajnagar",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "DIPTO DHOR",
+  "outbound_poc": "Ankan Debnath Dipto | 1567920191 | ankan.debnath@carrybee.com",
+  "pickup_poc": "Sumith Das | 1646008158 | sumith.das@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Moulvibazar-Sreemangal",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "DIPTO DHOR",
+  "outbound_poc": "Pritam Goswami | 1677369192 | pritam.goswami@carrybee.com",
+  "pickup_poc": "ARNOB DEB | 1643303768 | debarnob322@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Moulvibazar-Kamalganj",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "DIPTO DHOR",
+  "outbound_poc": "Uzzal Debnath | 1796455006 | uzzal.debnath@carrybee.com",
+  "pickup_poc": "Avishak Dash Dipta | 1317947885 | avishak.dash@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sunamganj-Sadar",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Habibur Rahman Tanvir",
+  "outbound_poc": "Habibur Rahman Tanvir | 1785751904 | tanvir.habibur@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Sunamganj-Chhatak",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Habibur Rahman Tanvir",
+  "outbound_poc": "MADOB CHANDRA DAS | 1779580042 | madob.das@carrybee.com",
+  "pickup_poc": "Farhan Nadim | 01755845908 | farhannadim95@gmail.com",
+  "inbound_poc": "Rofikul Islam | 01751336876 | rofiqul149832@gmail.com"
+ },
+ {
+  "hub_name": "Sunamganj-Jagannathpur",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Habibur Rahman Tanvir",
+  "outbound_poc": "S.M. A Sakib | 1772269939 | sma.sakib@carrybee.com",
+  "pickup_poc": "Md Seju Ahmed | 1340402615 | md.seju@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sunamganj-Derai",
+  "zone": "OSD",
+  "division": "Sylhet",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Habibur Rahman Tanvir",
+  "outbound_poc": "Md Muhitur Rahman Muhit | 1306438342 | md.muhit@carrybee.com",
+  "pickup_poc": "Md. Sayem Miah | 01678598435 | sayem975289@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Netrokona-Sadar",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD NAIM ULLAH",
+  "outbound_poc": "MD NAIM ULLAH | 1916174434 | naim.ullah@carrybee.com",
+  "pickup_poc": "MD.KHALID SAYFULLAH | 1733764118 | sadinet1999@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Netrakona-Mohonganj",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD NAIM ULLAH",
+  "outbound_poc": "Md. Mahedi Hasan Hridoy | 1725263436 | hridoy.mahadi@carrybee.com",
+  "pickup_poc": "Md. Abdur Rahim | 1940264620 | abdur.rahim@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Jamalpur-Dewanganj",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD NAIM ULLAH",
+  "outbound_poc": "MD. IMRAN HOSSAIN | 1985580452 | imran.hossain@carrybee.com",
+  "pickup_poc": "MD. SHAJIB MIA | 1936810581 | shajibmia055@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sherpur-Sadar",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD NAIM ULLAH",
+  "outbound_poc": "MD.SANJIDUL KABIR RIFAT | 1998583828 | sanjidul828@gmail.com",
+  "pickup_poc": "Md. Al Mamun | 1727712622 | al.mamun@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Mymensingh-Phulpur",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD NAIM ULLAH",
+  "outbound_poc": "MD. SAMSUL HUDA NUR | 1860553056 | samsul.hudanur3056@gmail.com",
+  "pickup_poc": "Sujit Chandra Nag | 01911808302 | sujit.c.nag@carrybee.net",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Mymensingh-Bhaluka",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Md Rahmot Ullah",
+  "outbound_poc": "Md Rahmot Ullah | 1726108754 | rahmot.ullah@carrybee.com",
+  "pickup_poc": "MD. ABOU JAFOUR | 1687898008 | abou.jafour@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Mymensingh-Gaffargaon",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "Md Rahmot Ullah",
+  "outbound_poc": "Md. Rayan Islam Adib | 1736698104 | rayan.adib@carrybee.com",
+  "pickup_poc": "Hasib Hasan | 1644887773 | hasib.hasan@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Mymensingh-Trishal",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD. BADRUZZAMAN KHAN",
+  "outbound_poc": "MD. SAIDUR RAHMAN | 1623359062 | saidur.rahman@carrybee.com",
+  "pickup_poc": "Mobtasim Fuad | 1635261051 | mobtasim.fuad@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Mymensingh-Sadar",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD. BADRUZZAMAN KHAN",
+  "outbound_poc": "MD. BADRUZZAMAN KHAN | 1731022221 | badruzzaman.khan@carrybee.com",
+  "pickup_poc": "SHAIK HOSSAIN | 1947829887 | ramzan.mia@carrybee.com",
+  "inbound_poc": "Md. Ramzan Mia | 01947829887 | ramzan.mia@carrybee.com"
+ },
+ {
+  "hub_name": "Mymensingh-Ishwarganj",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD. BADRUZZAMAN KHAN",
+  "outbound_poc": "Md. Sharuar Rahman | 01787762934 | md.sharuarrahman@carrybee.net",
+  "pickup_poc": "Md. Sohel Mia | 01815382164 | md.sohelmia@carrybee.net",
+  "inbound_poc": "MD. BADRUZZAMAN KHAN | 1731022221 | badruzzaman.khan@carrybee.com"
+ },
+ {
+  "hub_name": "Jamalpur-Sadar",
+  "zone": "OSD",
+  "division": "Mymensingh",
+  "regional_lead": "Md. Ruhin Ahmed Shimul",
+  "cluster_lead": "MD. BADRUZZAMAN KHAN",
+  "outbound_poc": "MD. JAKIRUL ISLAM | 1965463291 | jakirul.islam@carrybee.com",
+  "pickup_poc": "Shahin mia | 1923419768 | mdshahinmia572@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Joypurhat-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "SOEIOD AZIZUL HOQUE",
+  "outbound_poc": "Md. Sabbir Hossain | 1743337916 | sabbir.hossain@carrybee.com",
+  "pickup_poc": "Md. Shaowkatzahan Akonda | 1730660960 | md.akonda@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Bogra-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "SOEIOD AZIZUL HOQUE",
+  "outbound_poc": "Md Abu Raihan Hossen | 1758447641 | abu.raihan@carrybee.com",
+  "pickup_poc": "Md. Imran Ahmmed | 01774504054 | mdimranahmmed76@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Bogra-Sherpur",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "SOEIOD AZIZUL HOQUE",
+  "outbound_poc": "Md Mahmudul Hasan | 1777112169 | mdmahmudul.hasan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Bogra-Dhupchanchia",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "SOEIOD AZIZUL HOQUE",
+  "outbound_poc": "Asikur Rahman | 1761010374 | asikur.rahman@carrybee.com",
+  "pickup_poc": "SAGOR SAHA | 1724618324 | sagor.saha@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Naogaon-Patnitala",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "SOEIOD AZIZUL HOQUE",
+  "outbound_poc": "Sahadat Sarkar Shishir | 1619884716 | sahadat.shishir@carrybee.com",
+  "pickup_poc": "Naimur Hasan | 1766721004 | naimur.hasan@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Naogaon-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "SOEIOD AZIZUL HOQUE",
+  "outbound_poc": "Md. Golam Rabby | 1617225514 | golam.rabby@carrybee.com",
+  "pickup_poc": "Md. Taofikur RahMan | 1771079636 | taofikur.rahman@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Pabna-Bhangura",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Abu Hanjala | 1724929379 | abu.hanjala@carrybee.com",
+  "pickup_poc": "Md. Hafizur Rahman | 1734120164 | hafizur.rahman@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Natore-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "MD. CHANMIA PATOARY SAGOR | 1866712906 | sagor01866712906@gmail.com",
+  "pickup_poc": "Md. Ariful Islam | 1856308681 | ariful.islam@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Pabna-Ishwardi",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "MD MOYNAL HAQUE | 1794689634 | moynal.haque@carrybee.com",
+  "pickup_poc": "Md. Redoy Hossain | 1312946901 | md.redoy@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Pabna-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "MD. NAZIM UDDIN | 1717894189 | nazim.uddin@carrybee.com",
+  "pickup_poc": "Mozammel | 1784100667 | mozammel181993@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Sirajganj-Shahjadpur",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Md. Israfil Hossain | 1773861982 | israfil.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chapainawabganj-Shibganj",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Ruhul Amin | 1710997402 | r.amin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chapainawabganj-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Moidul Islam | 1778524292 | moidul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Sirajganj-Ullapara",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Md Kawser Mahmud 01701208013 | Md. Kawsar Mahmud / Outside Dhaka Operations",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Sirajganj-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Md. Saklain Mustak | 1783652850 | saklain.mustak@carrybee.com",
+  "pickup_poc": "Rashed Islam | 1701066966 | sumonrashed13@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Rajshahi-Puthia",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Md. Nashim Ali | 1783036746 | nashim.ali@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Rajshahi-Sadar",
+  "zone": "OSD",
+  "division": "Rajshahi",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "MD. KAWSAR MAHMUD",
+  "outbound_poc": "Md Istiak Hossain | 1758786223 | istiak.hossain@carrybee.com",
+  "pickup_poc": "Biswas Istiak Tahmid | 1577669519 | biswasistiak@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Gaibandha-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Md. Arif Rahman Khan | 1755451345 | arif.rahman@carrybee.com",
+  "pickup_poc": "MD Mijanur rahaman | 1717521855 | mijanur.rahaman@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Rangpur-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Md. Monjurul Islam | 1581034507 | monjurul.islam@carrybee.com",
+  "pickup_poc": "Md. Shahed Ali | 1892191103 | mahmudul.h@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Nilphamari-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Rabiul Islam Rana | 1770704165 | rabiul.rana@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Kurigram-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "MD. MEHEDI HASAN | 1738010117 | md.mehedi@carrybee.com",
+  "pickup_poc": "Amir Ali | 1707404885 | md.mehedi@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Thakurgaon-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Md. Mostafizur Rahman Sagar | 1762702901 | mostafizur.sagar@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Lalmonirhat-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Md. Ziarul Islam | 1321063383 | ziarul.islam@carrybee.com",
+  "pickup_poc": "Md. Khorshed Alam | 1717958864 | khorshed.alam@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Rangpur-Mithapukur",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Md. Liton | 1789643222 | mohd.liton@carrybee.com",
+  "pickup_poc": "Md. Muzahid Hossin | 1710422666 | md.muzahid@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Nilphamari-Saidpur",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Md. Rabbi Al Ajim | 1304643434 | rabbi.ajim@carrybee.com",
+  "pickup_poc": "Md Raza Ahmmed | 1727973694 | raza.ahmmed@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Gaibandha-Gobindaganj",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Mahmudul Hasan",
+  "outbound_poc": "Md. Azmir Rahman | 1795848586 | azmir.rahman@carrybee.com",
+  "pickup_poc": "Md. Abu Saeem | 1791826852 | md.abu@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Panchagarh-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Syed Toufik Ahmed",
+  "outbound_poc": "Md Ibn Sina Polok 01862709173",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Dinajpur-Nawabganj",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Syed Toufik Ahmed",
+  "outbound_poc": "SYED RUBAYET AHMED | 1722407351 | rubayet.ahmed@carrybee.com",
+  "pickup_poc": "MD ATAUR RAHMAN | 1726453254 | ataur1995ata@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Nilphamari-Joldhaka",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Syed Toufik Ahmed",
+  "outbound_poc": "FORIDUL ISLAM | 1753839861 | connect.foridul795@gmail.com",
+  "pickup_poc": "MD SIUM HOSSEN | 1767341342 | sium.hossen@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Dinajpur-Birganj",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Syed Toufik Ahmed",
+  "outbound_poc": "Kishor Chandra Roy | 1631226906 | kishor.roy@carrybee.com",
+  "pickup_poc": "Golum Robbani | 1894364291 | golumrobbani2@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Dinajpur-Sadar",
+  "zone": "OSD",
+  "division": "Rangpur",
+  "regional_lead": "Md. Sakib Hasan",
+  "cluster_lead": "Syed Toufik Ahmed",
+  "outbound_poc": "Syed Toufik Ahmed | 1608817006 | syed.ahmed@carrybee.com",
+  "pickup_poc": "Raju Ahmed | 1791871662 | raju.ahamed@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Narsingdi-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Mostafizur Rahman Mahim | 1733568779 | mostafizur.mahim@carrybee.com",
+  "pickup_poc": "Abdullah al Nafe | 1303166717 | abdullahalnafe6@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Narsingdi-Madhabdi",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Krishna Bhowmik",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Narsingdi-Roypura",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Md Shahriyaz Hossain | 1786569187 | md.shahriyaz@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Narsingdi-Shibpur",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Md Riyad Molla | 1974806194 | riyad.molla@carrybee.com",
+  "pickup_poc": "Tonoy Dus Gupta | 1786018076 | tonoy.das@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Kishoreganj-Mithamain",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": "Md. Eachin Miah",
+  "outbound_poc": "Liton Miah | 1815190914 | mia.liton@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Kishoreganj-Pakundia",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": "Md. Eachin Miah",
+  "outbound_poc": "Ebrahim Khalil Tuhin | 1918893119 | ebrahim.khalil@carrybee.com",
+  "pickup_poc": "Shawon Miah | 1739460150 | ebrahim.khalil@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Kishoreganj-Sadar",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": "Md. Eachin Miah",
+  "outbound_poc": "Abu Daud Piyas | 1710400163 | abu.daud@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Kishoreganj-Bhairab",
+  "zone": "OSD",
+  "division": "Dhaka",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": "Md. Eachin Miah",
+  "outbound_poc": "Md. Eachin Miah | 1335119823 | eachin.miah@carrybee.com",
+  "pickup_poc": "Shakil Arman | 1701731606 | shakil.arman@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "B.Baria-Sadar",
+  "zone": "OSD",
+  "division": "Chattogram",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Md Abdullah Al Hossain Sourav | 1689195131 | showrovab369@gmail.com",
+  "pickup_poc": "Mushfiq Ahmed Emon | 1870257544 | mushfiq.emon@carrybee.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "B.Baria-Bijaynagar",
+  "zone": "OSD",
+  "division": "Chattogram",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Md Ashiqur Rahman | 1720507355 | asiqur.rahman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "B.Baria-Kasba",
+  "zone": "OSD",
+  "division": "Chattogram",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Md Ariful Islam | 1781570703 | md.arif@carrybee.com",
+  "pickup_poc": "Md Shariful Islam | 01909454675 | sorkarsharif742@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "B.Baria-Nabinagar",
+  "zone": "OSD",
+  "division": "Chattogram",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Ahsan Ullah | 1340138606 | au108318@gmail.com",
+  "pickup_poc": "Shah Md Abul Fazal | 01920664048 | smfaisal034@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "B.Baria-Bancharampur",
+  "zone": "OSD",
+  "division": "Chattogram",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Md Saiful Islam Sajjad | 1612081856/1580601366 | saiful.sajjad@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "B.Baria-Nasirnagar",
+  "zone": "OSD",
+  "division": "Chattogram",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Shah Md Abdul Monsur | 1797785679 | abdul.monsur@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "B.Baria-Akhaura",
+  "zone": "OSD",
+  "division": "Chattogram",
+  "regional_lead": "Md. Ehsan Rabbi Rozen",
+  "cluster_lead": null,
+  "outbound_poc": "Faysal Ahmed | 1701208159 | faysal.ahmed@carrybee.com",
+  "pickup_poc": "Suyeb Malik Sowrob | 01771936691 | findsowrob@gmail.com",
+  "inbound_poc": "0"
+ },
+ {
+  "hub_name": "Comilla-Laksam",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Bappi Chandra Sarkar | 1870022012 | bappy.sarkar@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Biplob Tripura | 1701208099 | biplob.tripura@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Muradnagar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Saiful islam | 8801646515313 | saiful.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Chandina",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Ruhul Amin | 1335119835 | ruhul.amin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Chauddagram",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Mohammad Mohsin Ali Masum | 01633-536223 | mohammad.mohsin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Daudkandi",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Md Rubel | 1670515100 | robel.ahmed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Burichang",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Tanvir Hosen | 01875-519477 | tanvir.hosen@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Nangalkot",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Asif Hossain | 1863332321 | asif.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Brahmanpara",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Md. Yasin Arafat | 01625-191032 | md.yasin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Barura",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "MD Jabed Hossain | 1757592197 | md.jabed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Debidwar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Md. Mahabub Alam Tohin | 8801641551252 | mahabub.tohin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Comilla-Homna",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Rifat Khan",
+  "cluster_lead": "Abdullaha Al Zobair",
+  "outbound_poc": "Rakib Islam | 01849-283540 | rakib.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chandpur-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "HABIBUR RAHMAN TAPADER",
+  "outbound_poc": "Riyadul Islam | 1875706586 | riadul.islam@carrybee.comm",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chandpur-Faridganj",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "HABIBUR RAHMAN TAPADER",
+  "outbound_poc": "Muhammad Musfiqur Rahman | 1624346971 | musfiqur.rahman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chandpur-Hajiganj",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "HABIBUR RAHMAN TAPADER",
+  "outbound_poc": "Abu Jafor | 1705254862 | abu.jafar@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chandpur-Kachua",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "HABIBUR RAHMAN TAPADER",
+  "outbound_poc": "Al Amin | 1316363510 | al_amin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chandpur-Shahrasti",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "HABIBUR RAHMAN TAPADER",
+  "outbound_poc": "Tanvir Ahmed | 1701208252 | a.tanvir@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Chandpur-Matlab Dakshin",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "HABIBUR RAHMAN TAPADER",
+  "outbound_poc": "Md Abu Naim | 1628512653 | abu.naim@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Noakhali-Senbagh",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Md.Mosarrof Hosen | 1701207825 | mosarrof.hosen@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Noakhali-Companiganj",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Anowar Hosen | 1868254684 | anowar.hosen@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Noakhali-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Md. Tohidul Islam | 1335067967 | tohidul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Noakhali-Chatkhil",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Md. Shahadat Hossain | 1701207902 | h.shahadat@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Noakhali-Subarnachar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Md Amzad Hossain | 1625870931 | amzad.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Noakhali-Begumganj",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Omar Furkan Rasel | 1861350725 | omor.furkan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Lakshmipur-Kamalnagar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Md Shakil Hossain | 1748104964 | shakil.hossain@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Lakshmipur-Ramganj",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Kamrul Islam | 1609884681 | kamrul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Lakshmipur-Raipur",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Mohammad Hassan | 1836795095 | mohammad.hassan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Lakshmipur-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Md. Rafsan Jami Rejve",
+  "cluster_lead": "Ayon Saha",
+  "outbound_poc": "Solaiman Hossain | 1701207992 | hossain.solaiman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Cox's Bazar-Chakaria",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Anowarul Karim",
+  "outbound_poc": "Anowarul Karim | 1701207894 | anowarul.karim@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Cox's Bazar-Maheshkhali",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Anowarul Karim",
+  "outbound_poc": "Shiblee Noman | 1810129191 | shiblee.noman@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Cox's Bazar-Ramu",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Anowarul Karim",
+  "outbound_poc": "Rashidul Amin | 1690177454 | rashidul.amin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Cox's Bazar-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Anowarul Karim",
+  "outbound_poc": "Mohammed Abu Bakar | 1701207875 | mohammed.bakar@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Cox's Bazar-Teknaf",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Anowarul Karim",
+  "outbound_poc": "Ariful Matin Chy Adar | 01873186501 | chyarif641@gmail.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Cox's Bazar-Ukhia",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Anowarul Karim",
+  "outbound_poc": "Probal Pal | 1701208323 | probal.pal@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Halishahar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Ijajul Alam",
+  "outbound_poc": "Shahria Islam Jisan | 01607503965 | shahria.jisan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Nasirabad",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Ijajul Alam",
+  "outbound_poc": "Md Ijajul Alam | 1701208467 | asif.ahmed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Patenga",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Nur Uddin Bhuyan",
+  "outbound_poc": "Anik Ahamed Sikder | 01835412991 | anikahmed4422@gmail.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Patiya",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Nur Uddin Bhuyan",
+  "outbound_poc": "Rashedul Arefin | 1335067959 | rashedul.arefin@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Fatikchari",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Nur Uddin Bhuyan",
+  "outbound_poc": "Amit Hasan Bablu | 1829734876 | amit.hasan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Raozan",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Nur Uddin Bhuyan",
+  "outbound_poc": "Mohammad Jamir Uddin | 1922741412 | md.jamir@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Satkania",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Nur Uddin Bhuyan",
+  "outbound_poc": "Kaisar Hamid | 8801701207958 | kaisar.hamid@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Sitakunda",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Nur Uddin Bhuyan",
+  "outbound_poc": "Faisal Sayeed | 0 1798-508470 | abu.sayeed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Feni-Chhagalnaiya",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Mahmudul Hasan Chowdhury",
+  "outbound_poc": "Md. Monirul Alam Bhuiyan | 1335187825 | monirul.alam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Feni-Daganbhuya",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Mahmudul Hasan Chowdhury",
+  "outbound_poc": "Shahedul Islam Fahad | 1335119803 | shahedul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Feni-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Mahmudul Hasan Chowdhury",
+  "outbound_poc": "Sayod Md Abdul Kader | 01335187824 | sayod.kader@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Feni-Sonagazi",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Mahmudul Hasan Chowdhury",
+  "outbound_poc": "MD.MIRAZ KHAN | 01335-187826 | miraz.khan@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Khagrachari-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Nur Uddin Bhuyan",
+  "outbound_poc": "Dipayon Tripura | 1518358894 | rahim.tripura@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "Rangamati-Sadar",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": null,
+  "outbound_poc": "Janaprio Chakma | 0 1518-389132 | janapriochakma3@gmail.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Anwara",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": null,
+  "outbound_poc": "DIDARUL ISLAM | 1855737537 | didarul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Banshkhali",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": null,
+  "outbound_poc": "Didarul Islam | 1701207924 | didarul.islam@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Rangunia",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": null,
+  "outbound_poc": "Adison Chakma | 1335119827 | adison.chakma@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Hathazari",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": null,
+  "outbound_poc": "Md Arefin Opy | 1701208027 | arefin.opy@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Mirsarai",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": null,
+  "outbound_poc": "Abu Al Rafid Chowdhury | 1701208205 | rafid.chowdhury@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Bakolia",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Ijajul Alam",
+  "outbound_poc": "Imtiaj Ahmed | +880 1783-388491 | imtiaj.ahmed@carrybee.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ },
+ {
+  "hub_name": "CTG-Bayezid",
+  "zone": "CTG",
+  "division": "Chattogram",
+  "regional_lead": "Litaz Anwar Saif",
+  "cluster_lead": "Md Ijajul Alam",
+  "outbound_poc": "Shahruk Islam Hasan | +880 1585-815186 | shahrukhhasan6060@gmail.com",
+  "pickup_poc": null,
+  "inbound_poc": null
+ }
+]

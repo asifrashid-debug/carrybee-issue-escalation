@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import { pushToSheet, readSheetOps } from '../../../../lib/sheets';
+import { requireUser, requireRole } from '../../../../lib/session';
 export const dynamic = 'force-dynamic';
 // Reconciliation: compare sheet Ops block with DB; repair drift by field ownership; re-append missing rows.
 export async function POST(req) {
+  const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
+  const denied = requireRole(session, ['admin']); if (denied) return denied;
   const sb = supabaseAdmin();
   const body = await req.json().catch(()=>({}));
   const zone = body.zone;
@@ -22,7 +25,7 @@ export async function POST(req) {
     if (!s) { try { await pushToSheet(e); reappended++; } catch {} continue; }
     // Compare Ops block (cols Q-AA indices 16-26) — if drift, DB wins for requester, last-write for ops (here: push DB to sheet)
     // Simplified: re-push if row_version mismatch
-    const sheetVer = parseInt(s.vals[27]||'0');
+    const sheetVer = parseInt(s.vals[28]||'0'); // AC Row Version (COLS index 28)
     if (sheetVer !== e.row_version) { try { await pushToSheet(e); repaired++; } catch {} }
   }
   await sb.from('sync_log').insert({ direction:'reconciliation', status:'success', payload:{ zone, checked, repaired, reappended } });
