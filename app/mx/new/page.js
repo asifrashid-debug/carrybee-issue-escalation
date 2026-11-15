@@ -1,2 +1,2 @@
 import EscalationForm from '../../../components/EscalationForm';
-export default function MxNew(){ return <EscalationForm channel="MX" />; }
+export default function MxNew(){ return <div className="dm"><EscalationForm channel="MX" /></div>; }
