@@ -55,8 +55,9 @@ CREATE TABLE IF NOT EXISTS public.escalations (
   priority_scale TEXT NOT NULL CHECK (priority_scale IN ('P1','P2','P3','P4')),
   kam_feedback_status TEXT NOT NULL DEFAULT 'Not Shared' CHECK (kam_feedback_status IN ('Not Shared','Shared with Merchant','Merchant Confirmed','Merchant Disputed')),
   -- Ops block
-  comments_1 TEXT,
-  comments_2 TEXT,
+  layer1_response TEXT,
+  layer2_response TEXT,
+  layer3_response TEXT,
   issue_pick_time TIMESTAMPTZ,
   ops_issue_status TEXT NOT NULL DEFAULT 'New' CHECK (ops_issue_status IN ('New','Picked','In Progress','On Hold','Resolved','Unresolved')),
   remarks TEXT,

@@ -9,8 +9,8 @@ test('AC-03 one present allowed', () => {
   const ok = !(!'CB-1'.trim() && !''.trim());
   assert.equal(ok, true);
 });
-test('Issue ID format ESC-YYYYMMDD-####', () => {
-  assert.match('ESC-20261114-0001', /^ESC-\d{8}-\d{4}$/);
+test('Issue ID format CB-DD-MM-XXXX', () => {
+  assert.match('CB-14-11-2G4U', /^CB-\d{2}-\d{2}-[A-HJ-NP-Z2-9]{4}$/);
 });
 test('ISO week format', () => {
   assert.match('2026-W46', /^\d{4}-W\d{2}$/);
