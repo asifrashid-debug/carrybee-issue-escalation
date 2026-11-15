@@ -13,7 +13,7 @@ export default function Analytics() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead title="Analytics & Insights" sub="Trend, distribution, SLA funnel and operational patterns" />
+        <PageHead kicker="Insights" title="Analytics & Insights" sub="Trend, distribution, SLA funnel and operational patterns" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -33,7 +33,7 @@ export default function Analytics() {
 
   return (
     <div className="dm">
-      <PageHead title="Analytics & Insights" sub={`Trend, distribution, SLA funnel and operational patterns · last 14 days · ${busiest ? `busiest zone ${busiest.zone}` : ''}`}>
+      <PageHead kicker="Insights" title="Analytics & Insights" sub={`Trend, distribution, SLA funnel and operational patterns · last 14 days · ${busiest ? `busiest zone ${busiest.zone}` : ''}`}>
         <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
@@ -42,7 +42,7 @@ export default function Analytics() {
       {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
-      <div className="grid g4">
+      <div className="grid g4 kpi-strip">
         <Kpi label="SLA compliance" value={<>{fmtPct(k.responseSlaPct).replace('%', '')}<small>%</small></>} sub="First comment within 2h · target 90%" icon="check" tone="g" />
         <Kpi label="Open backlog" value={fmtN(k.open)} sub={`${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`} icon="shield" tone="b" />
         <Kpi label="SLA breached" value={fmtN(k.breaches)} sub="No comment past 2h or resolution past category SLA" icon="alert" tone="r" hot={k.breaches > 0} />

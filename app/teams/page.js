@@ -12,7 +12,7 @@ export default function TeamPerformance() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead title="Team Performance" sub="Team and member scorecards" />
+        <PageHead kicker="Teams" title="Team Performance" sub="Team and member scorecards" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -65,7 +65,7 @@ export default function TeamPerformance() {
 
   return (
     <div className="dm">
-      <PageHead title="Team Performance" sub="Team and member scorecards · issues raised by each team's members · same scope as the tracker">
+      <PageHead kicker="Teams" title="Team Performance" sub="Team and member scorecards · issues raised by each team's members · same scope as the tracker">
         <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
@@ -74,7 +74,7 @@ export default function TeamPerformance() {
       {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
-      <div className="grid g4">
+      <div className="grid g4 kpi-strip">
         <Kpi label="Active teams" value={fmtN(teams.length)} sub={`${fmtN(members)} members in teams`} icon="users" />
         <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} still open`} icon="shield" tone="b" />
         <Kpi label="Top team" value={<>{top ? fmtN(top.issues) : '—'} <small>{top?.team || ''}</small></>} sub="Most escalations raised" icon="trophy" tone="g" />

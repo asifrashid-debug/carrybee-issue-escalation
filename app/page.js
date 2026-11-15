@@ -275,11 +275,11 @@ export default function Tracker() {
 
   return (
     <div className="dm">
-      <PageHead title="Issue Escalation Tracker" sub="Live escalation feed with aging, SLA and per-action audit log. Work the stages in order: pick, first comment, follow-up, resolve. Open any issue for its layers, follow-ups and audit trail.">
+      <PageHead kicker="Escalations" title="Issue Escalation Tracker" sub="Live escalation feed with aging, SLA and per-action audit log. Work the stages in order: pick, first comment, follow-up, resolve. Open any issue for its layers, follow-ups and audit trail.">
         <LiveChip label={`Live · Asia/Dhaka · synced ${lastSynced}`} />
       </PageHead>
 
-      <div className="grid g4">
+      <div className="grid g4 kpi-strip">
         <Kpi label="Open escalations" value={fmtN(k?.open)} sub={stats ? zoneOpen : '…'} icon="shield" />
         <Kpi label="Unpicked queue" value={fmtN(k?.unpicked)} sub="Waiting for hub pick" icon="alert" tone="r" hot />
         <Kpi label="Awaiting first response" value={fmtN(k?.awaitingResponse)} sub="Open, no first comment yet" icon="clock" tone="b" />

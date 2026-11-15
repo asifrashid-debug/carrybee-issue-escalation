@@ -41,7 +41,7 @@ export default function Admin() {
 
   return (
     <div className="dm">
-      <PageHead title="Admin & Masters" sub="All hubs, category trees, RBAC scopes and SLA settings live in PostgreSQL config tables. Every change is written to the audit log.">
+      <PageHead kicker="Configuration" title="Admin & Masters" sub="All hubs, category trees, RBAC scopes and SLA settings live in PostgreSQL config tables. Every change is written to the audit log.">
         <LiveChip label="Live · database" />
         <button type="button" className="btn" onClick={load} aria-label="Refresh">⟳ Refresh</button>
       </PageHead>

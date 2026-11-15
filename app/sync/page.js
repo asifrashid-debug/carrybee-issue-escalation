@@ -47,7 +47,7 @@ export default function SyncHealth() {
 
   return (
     <div className="dm">
-      <PageHead title="Sync Health" sub="Two-way sync between the database and the ISD, OSD and CTG zone sheets · auto-refreshes every 60 seconds">
+      <PageHead kicker="Integrations" title="Sync Health" sub="Two-way sync between the database and the ISD, OSD and CTG zone sheets · auto-refreshes every 60 seconds">
         <LiveChip label={data ? `Live · ${fmtN(data.queue_depth)} queued` : 'Live'} />
         <button type="button" className="btn" onClick={load} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
       </PageHead>

@@ -25,10 +25,11 @@ export function Ico({ name, badge = '' }) {
   return <svg className="ico" viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ICON[name] }} />;
 }
 
-export function PageHead({ title, sub, children }) {
+export function PageHead({ kicker, title, sub, children }) {
   return (
     <div className="head">
       <div>
+        {kicker && <div className="kicker">{kicker}</div>}
         <h1>{title}</h1>
         {sub && <p>{sub}</p>}
       </div>

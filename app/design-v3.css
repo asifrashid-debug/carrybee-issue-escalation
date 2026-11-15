@@ -433,3 +433,112 @@ h1, h2, h3, h4, .head-row h1, .kv, .k-v, .dm .kv, .dm .head h1 { font-weight: 70
   .more-list .danger { color: var(--bad); }
   .drawer .stats3 b { font-size: 13px; }
 }
+
+/* =====================================================================
+   21. All pages: iPhone app layer and desktop-only content
+   Under 700px the tracker reads like an installed iPhone app (Add to Home Screen, full screen):
+   safe areas for the notch and home indicator, large titles, grouped cards, 2-up KPIs,
+   table rows as cards, 44px tap targets, and 16px inputs so iOS does not zoom when a field is focused.
+   Desktop layout is unchanged.
+   ===================================================================== */
+
+html, body { -webkit-tap-highlight-color: transparent; }
+
+/* Content that only suits one screen size */
+@media (min-width: 701px) { .only-phone { display: none !important; } }
+@media (max-width: 700px) { .only-desk { display: none !important; } }
+
+@media (max-width: 700px) {
+  /* Header clears the status bar when the app is opened from the home screen */
+  .topbar {
+    height: calc(var(--hdr) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .wrap {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  /* Large iOS-style title with the actions below it */
+  .dm .head { flex-direction: column; align-items: stretch; gap: 12px; margin: 18px 2px 14px; }
+  .dm .head h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.6px; font-weight: 700; }
+  .dm .head p { font-size: 13.5px; line-height: 1.45; }
+  .dm .head .tools { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .dm .head .tools > * { flex: 0 0 auto; }
+
+  /* Grouped cards: one column, 2-up KPI tiles */
+  .dm .grid { gap: 10px; margin-bottom: 10px; }
+  .dm .g5, .dm .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .dm .g3, .dm .g2, .dm .g2e { grid-template-columns: minmax(0, 1fr) !important; }
+  .dm .card { border-radius: 16px; padding: 14px; }
+  .dm .card .ph { flex-wrap: wrap; gap: 8px; }
+  .dm .kv { font-size: 24px; }
+
+  /* Tables become stacked cards (labels come from MobileTables.js) */
+  .dm .tbl-wrap { border: 0; background: none; overflow: visible; }
+  .dm .tbl-stack tr.rw {
+    background: var(--glass); border: 1px solid var(--line); border-radius: 16px;
+    margin: 0 0 10px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(20, 20, 30, .04);
+  }
+  .dm .tbl-stack td { border-bottom: 0; }
+
+  /* Forms: one column, 16px text so iOS does not zoom */
+  .dm .fgrid { grid-template-columns: minmax(0, 1fr) !important; }
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Segmented controls scroll sideways instead of wrapping */
+  .dm .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .dm .seg::-webkit-scrollbar { display: none; }
+  .dm .seg button { min-height: 44px; flex: 0 0 auto; }
+
+  /* Touch targets: at least 44px */
+  .dm .btn, .dm .submit { min-height: 44px; }
+  .dm select.fctl, .dm .flabel + select { min-height: 44px; }
+
+  /* Form footer stays above the phone tab bar, so Submit is always in reach (safe area respected) */
+  .dm .ffoot {
+    position: sticky; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); z-index: 5;
+    background: var(--glass); border-top: 1px solid var(--line); padding: 10px 0;
+  }
+}
+
+/* =====================================================================
+   22. Desktop web layout: page kicker, KPI strip, form side panel
+   Matches the approved complete web view: a kicker above each page title, one KPI strip per page
+   (a single bordered band with dividers), and the intake form with a "what happens next" panel beside it.
+   Phone rules are in section 21.
+   ===================================================================== */
+
+/* Page kicker: small label with a yellow rule */
+.dm .head .kicker { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 8px; color: var(--mut); }
+.dm .head .kicker::before { content: ""; width: 18px; height: 2px; border-radius: 2px; background: var(--y); flex: none; }
+
+/* KPI strip: one bordered band with dividers */
+.dm .grid.kpi-strip { gap: 0; margin-bottom: 16px; background: var(--glass); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(20, 20, 30, .04); }
+.dm .grid.kpi-strip > .card { border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; padding: 18px 20px; min-width: 0; }
+.dm .grid.kpi-strip > .card:last-child { border-right: 0; }
+.dm .grid.kpi-strip > .card.hot { box-shadow: inset 0 3px 0 var(--bad); }
+
+/* Intake forms: form on the left, "what happens next" panel on the right */
+.dm .kform-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.dm .kform-layout > .fwrap { min-width: 0; }
+.dm .kform-side { position: sticky; top: calc(var(--hdr) + 16px); display: grid; gap: 12px; }
+.dm .kside-card { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+.dm .kside-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.dm .kside-steps { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 13px; line-height: 1.5; color: var(--ink2); }
+.dm .kside-steps b { color: var(--ink); }
+.dm .kside-defs { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; margin: 0; font-size: 13px; }
+.dm .kside-defs dt { color: var(--mut); }
+.dm .kside-defs dd { margin: 0; font-family: var(--font-mono); font-weight: 600; color: var(--ink); text-align: right; }
+.dm .kside-note { font-size: 12.5px; color: var(--mut); background: var(--surface-2); }
+@media (max-width: 1100px) {
+  .dm .kform-layout { grid-template-columns: minmax(0, 1fr); }
+  .dm .kform-side { position: static; }
+}
+
+/* Phone: the KPI strip becomes separate tiles again */
+@media (max-width: 700px) {
+  .dm .grid.kpi-strip { background: none; border: 0; border-radius: 0; overflow: visible; box-shadow: none; gap: 10px; }
+  .dm .grid.kpi-strip > .card { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: 0 1px 2px rgba(20, 20, 30, .04); }
+  .dm .grid.kpi-strip > .card.hot { box-shadow: inset 0 3px 0 var(--bad), 0 1px 2px rgba(20, 20, 30, .04); }
+}

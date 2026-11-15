@@ -15,7 +15,7 @@ export default function Dashboard() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead title="Operations Command Centre" sub="All teams and zones, scoped to your access" />
+        <PageHead kicker="Command centre" title="Operations Command Centre" sub="All teams and zones, scoped to your access" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -33,7 +33,7 @@ export default function Dashboard() {
 
   return (
     <div className="dm">
-      <PageHead title="Operations Command Centre" sub={`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}>
+      <PageHead kicker="Command centre" title="Operations Command Centre" sub={`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}>
         <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
@@ -42,7 +42,7 @@ export default function Dashboard() {
       {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
-      <div className="grid g5">
+      <div className="grid g5 kpi-strip">
         <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed`} icon="shield" />
         <Kpi label="Open backlog" value={fmtN(k.open)} sub={`${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`} icon="clock" tone="b" />
         <Kpi label="SLA breaches" value={fmtN(k.breaches)} sub={<><span className="bad">No comment past 2h or resolution past category SLA</span> · comment compliance {fmtPct(k.responseSlaPct)}</>} icon="alert" tone="r" hot={k.breaches > 0} />
@@ -51,7 +51,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid g2">
-        <div className="card">
+        <div className="card only-desk">
           <div className="ph">
             <div><h3>Escalation Flow</h3><small>Daily intake, pick and first comment · last 14 days (Dhaka)</small></div>
             <Legend items={[['Submitted', '#F8C800'], ['Picked', '#3B9CFF'], ['Responded', '#3DDC97']]} />
@@ -86,7 +86,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid g3">
+      <div className="grid g3 only-desk">
         {data.zones.map((z) => {
           const color = ZONE_COLOR[z.zone] || '#F8C800';
           const openShare = pct(z.open, z.total);
@@ -113,7 +113,7 @@ export default function Dashboard() {
         })}
       </div>
 
-      <div className="grid g3">
+      <div className="grid g3 only-desk">
         <div className="card">
           <div className="ph"><div><h3>Priority Mix</h3><small>All escalations in scope</small></div></div>
           <div className="lst">
@@ -242,7 +242,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card only-desk">
         <div className="ph"><div><h3>Latest escalations</h3><small>Last 10 submitted · Dhaka time</small></div></div>
         {data.recent.length === 0 ? <div className="empty">No escalations yet.</div> : (
           <div className="tbl-wrap">

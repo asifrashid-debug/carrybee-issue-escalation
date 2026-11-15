@@ -3,6 +3,7 @@ import './demo.css';
 import './design-v3.css';
 import AppHeader from '../components/AppHeader';
 import InstallApp from '../components/InstallApp';
+import MobileTables from '../components/MobileTables';
 
 export const metadata = {
   title: 'CarryBee Issue Escalation Tracker',
@@ -11,7 +12,8 @@ export const metadata = {
   appleWebApp: { capable: true, title: 'CB Tracker', statusBarStyle: 'black-translucent' },
 };
 
-export const viewport = { width: 'device-width', initialScale: 1, themeColor: '#F8C800' };
+// viewportFit cover lets the phone layout use the notch and home-indicator areas (safe-area insets in design-v3.css).
+export const viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#F8C800' };
 
 // Registers the service worker that lets Chrome install the tracker as an app.
 const swScript = "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}";
@@ -31,6 +33,7 @@ export default function RootLayout({ children }) {
       <body>
         <div className="wrap">
           <AppHeader />
+          <MobileTables />
           <main>{children}</main>
           <footer className="foot">
             <span>CarryBee · Issue ID is the sync key (CB-DD-MM-XXXX) · Times in Asia/Dhaka · Never hard-delete (use Not possible)</span>

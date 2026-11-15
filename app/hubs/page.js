@@ -31,7 +31,7 @@ export default function HubPerformance() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead title="HUB Performance" sub="Hub-level scorecards ranked by first-comment SLA" />
+        <PageHead kicker="Hubs" title="HUB Performance" sub="Hub-level scorecards ranked by first-comment SLA" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -53,7 +53,7 @@ export default function HubPerformance() {
 
   return (
     <div className="dm">
-      <PageHead title="HUB Performance" sub={`${fmtN(data.hubCount.withIssues)} hubs with escalations, of ${fmtN(data.hubCount.active)} active · ranked by first-comment SLA · all escalations in your scope`}>
+      <PageHead kicker="Hubs" title="HUB Performance" sub={`${fmtN(data.hubCount.withIssues)} hubs with escalations, of ${fmtN(data.hubCount.active)} active · ranked by first-comment SLA · all escalations in your scope`}>
         <Seg label="Zone" items={['All Zones', ...ZONES]} value={zone} onChange={setZone} />
         <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
@@ -63,7 +63,7 @@ export default function HubPerformance() {
       {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
-      <div className="grid g4">
+      <div className="grid g4 kpi-strip">
         <Kpi label="Avg hub score" value={<>{avgScore ?? '—'}<small>{avgScore == null ? '' : '/100'}</small></>} sub={`${fmtN(withScore.length)} hubs with a first comment`} icon="trophy" />
         <Kpi label="Clean hubs" value={fmtN(clean)} sub="Zero first-comment breaches" icon="shield" tone="g" />
         <Kpi label="Total breached" value={fmtN(totalBreaches)} sub="Across all hubs" icon="alert" tone="r" hot={totalBreaches > 0} />
@@ -132,6 +132,18 @@ export default function HubPerformance() {
           <div className="search" style={{ flex: '0 1 260px', padding: '7px 10px' }}>
             <input placeholder="Find hub…" aria-label="Find hub" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
+        </div>
+        {/* Phone: column headers are hidden, so sorting moves to this select (same state as the headers). */}
+        <div className="only-phone" style={{ marginBottom: 12 }}>
+          <label htmlFor="hub-sort" className="flabel">Sort hubs by</label>
+          <div className="fctl"><select id="hub-sort" value={`${sort.key}:${sort.desc ? 'desc' : 'asc'}`} onChange={(e) => { const [key, dir] = e.target.value.split(':'); setSort({ key, desc: dir === 'desc' }); }}>
+            <option value="total:desc">Issues</option>
+            <option value="open:desc">Open</option>
+            <option value="breaches:desc">Breached</option>
+            <option value="responseSlaPct:desc">Comment ≤ 2h (best first)</option>
+            <option value="responseSlaPct:asc">Comment ≤ 2h (worst first)</option>
+            <option value="resolvedPct:desc">Resolved</option>
+          </select></div>
         </div>
         <div className="tbl-wrap">
           <table className="tbl">

@@ -163,6 +163,7 @@ export default function EscalationForm({ channel }) {
   );
 
   return (
+    <div className="kform-layout">
     <div className="fwrap">
       <div className="fhead">
         <span className="chanpill" style={isKam ? undefined : { background: '#3B9CFF', color: '#fff' }}>CHANNEL: {channel}</span>
@@ -263,6 +264,26 @@ export default function EscalationForm({ channel }) {
         </div>
       </form>
       <p className="note2" style={{ textAlign: 'center' }}>Writes to the database. Nothing is sent until you submit.</p>
+    </div>
+    <aside className="kform-side" aria-label="What happens after you submit">
+      <div className="kside-card">
+        <h3>What happens next</h3>
+        <ol className="kside-steps">
+          <li><b>Saved first.</b> The escalation is written to the database before anything else.</li>
+          <li><b>Sheet push queued.</b> The zone sheet is updated in the background.</li>
+          <li><b>Visible in the tracker</b> within about 5 seconds, with its Issue ID.</li>
+        </ol>
+      </div>
+      <div className="kside-card">
+        <h3>Defaults on submit</h3>
+        <dl className="kside-defs">
+          <dt>Issue Status</dt><dd>Open</dd>
+          <dt>KAM Feedback</dt><dd>Pending</dd>
+          <dt>Ops Status</dt><dd>Pending</dd>
+        </dl>
+      </div>
+      <div className="kside-card kside-note">Channel is fixed to {channel}. Times are recorded in Asia/Dhaka.</div>
+    </aside>
     </div>
   );
 }
