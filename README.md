@@ -31,23 +31,36 @@ DB is single source of truth. Issue ID `ESC-YYYYMMDD-####` is sync key. All time
 | N | Week (ISO) | system (protected) |
 | O | Priority Scale (P1–P4) | requester (protected) |
 | P | KAM Feedback Status | requester (protected; DB→sheet only) |
-| Q | Comments 1 (Ops End) | ops (editable) |
-| R | Comments 2 (Ops End) | ops (editable) |
-| S | Issue Pick Time | system/ops (set-once) |
-| T | ISSUE STATUS (New/Picked/In Progress/On Hold/Resolved/Unresolved) | ops (dropdown) |
-| U | Remarks | ops (editable) |
-| V | Regional Lead | ops (dropdown, auto from Hub Master) |
-| W | Division | ops (dropdown, auto from Hub Master) |
-| X | Issue Response Date & Time | system (protected, auto-stamped) |
-| Y | Ops Status (Pending/In Progress/Completed/Dropped) | ops (dropdown) |
-| Z | Validation (Valid/Invalid/Duplicate/Insufficient Info) | ops (dropdown) |
-| AA | Issue Category (Ops Type) | ops (dropdown) |
-| AB | Row Version | hidden, service account only |
-| AC | Last Synced At | hidden, service account only |
+| Q | Layer 1 Response (HUB Incharge) | ops (editable, free text) |
+| R | Layer 2 Response (Cluster Lead) | ops (editable, free text) |
+| S | Layer 3 Response (Regional Lead) | ops (editable, free text) |
+| T | Issue Pick Time | system/ops (set-once) |
+| U | ISSUE STATUS (New/Picked/In Progress/On Hold/Resolved/Unresolved) | ops (dropdown) |
+| V | Remarks | ops (editable) |
+| W | Regional Lead | ops (dropdown, auto from Hub Master) |
+| X | Issue Response Date & Time | system (protected, auto-stamped on first Layer 1/2/3 response) |
+| Y | Division | ops (dropdown, auto from Hub Master) |
+| Z | Ops Status (Pending/In Progress/Completed/Dropped) | ops (dropdown) |
+| AA | Validation (Valid/Invalid/Duplicate/Insufficient Info) | ops (dropdown) |
+| AB | Issue Category (Ops Type) | ops (dropdown) |
+| AC | Row Version | hidden, service account only |
+| AD | Last Synced At | hidden, service account only |
 
-> Assumption A1: PRD lists Consignment ID / Merchant Name as one item but requires two form inputs + separate search. Implemented as two sheet columns (D,E), so Requester block is B–P (15 cols) and total is 29 cols (not 28). DB stores them separately.
+## Response SLA (per layer, cumulative)
+- Clock starts at the issue Timestamp (column B).
+- **Layer 1 (HUB Incharge)** cell (Q) turns **red** if still empty 2 hours after the issue was raised.
+- **Layer 2 (Cluster Lead)** cell (R) turns **red** if Layer 1 is still empty at 2h AND Layer 2 is still empty at 4h.
+- **Layer 3 (Regional Lead)** cell (S) turns **red** if Layers 1 and 2 are still empty at 2h/4h AND Layer 3 is still empty at 6h.
+- Typing any text in a layer cell clears the red for that layer and stops the escalation to the layers below it.
+- Conditional formatting formulas (applied to Q2:Q1000, R2:R1000, S2:S1000):
+  - Q: `=AND($Q2="",$B2<>"",NOW()-$B2>2/24)`
+  - R: `=AND($R2="",$Q2="",$B2<>"",NOW()-$B2>4/24)`
+  - S: `=AND($S2="",$R2="",$Q2="",$B2<>"",NOW()-$B2>6/24)`
+- Spreadsheet time zone must be **Asia/Dhaka** so NOW() and the Timestamp are compared in local time.
 
-Protections: A–P + X protected (blocked edits). Header frozen + styled, basic filter on, AB–AC hidden. Dropdowns on T,Y,Z,AA,V,W. Conditional formatting (P1 red, unpicked breach, responded-but-unclosed) — see note below.
+> Assumption A1: PRD lists Consignment ID / Merchant Name as one item but requires two form inputs + separate search. Implemented as two sheet columns (D,E), so Requester block is B–P (15 cols) and total is 30 cols (A–AD). DB stores them separately.
+
+Protections: A–P + X protected (X = Issue Response Date & Time). Header frozen + styled, basic filter on, AC–AD hidden. Dropdowns on U, W, Y, Z, AA, AB. Layer cells Q–S are free text and stay editable.
 
 ## Setup
 1. Supabase: project already created. Migrations in `supabase/migrations/001_init.sql` (already applied). Seed hubs/categories/users already inserted.
