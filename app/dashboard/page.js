@@ -50,8 +50,7 @@ export default function Dashboard() {
         <Kpi label="Resolved" value={fmtN(k.resolved)} sub={`${fmtPct(k.resolvedPct)} resolution rate`} icon="check" tone="g" />
       </div>
 
-      <div className="grid g2">
-        <div className="card only-desk">
+      <div className="card only-desk">
           <div className="ph">
             <div><h3>Escalation Flow</h3><small>Daily intake, pick and first comment · last 14 days (Dhaka)</small></div>
             <Legend items={[['Submitted', '#F8C800'], ['Picked', '#3B9CFF'], ['Responded', '#3DDC97']]} />
@@ -68,52 +67,24 @@ export default function Dashboard() {
           />
         </div>
 
-        <div className="card">
-          <div className="ph"><div><h3>Operational Health</h3><small>Rolling compliance</small></div></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
-            <Ring pct={k.responseSlaPct} color="#F8C800" label="SLA" sub="Comment ≤ 2h" />
-            <Ring pct={k.pickSlaPct} color="#3B9CFF" label="Picked" sub="Pick ≤ 4h" />
-            <Ring pct={k.resolvedPct} color="#3DDC97" label="Resolved" />
-          </div>
-          <div className="grid g2e" style={{ marginTop: 14, gap: 10 }}>
-            <div className="card hot" style={{ padding: 12 }}><div className="kl">P1 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--bad)' }}>{fmtN(k.p1Open)}</div></div>
-            <div className="card" style={{ padding: 12 }}><div className="kl">P2 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--warn)' }}>{fmtN(k.p2Open)}</div></div>
-          </div>
-          <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span className="pillc p-br">{fmtN(k.breaches)} breached</span>
-            <span className="pillc p-open">{fmtN(k.awaitingResponse)} awaiting first comment</span>
+      <div className="grid g3 only-desk">
+        <div className="card only-desk">
+          <div className="ph"><div><h3>Open by Zone</h3><small>Share of open backlog · resolved and breached per zone</small></div></div>
+          <div className="lst">
+            {data.zones.map((z) => {
+              const color = ZONE_COLOR[z.zone] || '#F8C800';
+              return (
+                <div key={z.zone}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, gap: 8, flexWrap: 'wrap' }}>
+                    <b style={{ color }}>● {z.zone} Zone</b>
+                    <span>{fmtN(z.open)} open · {fmtN(z.resolved)} resolved · <span className={z.breaches ? 'bad' : ''}>{fmtN(z.breaches)} breached</span></span>
+                  </div>
+                  <Bar pct={pct(z.open, k.open)} color={color} />
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
-
-      <div className="grid g3 only-desk">
-        {data.zones.map((z) => {
-          const color = ZONE_COLOR[z.zone] || '#F8C800';
-          const openShare = pct(z.open, z.total);
-          return (
-            <div key={z.zone} className="card">
-              <div className="ph" style={{ marginBottom: 8 }}>
-                <div>
-                  <b style={{ fontSize: 14, color }}>● {z.zone} Zone</b>
-                  <div className="ks">{fmtN(z.total)} total · {fmtN(z.open)} open · {fmtN(z.breaches)} breached</div>
-                </div>
-                <div style={{ width: 54, height: 54, borderRadius: '50%', background: `conic-gradient(${color} ${openShare}%, var(--track) 0)`, display: 'grid', placeItems: 'center' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--glass2)', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 800 }}>{pct(z.resolved, z.total)}%</div>
-                </div>
-              </div>
-              <div className="grid" style={{ gridTemplateColumns: 'repeat(3,1fr)', gap: 8, margin: 0 }}>
-                {[['OPEN', z.open, ''], ['RESOLVED', z.resolved, ''], ['BREACHED', z.breaches, z.breaches ? 'bad' : '']].map(([l, v, c]) => (
-                  <div key={l} style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 8, fontSize: 10.5, color: 'var(--mut)', fontWeight: 700, letterSpacing: '.08em' }}>
-                    {l}<div className={c} style={{ fontSize: 18, color: c ? undefined : 'var(--ink)', letterSpacing: 0, marginTop: 3 }}>{fmtN(v)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="grid g3 only-desk">
         <div className="card">
           <div className="ph"><div><h3>Priority Mix</h3><small>All escalations in scope</small></div></div>
           <div className="lst">
@@ -142,8 +113,26 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+      </div>
 
+      <div className="grid g2">
         <div className="card">
+          <div className="ph"><div><h3>Operational Health</h3><small>Rolling compliance</small></div></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+            <Ring pct={k.responseSlaPct} color="#F8C800" label="SLA" sub="Comment ≤ 2h" />
+            <Ring pct={k.pickSlaPct} color="#3B9CFF" label="Picked" sub="Pick ≤ 4h" />
+            <Ring pct={k.resolvedPct} color="#3DDC97" label="Resolved" />
+          </div>
+          <div className="grid g2e" style={{ marginTop: 14, gap: 10 }}>
+            <div className="card hot" style={{ padding: 12 }}><div className="kl">P1 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--bad)' }}>{fmtN(k.p1Open)}</div></div>
+            <div className="card" style={{ padding: 12 }}><div className="kl">P2 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--warn)' }}>{fmtN(k.p2Open)}</div></div>
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <span className="pillc p-br">{fmtN(k.breaches)} breached</span>
+            <span className="pillc p-open">{fmtN(k.awaitingResponse)} awaiting first comment</span>
+          </div>
+        </div>
+        <div className="card only-desk">
           <div className="ph">
             <div><h3>Hub Hotspots</h3><small>Most breaches (first comment or resolution)</small></div>
             <Link href="/hubs" style={{ fontSize: 12, fontWeight: 700, textDecoration: 'none', color: 'var(--y)' }}>All hubs →</Link>
@@ -161,8 +150,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid g2">
-        <div className="card">
+      <div className="card">
           <div className="ph">
             <div><h3>Needs attention</h3><small>{data.attentionTotal ? `${fmtN(data.attentionTotal)} open past SLA · most urgent first` : 'Open issues past SLA'}</small></div>
           </div>
@@ -240,7 +228,6 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </div>
 
       <div className="card only-desk">
         <div className="ph"><div><h3>Latest escalations</h3><small>Last 10 submitted · Dhaka time</small></div></div>
