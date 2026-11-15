@@ -106,6 +106,36 @@ export default function Analytics() {
         </div>
       </div>
 
+      <div className="grid g2">
+        <div className="card">
+          <div className="ph"><div><h3>Ageing of Open Cases</h3><small>Whole days since submission · open issues</small></div></div>
+          {k.open === 0 ? <div className="empty">No open cases</div> : (
+            <div className="lst">
+              {data.ageing.map((a, i) => (
+                <div key={a.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{a.label}</span><b>{fmtN(a.count)}</b></div>
+                  <Bar pct={pct(a.count, k.open)} color={['#3DDC97', '#F8C800', '#FF5D73'][i]} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="ph"><div><h3>Feedback Outcomes</h3><small>Share of closed cases · {fmtN(data.feedbackOutcomes.closed)} closed</small></div></div>
+          {data.feedbackOutcomes.closed === 0 ? <div className="empty">No closed cases yet</div> : (
+            <div className="lst">
+              {data.feedbackOutcomes.items.map((f, i) => (
+                <div key={f.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{f.label}</span><b>{fmtN(f.count)} · {fmtPct(f.pct)}</b></div>
+                  <Bar pct={f.pct ?? 0} color={['#3DDC97', '#FF5D73', '#FFB020', '#A3A1A8'][i]} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid g3">
         <div className="card">
           <div className="ph"><div><h3>Ops Status Mix</h3><small>Share of all issues</small></div></div>
