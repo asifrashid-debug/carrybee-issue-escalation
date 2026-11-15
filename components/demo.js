@@ -100,6 +100,32 @@ export function Legend({ items }) {
   );
 }
 
+export function Donut({ segments, center, sub, size = 150, stroke = 18 }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const total = segments.reduce((a, s) => a + (s.value || 0), 0);
+  let off = 0;
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flex: '0 0 auto' }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth={stroke} />
+        {total > 0 && segments.map((seg) => {
+          const len = c * (seg.value / total);
+          const el = <circle key={seg.label} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={seg.color} strokeWidth={stroke} strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-off} />;
+          off += len;
+          return el;
+        })}
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums' }}>{center}</div>
+          {sub && <div className="ks">{sub}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Bar({ pct, color }) {
   const v = Math.max(0, Math.min(100, pct || 0));
   return (

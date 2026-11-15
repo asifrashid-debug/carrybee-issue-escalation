@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useAnalytics } from '../../components/useAnalytics';
-import { PageHead, Kpi, Seg, LiveChip, Ring, Legend, Bar, LineChart, PriPill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
+import { PageHead, Kpi, Seg, LiveChip, Ring, Legend, Bar, Donut, LineChart, PriPill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
 import { formatDhaka } from '../../lib/time';
 import { teamActions, LAG_SCORE, IMPROVE_POINTS } from '../../lib/teamGuidance';
 
@@ -87,16 +87,22 @@ export default function Dashboard() {
         </div>
         <div className="card">
           <div className="ph"><div><h3>Priority Mix</h3><small>All escalations in scope</small></div></div>
-          <div className="lst">
-            {data.priorities.map((p) => (
-              <div key={p.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
-                  <b style={{ color: PRI_COLOR[p.label] }}>{p.label}</b>
-                  <span>{fmtN(p.total)} · {pct(p.total, k.total)}% · {fmtN(p.open)} open</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+            <Donut
+              segments={data.priorities.map((p) => ({ label: p.label, value: p.total, color: PRI_COLOR[p.label] }))}
+              center={fmtN(k.total)}
+              sub="escalations"
+            />
+            <div className="lst" style={{ flex: '1 1 180px', minWidth: 0 }}>
+              {data.priorities.map((p) => (
+                <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+                  <i style={{ width: 9, height: 9, borderRadius: '50%', background: PRI_COLOR[p.label], flex: '0 0 auto' }} />
+                  <span>{p.label}</span>
+                  <b style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{fmtN(p.total)}</b>
+                  <span style={{ color: 'var(--mut)', minWidth: 96, textAlign: 'right' }}>{pct(p.total, k.total)}% · {fmtN(p.open)} open</span>
                 </div>
-                <Bar pct={pct(p.total, k.total)} color={PRI_COLOR[p.label]} />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
