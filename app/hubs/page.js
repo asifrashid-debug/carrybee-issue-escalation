@@ -51,6 +51,13 @@ export default function HubPerformance() {
     </th>
   );
 
+  // Demo order: median first comment and volume by hub (real data, top hubs by volume).
+  const hubsByVol = [...data.hubs].sort((a, b) => b.total - a.total || a.hub.localeCompare(b.hub));
+  const hubsMed = hubsByVol.filter((h) => h.medianResponseHours != null).slice(0, 6);
+  const maxMed = Math.max(2, ...hubsMed.map((h) => h.medianResponseHours));
+  const hubsVol = hubsByVol.slice(0, 8);
+  const maxVol = Math.max(1, ...hubsVol.map((h) => h.total));
+
   return (
     <div className="dm">
       <PageHead kicker="Hubs" title="HUB Performance" sub={`${fmtN(data.hubCount.withIssues)} hubs with escalations, of ${fmtN(data.hubCount.active)} active · ranked by first-comment SLA · all escalations in your scope`}>
@@ -68,6 +75,35 @@ export default function HubPerformance() {
         <Kpi label="Clean hubs" value={fmtN(clean)} sub="Zero first-comment breaches" icon="shield" tone="g" />
         <Kpi label="Total breached" value={fmtN(totalBreaches)} sub="Across all hubs" icon="alert" tone="r" hot={totalBreaches > 0} />
         <Kpi label="Open backlog" value={fmtN(openTotal)} sub="Open hub escalations" icon="clock" tone="b" />
+      </div>
+
+      <div className="grid g2">
+        <div className="card">
+          <div className="ph"><div><h3>Median First Comment by Hub</h3><small>Top 6 hubs by volume · target 2h</small></div></div>
+          {hubsMed.length === 0 ? <div className="empty">No first comments yet</div> : (
+            <div className="lst">
+              {hubsMed.map((h) => (
+                <div key={h.hub}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{h.hub}</span><b className={h.medianResponseHours <= 2 ? 'good' : 'bad'}>{fmtH(h.medianResponseHours)}</b></div>
+                  <Bar pct={(h.medianResponseHours / maxMed) * 100} color={h.medianResponseHours <= 2 ? '#3DDC97' : '#FF5D73'} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="card">
+          <div className="ph"><div><h3>Volume by Hub</h3><small>Escalations raised · top 8 hubs</small></div></div>
+          {hubsVol.length === 0 ? <div className="empty">No hub escalations yet</div> : (
+            <div className="lst">
+              {hubsVol.map((h) => (
+                <div key={h.hub}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{h.hub}</span><b>{fmtN(h.total)}</b></div>
+                  <Bar pct={(h.total / maxVol) * 100} color="#F8C800" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid g3">

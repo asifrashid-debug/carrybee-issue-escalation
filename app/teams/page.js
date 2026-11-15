@@ -25,6 +25,10 @@ export default function TeamPerformance() {
   const perMember = teams.filter((t) => t.issuesPerMember != null);
   const avgPerMember = perMember.length ? Math.round((perMember.reduce((a, t) => a + t.issuesPerMember, 0) / perMember.length) * 10) / 10 : null;
   const k = data.kpi;
+  // Demo order: issues raised and breaches by team (real data).
+  const teamsByIssues = [...teams].sort((a, b) => b.issues - a.issues || a.team.localeCompare(b.team));
+  const maxTeamIssues = Math.max(1, ...teams.map((t) => t.issues));
+  const maxTeamBreaches = Math.max(1, ...teams.map((t) => t.breaches || 0));
   const weeks = data.weeks || [];
 
   const teamCard = (t, i) => {
@@ -80,6 +84,33 @@ export default function TeamPerformance() {
         <Kpi label="Top team" value={<>{top ? fmtN(top.issues) : '—'} <small>{top?.team || ''}</small></>} sub="Most escalations raised" icon="trophy" tone="g" />
         <Kpi label="Issues per member" value={avgPerMember ?? '—'} sub="Average across teams" icon="trophy" tone="p" />
       </div>
+
+      {teams.length > 0 && (
+        <div className="grid g2">
+          <div className="card">
+            <div className="ph"><div><h3>Issues Raised by Team</h3><small>All escalations raised by each team's members</small></div></div>
+            <div className="lst">
+              {teamsByIssues.map((t) => (
+                <div key={t.team}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{t.team}</span><b>{fmtN(t.issues)}</b></div>
+                  <Bar pct={(t.issues / maxTeamIssues) * 100} color="#F8C800" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="ph"><div><h3>Breaches by Team</h3><small>Lower is better</small></div></div>
+            <div className="lst">
+              {teamsByIssues.map((t) => (
+                <div key={t.team}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{t.team}</span><b className={t.breaches ? 'bad' : 'good'}>{fmtN(t.breaches || 0)}</b></div>
+                  <Bar pct={((t.breaches || 0) / maxTeamBreaches) * 100} color="#FF5D73" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {teams.length === 0 ? (
         <div className="card"><div className="empty"><b>No teams yet</b>Team membership comes from users_roles.</div></div>
