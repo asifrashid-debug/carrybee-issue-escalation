@@ -163,7 +163,7 @@ export default function HubPerformance() {
             <div key={z} className="card" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
               <div style={{ width: 130, flex: '0 0 130px' }}><Gauge value={score ?? 0} color={ZONE_COLOR[z]} center={score == null ? '—' : `${score}%`} sub="score" w={130} /></div>
               <div>
-                <b style={{ fontSize: 15, color: ZONE_COLOR[z] }}>● {z} Zone</b>
+                <b style={{ fontSize: 15 }}><span aria-hidden="true" style={{ color: ZONE_COLOR[z] }}>● </span>{z} Zone</b>
                 <div className="ks">{zh.length} hubs · {fmtN(open)} open · {fmtN(br)} breached</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                   {Object.entries(grades).filter(([, n]) => n > 0).map(([g, n]) => <span key={g} className={`pillc p-${g}`}>{g} × {n}</span>)}

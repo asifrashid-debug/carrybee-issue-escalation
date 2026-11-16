@@ -126,7 +126,7 @@ export default function Analytics() {
             {data.zones.map((z) => (
               <div key={z.zone} className="lrow" style={{ display: 'block' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <b style={{ color: ZONE_COLOR[z.zone] }}>● {z.zone}</b>
+                  <b><span aria-hidden="true" style={{ color: ZONE_COLOR[z.zone] }}>● </span>{z.zone}</b>
                   <b className={z.responseSlaPct == null ? '' : z.responseSlaPct >= 90 ? 'good' : z.responseSlaPct >= 75 ? 'warn' : 'bad'}>{fmtPct(z.responseSlaPct)} SLA</b>
                 </div>
                 <Bar pct={z.responseSlaPct ?? 0} color={ZONE_COLOR[z.zone]} />

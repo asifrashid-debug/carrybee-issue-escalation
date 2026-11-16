@@ -82,7 +82,7 @@ export default function Dashboard() {
           <div className="lst" style={{ marginTop: 10 }}>
             {data.zones.map((z) => (
               <div key={z.zone} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, gap: 8, flexWrap: 'wrap' }}>
-                <b style={{ color: ZONE_COLOR[z.zone] || '#FFCC00' }}>● {z.zone} Zone</b>
+                <b><span aria-hidden="true" style={{ color: ZONE_COLOR[z.zone] || '#FFCC00' }}>● </span>{z.zone} Zone</b>
                 <span>{fmtN(z.open)} open · {fmtN(z.resolved)} resolved · <span className={z.breaches ? 'bad' : ''}>{fmtN(z.breaches)} breached</span></span>
               </div>
             ))}
