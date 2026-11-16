@@ -5,7 +5,8 @@ import { pickWriteBlock, pickJustifyDueFrom, PICK_JUSTIFICATION_LIMIT } from '..
 export const dynamic = 'force-dynamic';
 
 // POST { justification } — a CM member explains a missed or late pick. Asked twice; each has a 24h window.
-export async function POST(req, { params }) {
+export async function POST(req, ctx) {
+  const params = await ctx.params;
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const body = await req.json().catch(() => ({}));
   const text = String(body.justification || '').trim();

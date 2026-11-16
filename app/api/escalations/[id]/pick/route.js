@@ -6,7 +6,8 @@ import { requireUser } from '../../../../../lib/session';
 import { pickBlock } from '../../../../../lib/pickSla';
 import { loadScope, isVisible } from '../../../../../lib/visibility';
 export const dynamic = 'force-dynamic';
-export async function POST(req, { params }) {
+export async function POST(req, ctx) {
+  const params = await ctx.params;
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const sb = supabaseAdmin();
   const actor = session.email;

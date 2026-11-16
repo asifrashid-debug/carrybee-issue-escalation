@@ -5,7 +5,8 @@ import { feedbackPhase, isFeedbackOwner, windowEndFrom, JUSTIFICATION_LIMIT } fr
 export const dynamic = 'force-dynamic';
 
 // POST { justification } — owner explains a missed 24h feedback window. Each one reopens a new 24h window (max 2).
-export async function POST(req, { params }) {
+export async function POST(req, ctx) {
+  const params = await ctx.params;
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const body = await req.json().catch(() => ({}));
   const text = String(body.justification || '').trim();

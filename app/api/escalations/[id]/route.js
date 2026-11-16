@@ -13,7 +13,8 @@ const LAYER_FIELDS = ['layer1_response','layer2_response','layer3_response'];
 const OPS_FIELDS = [...LAYER_FIELDS,'ops_issue_status','remarks','regional_lead','division','ops_status','validation','ops_category'];
 const REQUESTER_PREPICK = ['issue_details','issue_category','issue_sub_category']; // priority is derived from the sub category
 const REQUESTER_POSTPICK = ['issue_status']; // KAM feedback has its own rules below
-export async function PATCH(req, { params }) {
+export async function PATCH(req, ctx) {
+  const params = await ctx.params;
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const sb = supabaseAdmin();
   const id = params.id;
@@ -96,7 +97,8 @@ export async function PATCH(req, { params }) {
   }
   return NextResponse.json({ data });
 }
-export async function GET(req, { params }) {
+export async function GET(req, ctx) {
+  const params = await ctx.params;
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const sb = supabaseAdmin();
   const { data: esc } = await sb.from('escalations').select('*').eq('issue_id', params.id).single();

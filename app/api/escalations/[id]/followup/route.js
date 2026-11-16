@@ -7,7 +7,8 @@ import { loadScope, isVisible } from '../../../../../lib/visibility';
 export const dynamic = 'force-dynamic';
 
 // GET: current follow-up plan for an issue (KAM + CM levels, due times, status).
-export async function GET(_req, { params }) {
+export async function GET(_req, ctx) {
+  const params = await ctx.params;
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const sb = supabaseAdmin();
   const [{ data: esc }, { data: fus }] = await Promise.all([
@@ -20,7 +21,8 @@ export async function GET(_req, { params }) {
 }
 
 // POST { level: 0 | 1 | 2 | 3, actor_email }  (0 = KAM followup, 1..3 = CM followups)
-export async function POST(req, { params }) {
+export async function POST(req, ctx) {
+  const params = await ctx.params;
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const body = await req.json().catch(() => ({}));
   const level = Number(body.level);
