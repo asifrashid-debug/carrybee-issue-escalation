@@ -15,7 +15,7 @@ export default function Dashboard() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead kicker="Command centre" title="Operations Command Centre" sub="All teams and zones, scoped to your access" />
+        <PageHead kicker="Dashboard · 14 days" title="Operations overview" sub="All teams and zones, scoped to your access" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -37,7 +37,7 @@ export default function Dashboard() {
 
   return (
     <div className="dm">
-      <PageHead kicker="Command centre" title="Operations Command Centre" sub={`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}>
+      <PageHead kicker="Dashboard · 14 days" title="Operations overview" sub={`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}>
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
       </PageHead>

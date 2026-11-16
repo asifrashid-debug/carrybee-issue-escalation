@@ -12,7 +12,7 @@ export default function TeamPerformance() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead kicker="Teams" title="Team Performance" sub="Team and member scorecards" />
+        <PageHead kicker="Team performance · 14 days" title="Team performance" sub="Team and member scorecards" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -69,7 +69,7 @@ export default function TeamPerformance() {
 
   return (
     <div className="dm">
-      <PageHead kicker="Teams" title="Team Performance" sub="Team and member scorecards · issues raised by each team's members · same scope as the tracker">
+      <PageHead kicker="Team performance · 14 days" title="Team performance" sub="Team and member scorecards · issues raised by each team's members · same scope as the tracker">
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
       </PageHead>

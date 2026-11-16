@@ -31,7 +31,7 @@ export default function HubPerformance() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead kicker="Hubs" title="HUB Performance" sub="Hub-level scorecards ranked by first-comment SLA" />
+        <PageHead kicker="HUB performance · 14 days" title="Hub performance" sub="Hub-level scorecards ranked by first-comment SLA" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -60,7 +60,7 @@ export default function HubPerformance() {
 
   return (
     <div className="dm">
-      <PageHead kicker="Hubs" title="HUB Performance" sub={`${fmtN(data.hubCount.withIssues)} hubs with escalations, of ${fmtN(data.hubCount.active)} active · ranked by first-comment SLA · all escalations in your scope`}>
+      <PageHead kicker="HUB performance · 14 days" title="Hub performance" sub={`${fmtN(data.hubCount.withIssues)} hubs with escalations, of ${fmtN(data.hubCount.active)} active · ranked by first-comment SLA · all escalations in your scope`}>
         <Seg label="Zone" items={['All Zones', ...ZONES]} value={zone} onChange={setZone} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />

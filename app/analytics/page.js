@@ -13,7 +13,7 @@ export default function Analytics() {
   if (!data) {
     return (
       <div className="dm">
-        <PageHead kicker="Insights" title="Analytics & Insights" sub="Trend, distribution, SLA funnel and operational patterns" />
+        <PageHead kicker="Analytics · 14 days" title="Escalation analytics" sub="Trend, distribution, SLA funnel and operational patterns" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -33,7 +33,7 @@ export default function Analytics() {
 
   return (
     <div className="dm">
-      <PageHead kicker="Insights" title="Analytics & Insights" sub={`Trend, distribution, SLA funnel and operational patterns · last 14 days · ${busiest ? `busiest zone ${busiest.zone}` : ''}`}>
+      <PageHead kicker="Analytics · 14 days" title="Escalation analytics" sub={`Trend, distribution, SLA funnel and operational patterns · last 14 days · ${busiest ? `busiest zone ${busiest.zone}` : ''}`}>
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
       </PageHead>
