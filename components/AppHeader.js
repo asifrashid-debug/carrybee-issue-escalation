@@ -38,14 +38,13 @@ const BOTTOM = [
   { tab: 'hubs', label: 'Hubs', href: '/hubs', icon: P.pin },
 ];
 
-// Top bar: logo left; clock, notifications, theme and sign-out on the right.
+// Top bar: logo left; notifications, theme and sign-out on the right. Plain bar.
 // Folder tabs sit under the bar on wide screens. On phones they become a bottom bar with More.
 export default function AppHeader() {
   const path = usePathname() || '/';
   const activeTab = tabForPath(path);
   // Light is the default. A saved choice (localStorage 'cb-theme') overrides it.
   const [theme, setTheme] = useState('light');
-  const [clock, setClock] = useState('');
   const [me, setMe] = useState(null);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -62,11 +61,6 @@ export default function AppHeader() {
 
   useEffect(() => {
     setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
-    const fmtTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit' });
-    const tick = () => setClock(fmtTime.format(new Date()));
-    tick();
-    const t = setInterval(tick, 30000);
-    return () => clearInterval(t);
   }, []);
 
   function toggleTheme() {
@@ -98,7 +92,6 @@ export default function AppHeader() {
         </div>
 
         <div className="tools">
-          <span className="live"><span className="dot" aria-hidden="true" />Dhaka {clock || '—'}</span>
           {links.length > 0 && <NotificationBell />}
           <button type="button" className="ibtn" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'}>
             <Icon path={theme === 'light' ? P.moon : P.sun} />
