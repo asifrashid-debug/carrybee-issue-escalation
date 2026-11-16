@@ -326,11 +326,14 @@ export default function Tracker() {
   const moreOn = moreOpts.some((o) => o.key === activeKey) ? activeKey : '';
   const pages = Math.max(1, Math.ceil(list.count / PAGE));
 
+  // Past SLA: change vs a week ago and a 14-day spark, from live data (same rules as the breach count).
+  const bt = stats?.breachTrend;
+  const btDelta = bt ? (bt.delta > 0 ? `+${fmtN(bt.delta)} vs last week` : bt.delta < 0 ? `−${fmtN(-bt.delta)} vs last week` : 'No change vs last week') : null;
   const kpiItems = [
     { label: 'Open escalations', value: fmtN(k?.open), sub: stats ? zoneOpen : '…', icon: 'escalation' },
     { label: 'Unpicked queue', value: fmtN(k?.unpicked), sub: 'waiting for hub pick', icon: 'pick' },
     { label: 'Awaiting first response', value: fmtN(k?.awaitingResponse), sub: 'open, no comment yet', icon: 'sla' },
-    { label: 'Past SLA', value: fmtN(k?.breaches), sub: 'breaches in scope', icon: 'breach', good: false },
+    { label: 'Past SLA', value: fmtN(k?.breaches), sub: 'breaches in scope', icon: 'breach', delta: btDelta, spark: bt?.daily, good: bt ? bt.delta <= 0 : false },
   ];
   const kpiHtml = kpiStrip(kpiItems);
   const pieHtml = pie({ segments: priRows.map((p) => ({ value: p.open, color: p.color })), size: 120 });
