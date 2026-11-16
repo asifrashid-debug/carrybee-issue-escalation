@@ -1,7 +1,8 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { useAnalytics } from '../../components/useAnalytics';
-import { PageHead, Kpi, Seg, LiveChip, Ring, Bar, GradePill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
+import { PageHead, Kpi, Seg, LiveChip, Bar, GradePill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
+import { HBars, Gauge } from '../../components/charts';
 import { formatDhaka } from '../../lib/time';
 
 const ZONE_COLOR = { ISD: '#F8C800', OSD: '#3B9CFF', CTG: '#A78BFA' };
@@ -30,7 +31,7 @@ export default function HubPerformance() {
 
   if (!data) {
     return (
-      <div className="dm">
+      <div className="dm dchart">
         <PageHead kicker="HUB performance · 14 days" title="Hub performance" sub="Hub-level scorecards ranked by first-comment SLA" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
@@ -79,27 +80,13 @@ export default function HubPerformance() {
         <div className="card">
           <div className="ph"><div><h3>Median First Comment by Hub</h3><small>Top 6 hubs by volume · target 2h</small></div></div>
           {hubsMed.length === 0 ? <div className="empty">No first comments yet</div> : (
-            <div className="lst">
-              {hubsMed.map((h) => (
-                <div key={h.hub}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{h.hub}</span><b className={h.medianResponseHours <= 2 ? 'good' : 'bad'}>{fmtH(h.medianResponseHours)}</b></div>
-                  <Bar pct={(h.medianResponseHours / maxMed) * 100} color={h.medianResponseHours <= 2 ? '#3DDC97' : '#FF5D73'} />
-                </div>
-              ))}
-            </div>
+            <HBars format={(v) => fmtH(v)} rows={hubsMed.map((h) => ({ label: h.hub, value: h.medianResponseHours, color: h.medianResponseHours <= 2 ? '#0A7A56' : '#FF5470' }))} />
           )}
         </div>
         <div className="card">
           <div className="ph"><div><h3>Volume by Hub</h3><small>Escalations raised · top 8 hubs</small></div></div>
           {hubsVol.length === 0 ? <div className="empty">No hub escalations yet</div> : (
-            <div className="lst">
-              {hubsVol.map((h) => (
-                <div key={h.hub}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{h.hub}</span><b>{fmtN(h.total)}</b></div>
-                  <Bar pct={(h.total / maxVol) * 100} color="#F8C800" />
-                </div>
-              ))}
-            </div>
+            <HBars rows={hubsVol.map((h) => ({ label: h.hub, value: h.total, color: '#FFCC00' }))} />
           )}
         </div>
       </div>
@@ -174,7 +161,7 @@ export default function HubPerformance() {
           zh.forEach((h) => { const g = h.responseSlaPct == null ? null : h.responseSlaPct >= 90 ? 'A' : h.responseSlaPct >= 75 ? 'B' : h.responseSlaPct >= 50 ? 'C' : 'D'; if (g) grades[g]++; });
           return (
             <div key={z} className="card" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <Ring pct={score} color={ZONE_COLOR[z]} />
+              <div style={{ width: 130, flex: '0 0 130px' }}><Gauge value={score ?? 0} color={ZONE_COLOR[z]} center={score == null ? '—' : `${score}%`} sub="score" w={130} /></div>
               <div>
                 <b style={{ fontSize: 15, color: ZONE_COLOR[z] }}>● {z} Zone</b>
                 <div className="ks">{zh.length} hubs · {fmtN(open)} open · {fmtN(br)} breached</div>

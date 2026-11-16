@@ -130,7 +130,7 @@ export function BarChart({ items = [], w = 320, h = 200, label = 'Bar chart' }) 
 }
 
 // Horizontal bars (HTML): label, track, value.
-export function HBars({ rows = [], color = '#111216' }) {
+export function HBars({ rows = [], color = '#111216', format = fmt }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   if (!rows.length) return <div className="empty">No data in this range</div>;
   return rows.map((r) => (
@@ -139,7 +139,7 @@ export function HBars({ rows = [], color = '#111216' }) {
       <div className="track">
         <div className="fill" style={{ width: `${((r.value / max) * 100).toFixed(1)}%`, background: r.color || color }} />
       </div>
-      <b>{fmt(r.value)}</b>
+      <b>{format(r.value)}</b>
     </div>
   ));
 }
@@ -222,5 +222,30 @@ export function DLegend({ items = [] }) {
         </span>
       ))}
     </div>
+  );
+}
+
+// Mini wave for KPI cards: no axes (demo spark).
+export function Spark({ data = [], color = '#0A7A56' }) {
+  if (!data || data.length < 2) return null;
+  const W = 160;
+  const H = 40;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const span = max - min || 1;
+  const pts = data.map((v, i) => [(i * W) / (data.length - 1), 4 + (H - 8) * (1 - (v - min) / span)]);
+  const d = smooth(pts);
+  const uid = useId().replace(/:/g, '');
+  return (
+    <svg className="spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={uid} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor={color} stopOpacity=".25" />
+          <stop offset="1" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${d} L${W},${H} L0,${H} Z`} fill={`url(#${uid})`} />
+      <path d={d} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

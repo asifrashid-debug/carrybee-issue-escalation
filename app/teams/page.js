@@ -1,6 +1,7 @@
 'use client';
 import { useAnalytics } from '../../components/useAnalytics';
 import { PageHead, Kpi, Seg, LiveChip, Bar, fmtN, fmtPct, fmtH } from '../../components/demo';
+import { HBars } from '../../components/charts';
 import { formatDhaka } from '../../lib/time';
 
 const PALETTE = ['#F8C800', '#3B9CFF', '#A78BFA', '#3DDC97', '#FF9F1C', '#FF5D73', '#7DD3FC'];
@@ -11,7 +12,7 @@ export default function TeamPerformance() {
 
   if (!data) {
     return (
-      <div className="dm">
+      <div className="dm dchart">
         <PageHead kicker="Team performance · 14 days" title="Team performance" sub="Team and member scorecards" />
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
@@ -87,25 +88,11 @@ export default function TeamPerformance() {
         <div className="grid g2">
           <div className="card">
             <div className="ph"><div><h3>Issues Raised by Team</h3><small>All escalations raised by each team's members</small></div></div>
-            <div className="lst">
-              {teamsByIssues.map((t) => (
-                <div key={t.team}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{t.team}</span><b>{fmtN(t.issues)}</b></div>
-                  <Bar pct={(t.issues / maxTeamIssues) * 100} color="#F8C800" />
-                </div>
-              ))}
-            </div>
+            <HBars rows={teamsByIssues.map((t) => ({ label: t.team, value: t.issues, color: '#FFCC00' }))} />
           </div>
           <div className="card">
             <div className="ph"><div><h3>Breaches by Team</h3><small>Lower is better</small></div></div>
-            <div className="lst">
-              {teamsByIssues.map((t) => (
-                <div key={t.team}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{t.team}</span><b className={t.breaches ? 'bad' : 'good'}>{fmtN(t.breaches || 0)}</b></div>
-                  <Bar pct={((t.breaches || 0) / maxTeamBreaches) * 100} color="#FF5D73" />
-                </div>
-              ))}
-            </div>
+            <HBars rows={teamsByIssues.map((t) => ({ label: t.team, value: t.breaches || 0, color: '#FF5470' }))} />
           </div>
         </div>
       )}

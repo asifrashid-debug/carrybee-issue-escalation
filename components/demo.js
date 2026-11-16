@@ -1,5 +1,6 @@
 'use client';
 import { useId } from 'react';
+import { Spark } from './charts';
 
 // Shared building blocks for the v7 page layout (ported from the v5 demo).
 // Every page wraps its markup in <div className="dm"> so the demo styles in app/demo.css apply only there.
@@ -45,7 +46,7 @@ export function LiveChip({ label }) {
 }
 
 // KPI card. `value` may be a node (e.g. <>84.2<small>%</small></>).
-export function Kpi({ label, value, sub, icon, tone = '', hot = false }) {
+export function Kpi({ label, value, sub, icon, tone = '', hot = false, spark = null }) {
   return (
     <div className={`card ${hot ? 'hot' : ''}`}>
       <div className="kl">
@@ -54,6 +55,7 @@ export function Kpi({ label, value, sub, icon, tone = '', hot = false }) {
       </div>
       <div className="kv">{value}</div>
       {sub && <div className="ks">{sub}</div>}
+      {spark && spark.length > 1 && <Spark data={spark} color={tone === 'r' ? '#FF5470' : '#0A7A56'} />}
     </div>
   );
 }

@@ -35,3 +35,6 @@ html[data-theme="dark"] .dchart { --grid: #1C1F25; --track: #22252C; --chart-bg:
 .dchart .card-h h2 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -.005em; }
 .dchart .card-h small { color: var(--mut); font-size: 12px; }
 .dchart.mt, .dchart .mt { margin-top: 16px; }
+
+/* KPI sparkline (demo) */
+.dchart .spark { width: 100%; height: 40px; display: block; margin-top: 8px; }
