@@ -11,5 +11,8 @@ export async function GET() {
     sb.from('users_roles').select('*').eq('is_active', true).order('email'),
     sb.from('app_config').select('*')
   ]);
-  return NextResponse.json({ hubs: hubs||[], categories: cats||[], users: users||[], config: cfg||[] });
+  // Hubs and categories are needed by the KAM and MX forms, so every signed-in role gets them.
+  // The user list and app settings are admin-only.
+  const isAdmin = session.role === 'admin';
+  return NextResponse.json({ hubs: hubs||[], categories: cats||[], users: isAdmin ? (users||[]) : [], config: isAdmin ? (cfg||[]) : [] });
 }
