@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useAnalytics } from '../../components/useAnalytics';
-import { PageHead, Kpi, Seg, LiveChip, Ring, Legend, Bar, Donut, LineChart, PriPill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
+import { PageHead, Kpi, Seg, LiveChip, PriPill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
+import { WaveChart, BarChart, HBars, Donut as DonutChart, Gauge, DLegend } from '../../components/charts';
 import { formatDhaka } from '../../lib/time';
 import { teamActions, LAG_SCORE, IMPROVE_POINTS } from '../../lib/teamGuidance';
 
-const ZONE_COLOR = { ISD: '#F8C800', OSD: '#3B9CFF', CTG: '#A78BFA' };
-const PRI_COLOR = { P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' };
+const ZONE_COLOR = { ISD: '#FFCC00', OSD: '#37A9FF', CTG: '#A78BFA' };
+const PRI_COLOR = { P1: '#FF5470', P2: '#FFCC00', P3: '#00E5A0', P4: '#A3A1A8' };
 
 // Operations Command Centre (demo layout). Exception-first: SLA breaches, owners and next actions.
 export default function Dashboard() {
@@ -52,48 +53,51 @@ export default function Dashboard() {
         <Kpi label="Resolved" value={fmtN(k.resolved)} sub={`${fmtPct(k.resolvedPct)} resolution rate`} icon="check" tone="g" />
       </div>
 
-      <div className="card only-desk">
-          <div className="ph">
-            <div><h3>Escalation Flow</h3><small>Daily intake, pick and first comment · last 14 days (Dhaka)</small></div>
-            <Legend items={[['Submitted', '#F8C800'], ['Picked', '#3B9CFF'], ['Responded', '#3DDC97']]} />
-          </div>
-          <LineChart
-            labels={data.trend.map((d) => d.date.slice(5).split('-').reverse().join(' '))}
-            series={[
-              { data: data.trend.map((d) => d.submitted), color: '#F8C800', fill: 1 },
-              { data: data.trend.map((d) => d.picked), color: '#3B9CFF', fill: 1 },
-              { data: data.trend.map((d) => d.responded), color: '#3DDC97', fill: 1 },
-            ]}
-            max={maxFlow}
-            h={250}
+      <div className="card only-desk dchart mt">
+        <div className="card-h">
+          <div><h2>Escalation flow</h2><small>Submitted, picked and first response · last 14 days · Asia/Dhaka</small></div>
+          <DLegend items={[{ c: '#08090B', l: 'Submitted' }, { c: '#37A9FF', l: 'Picked' }, { c: '#0A7A56', l: 'Responded' }]} />
+        </div>
+        <WaveChart
+          label="Escalation flow"
+          labels={data.trend.map((d) => d.date.slice(5).split('-').reverse().join(' '))}
+          every={1}
+          h={250}
+          series={[
+            { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0.1 },
+            { data: data.trend.map((d) => d.picked), color: '#37A9FF', fillOpacity: 0.12 },
+            { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.18 },
+          ]}
+        />
+      </div>
+
+      <div className="grid g3 only-desk mt dchart">
+        <div className="card">
+          <div className="card-h"><div><h2>Open by zone</h2><small>Open backlog per zone</small></div></div>
+          <BarChart
+            label="Open by zone"
+            h={200}
+            items={data.zones.map((z) => ({ label: z.zone, value: z.open, color: ZONE_COLOR[z.zone] || '#FFCC00' }))}
           />
+          <div className="lst" style={{ marginTop: 10 }}>
+            {data.zones.map((z) => (
+              <div key={z.zone} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, gap: 8, flexWrap: 'wrap' }}>
+                <b style={{ color: ZONE_COLOR[z.zone] || '#FFCC00' }}>● {z.zone} Zone</b>
+                <span>{fmtN(z.open)} open · {fmtN(z.resolved)} resolved · <span className={z.breaches ? 'bad' : ''}>{fmtN(z.breaches)} breached</span></span>
+              </div>
+            ))}
+          </div>
         </div>
 
-      <div className="grid g3 only-desk">
-        <div className="card only-desk">
-          <div className="ph"><div><h3>Open by Zone</h3><small>Share of open backlog · resolved and breached per zone</small></div></div>
-          <div className="lst">
-            {data.zones.map((z) => {
-              const color = ZONE_COLOR[z.zone] || '#F8C800';
-              return (
-                <div key={z.zone}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, gap: 8, flexWrap: 'wrap' }}>
-                    <b style={{ color }}>● {z.zone} Zone</b>
-                    <span>{fmtN(z.open)} open · {fmtN(z.resolved)} resolved · <span className={z.breaches ? 'bad' : ''}>{fmtN(z.breaches)} breached</span></span>
-                  </div>
-                  <Bar pct={pct(z.open, k.open)} color={color} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
         <div className="card">
-          <div className="ph"><div><h3>Priority Mix</h3><small>All escalations in scope</small></div></div>
+          <div className="card-h"><div><h2>Priority mix</h2><small>open</small></div></div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
-            <Donut
-              segments={data.priorities.map((p) => ({ label: p.label, value: p.total, color: PRI_COLOR[p.label] }))}
-              center={fmtN(k.total)}
-              sub="escalations"
+            <DonutChart
+              segments={data.priorities.map((p) => ({ label: p.label, value: p.open, color: PRI_COLOR[p.label] || '#A3A1A8' }))}
+              center={fmtN(k.open)}
+              sub="open"
+              size={140}
+              stroke={18}
             />
             <div className="lst" style={{ flex: '1 1 180px', minWidth: 0 }}>
               {data.priorities.map((p) => (
@@ -109,27 +113,22 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <div className="ph"><div><h3>Top Issue Categories</h3><small>Highest volume drivers</small></div></div>
+          <div className="card-h"><div><h2>Top categories</h2><small>Highest volume drivers</small></div></div>
           {data.categories.length === 0 ? <div className="empty">No categories yet</div> : (
-            <div className="lst">
-              {data.categories.map((c) => (
-                <div key={c.label}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{c.label}</span><b>{fmtN(c.count)}</b></div>
-                  <Bar pct={(c.count / maxCat) * 100} color="#F8C800" />
-                </div>
-              ))}
-            </div>
+            <HBars rows={data.categories.map((c) => ({ label: c.label, value: c.count }))} color="#111216" />
           )}
         </div>
       </div>
 
       <div className="grid g2">
-        <div className="card">
-          <div className="ph"><div><h3>Operational Health</h3><small>Rolling compliance</small></div></div>
+        <div className="card dchart">
+          <div className="card-h"><div><h2>Operational health</h2><small>target met</small></div></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
-            <Ring pct={k.responseSlaPct} color="#F8C800" label="SLA" sub="Comment ≤ 2h" />
-            <Ring pct={k.pickSlaPct} color="#3B9CFF" label="Picked" sub="Pick ≤ 4h" />
-            <Ring pct={k.resolvedPct} color="#3DDC97" label="Resolved" />
+            {[['SLA ≤ 2h', k.responseSlaPct], ['Picked ≤ 4h', k.pickSlaPct], ['Resolved', k.resolvedPct]].map(([sub, v]) => (
+              <div key={sub} className="dchart" style={{ textAlign: 'center' }}>
+                <Gauge value={v ?? 0} color={(v ?? 0) >= 85 ? '#0A7A56' : '#FFCC00'} center={v == null ? '—' : `${v}%`} sub={sub} w={150} />
+              </div>
+            ))}
           </div>
           <div className="grid g2e" style={{ marginTop: 14, gap: 10 }}>
             <div className="card hot" style={{ padding: 12 }}><div className="kl">P1 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--bad)' }}>{fmtN(k.p1Open)}</div></div>

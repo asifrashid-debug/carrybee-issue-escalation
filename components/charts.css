@@ -1,0 +1,37 @@
+/* Chart styling from the approved demo. Scoped to .dchart so no other page changes. */
+.dchart { --grid: #EEECE6; --track: #EFEDE7; --chart-bg: #FFFFFF; }
+html[data-theme="dark"] .dchart { --grid: #1C1F25; --track: #22252C; --chart-bg: #111317; }
+
+.dchart .chart { width: 100%; height: auto; display: block; overflow: visible; }
+.dchart .chart .gl { stroke: var(--grid); stroke-width: 1; }
+.dchart .chart .ax { font: 500 10.5px var(--font-sans, Inter, system-ui, sans-serif); fill: var(--mut); }
+.dchart .chart .val { font: 600 11px var(--font-sans, Inter, system-ui, sans-serif); fill: var(--text); }
+.dchart .chart .base { stroke: var(--line); stroke-width: 1; }
+.dchart .chart .gv { font: 700 26px var(--font-sans, Inter, system-ui, sans-serif); fill: var(--text); }
+.dchart .chart .dot-ring { stroke: var(--chart-bg); }
+
+.dchart .dlegend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--mut); }
+.dchart .dlegend span { display: inline-flex; align-items: center; gap: 6px; }
+.dchart .dlegend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+
+.dchart .hbar { display: grid; grid-template-columns: 112px 1fr 40px; align-items: center; gap: 12px; margin: 10px 0; font-size: 13px; }
+.dchart .hbar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dchart .hbar .track { height: 8px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.dchart .hbar .fill { height: 100%; border-radius: 99px; }
+.dchart .hbar b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+@media (max-width: 600px) { .dchart .hbar { grid-template-columns: 96px 1fr 36px; } }
+
+.dchart .donut { position: relative; width: max-content; }
+.dchart .donut svg { display: block; }
+.dchart .donut .donut-track { stroke: var(--track); }
+.dchart .donut .dc { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.dchart .donut .dc b { font: 700 24px var(--font-sans, Inter, system-ui, sans-serif); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.dchart .donut .dc span { font-size: 11px; color: var(--mut); }
+
+.dchart .gauge-track { stroke: rgba(128, 128, 128, .14); }
+
+/* Card header and spacing from the demo (scoped) */
+.dchart .card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.dchart .card-h h2 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -.005em; }
+.dchart .card-h small { color: var(--mut); font-size: 12px; }
+.dchart.mt, .dchart .mt { margin-top: 16px; }
