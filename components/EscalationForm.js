@@ -73,7 +73,7 @@ export default function EscalationForm({ channel }) {
     const token = {};
     hubReq.current = token;
     lastLookup.current = parcel;
-    setHubLookup({ state: 'loading', message: 'Finding hub in Hive…' });
+    setHubLookup({ state: 'loading', message: 'Finding hub…' });
     const r = await requestHubLookup(parcel, { win: window, origin: window.location.origin });
     if (hubReq.current !== token) return; // a newer lookup replaced this one
     if (consRef.current !== parcel) { setHubLookup({ state: 'idle', message: '' }); return; } // the ID changed while waiting
@@ -84,7 +84,7 @@ export default function EscalationForm({ channel }) {
         set('concern_hub', m.hub.hub_name);
         setHubAuto({ hub_name: m.hub.hub_name });
         setHubConfirmed(false);
-        setHubLookup({ state: 'confirm', message: `Found in Hive: ${m.hub.hub_name}. Confirm zone and hub before you submit.` });
+        setHubLookup({ state: 'confirm', message: `Found: ${m.hub.hub_name}. Confirm zone and hub before you submit.` });
       } else {
         setHubLookup({ state: 'manual', message: NO_UNIQUE_MATCH_MESSAGE });
       }
@@ -126,7 +126,7 @@ export default function EscalationForm({ channel }) {
 
   const parcelOk = isValidParcelId(form.consignment_id);
   const findHint = !form.consignment_id.trim()
-    ? 'Enter a Consignment ID. The hub is found in Hive automatically.'
+    ? 'Enter a Consignment ID. The hub is found automatically.'
     : !parcelOk
       ? 'Use only letters, numbers, dashes and underscores (up to 80 characters).'
       : masters.hubs.length === 0 ? 'Loading hubs…' : '';
@@ -219,7 +219,7 @@ export default function EscalationForm({ channel }) {
             </div>
             {hub && <div className="full" style={{ fontSize: 12, color: 'var(--mut)', fontWeight: 600 }}>Regional lead <b style={{ color: 'var(--ink)' }}>{hub.regional_lead || '—'}</b> · Cluster lead <b style={{ color: 'var(--ink)' }}>{hub.cluster_lead || '—'}</b> · Division <b style={{ color: 'var(--ink)' }}>{hub.division || '—'}</b></div>}
             <div className="full" aria-live="polite">
-              {hubLookup.state === 'loading' && <div className="hint">Finding hub in Hive…</div>}
+              {hubLookup.state === 'loading' && <div className="hint">Finding hub…</div>}
               {hubLookup.state === 'confirm' && (
                 <div className="box box-ok">
                   {/* Plain text: the hub name comes from the active hub list, never from raw HTML */}

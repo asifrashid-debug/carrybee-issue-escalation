@@ -66,7 +66,7 @@ export default function SyncHealth() {
           <select className="btn" aria-label="Zone" value={zone} onChange={(e) => setZone(e.target.value)} style={{ padding: '8px 12px' }}>
             {ZONES.map((z) => <option key={z}>{z}</option>)}
           </select>
-          <button type="button" className="btn y" onClick={reconcile} disabled={busy}>{busy ? 'Running…' : '⟳ Run reconciliation now'}</button>
+          <button type="button" className="btn y" onClick={reconcile} disabled={busy}>{busy ? 'Running…' : 'Run reconcile'}</button>
         </div>
       </div>
 
