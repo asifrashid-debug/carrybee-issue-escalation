@@ -574,3 +574,28 @@ html, body { -webkit-tap-highlight-color: transparent; }
   .dm .pipe-grid > div:nth-child(odd) { border-left: 0; }
   .dm .pipe-grid > div:nth-child(n+3) { border-top: 1px solid var(--line); }
 }
+
+/* ---------- 24. Login: approved card layout (logic and labels unchanged) ---------- */
+.login-wrap { min-height: 80vh; padding: 32px 0 48px; }
+.lg-card {
+  width: min(440px, 100%); margin: 0 auto; padding: 28px 28px 24px;
+  background: #FFFFFF; border: 1px solid var(--line); border-top: 4px solid var(--y);
+  border-radius: 16px; box-shadow: 0 2px 0 rgba(23,23,28,.04), 0 18px 36px -24px rgba(23,23,28,.28);
+}
+html[data-theme="dark"] .lg-card { background: #16171C; border-color: #2A2B33; border-top-color: var(--y); box-shadow: none; }
+.lg-logo { margin-bottom: 16px; }
+.lg-logo img { height: 36px; width: auto; }
+.lg-kicker { margin-bottom: 6px; }
+.lg-title { margin: 0 0 6px; font-size: 26px; font-weight: 700; letter-spacing: -.03em; line-height: 1.15; }
+.lg-card .meta { margin: 0 0 18px; font-size: 13px; line-height: 1.5; }
+.lg-seg { display: flex; width: 100%; margin-bottom: 16px; }
+.lg-seg button { flex: 1 1 0; min-height: 44px; font-size: 13px; }
+.lg-form { gap: 14px; }
+.lg-card .field { font-size: 12px; }
+.lg-card .inp { min-height: 44px; font-size: 15px; }
+.lg-submit { width: 100%; min-height: 46px; font-size: 15px; margin-top: 4px; }
+.lg-card .box { margin-bottom: 14px; }
+@media (max-width: 480px) {
+  .lg-card { padding: 22px 20px 20px; border-radius: 14px; }
+  .lg-title { font-size: 23px; }
+}
