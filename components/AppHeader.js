@@ -105,7 +105,6 @@ export default function AppHeader() {
           >
             <Icon path={P.out} />
             {me && <b className="ini" aria-hidden="true">{initials(name)}</b>}
-            {me && <span className="role" aria-hidden="true">{me.role}</span>}
           </button>
         </div>
       </header>
