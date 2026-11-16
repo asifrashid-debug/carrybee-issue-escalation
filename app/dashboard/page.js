@@ -1,87 +1,73 @@
 'use client';
 import Link from 'next/link';
+import { useState } from 'react';
 import { useAnalytics } from '../../components/useAnalytics';
-import { PageHead, Kpi, Seg, LiveChip, PriPill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
-import { WaveChart, BarChart, HBars, Donut as DonutChart, Gauge, DLegend } from '../../components/charts';
+import { wave, bars, hbars, donut, gauge, legend, kpiStrip } from '../../components/cw/chartlib';
+import { fmtN, fmtH, fmtPct, PRI_COLOR, ZONE_COLOR, priHTML } from '../../components/cw/format';
 import { formatDhaka } from '../../lib/time';
 import { teamActions, LAG_SCORE, IMPROVE_POINTS } from '../../lib/teamGuidance';
 
-const ZONE_COLOR = { ISD: '#FFCC00', OSD: '#37A9FF', CTG: '#A78BFA' };
-const PRI_COLOR = { P1: '#FF5470', P2: '#FFCC00', P3: '#00E5A0', P4: '#A3A1A8' };
+// Raw HTML from the demo chart and card helpers. Inputs are live values; text is escaped inside the helpers.
+const Html = ({ html, className }) => <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 
-// Operations Command Centre (demo layout). Exception-first: SLA breaches, owners and next actions.
+// Dashboard, demo layout (carrybee-complete-web.html pDash). Every number comes from the live analytics payload.
 export default function Dashboard() {
   const { data, error, loading, reload } = useAnalytics();
+  const [mode, setMode] = useState('desk');
 
   if (!data) {
     return (
-      <div className="dm">
-        <PageHead kicker="Dashboard · 14 days" title="Operations overview" sub="All teams and zones, scoped to your access" />
-        {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
+      <div id="dash">
+        <div className="ph"><div><div className="kicker">Dashboard · 14 days</div><h1>Operations overview</h1><p className="sub">All teams and zones, scoped to your access</p></div></div>
+        {error ? <div className="card" role="alert"><b>Could not load data.</b> {error}</div> : <div className="card">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
   }
 
   const k = data.kpi;
-  const hubsByBreach = data.hubs.filter((h) => h.breaches > 0).sort((a, b) => b.breaches - a.breaches || a.hub.localeCompare(b.hub));
-  // Team guidance: actions per team with named owners, plus who is lagging and who is improving.
-  const guide = teamActions(data.teams || []);
-  const actions = guide.actions;
-  const standing = guide.standing;
   const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
-  const maxFlow = Math.max(4, ...data.trend.flatMap((d) => [d.submitted, d.picked, d.responded]));
-  // Week on week change in submitted escalations, from the live 14-day trend (needs both halves)
+  const hubsByBreach = data.hubs.filter((h) => h.breaches > 0).sort((a, b) => b.breaches - a.breaches || a.hub.localeCompare(b.hub));
+  const guide = teamActions(data.teams || []);
+  const { actions, standing } = guide;
+  // Week on week change in submitted escalations, from the live 14-day trend.
   const wkNow = data.trend.length >= 14 ? data.trend.slice(-7).reduce((a, d) => a + d.submitted, 0) : null;
   const wkPrev = data.trend.length >= 14 ? data.trend.slice(0, 7).reduce((a, d) => a + d.submitted, 0) : null;
   const wkPct = wkPrev ? Math.round(((wkNow - wkPrev) / wkPrev) * 100) : null;
-  const maxCat = Math.max(1, ...data.categories.map((c) => c.count));
+  const labels = data.trend.map((d) => d.date.slice(5).split('-').reverse().join(' '));
+  const flowSeries = [
+    { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0.1 },
+    { data: data.trend.map((d) => d.picked), color: '#37A9FF', fillOpacity: 0.12 },
+    { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.18 },
+  ];
+  const zoneItems = data.zones.map((z) => ({ label: z.zone, value: z.open, color: ZONE_COLOR[z.zone] || '#FFCC00' }));
+  const priSegs = data.priorities.map((p) => ({ label: p.label, value: p.open, color: PRI_COLOR[p.label] || '#A3A9B3' }));
+  const kpis = kpiStrip([
+    { label: 'Total escalations', value: fmtN(k.total), delta: wkPct != null ? `${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : `${fmtN(k.open)} open · ${fmtN(k.closed)} closed`, good: wkPct == null || wkPct <= 0, icon: 'escalation' },
+    { label: 'Open backlog', value: fmtN(k.open), sub: `${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`, icon: 'parcel' },
+    { label: 'SLA breaches', value: fmtN(k.breaches), sub: `No comment past 2h or resolution past category SLA · comment compliance ${fmtPct(k.responseSlaPct)}`, good: false, icon: 'breach' },
+    { label: 'Median first response', value: fmtH(k.medianResponseHours), sub: `Median pick ${fmtH(k.medianPickHours)}`, icon: 'sla' },
+    { label: 'Resolved', value: fmtN(k.resolved), sub: `${fmtPct(k.resolvedPct)} resolution rate`, icon: 'resolved' },
+  ]);
 
-  return (
-    <div className="dm">
-      <PageHead kicker="Dashboard · 14 days" title="Operations overview" sub={`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}>
-        <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
-        <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
-      </PageHead>
+  const desk = (
+    <div className="desk">
+      <Html html={kpis} />
 
-      {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
-
-      <div className="grid g5 kpi-strip">
-        <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed${wkPct != null ? ` · submitted ${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : ''}`} icon="shield" spark={data.trend.map((d) => d.submitted)} />
-        <Kpi label="Open backlog" value={fmtN(k.open)} sub={`${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`} icon="clock" tone="b" />
-        <Kpi label="SLA breaches" value={fmtN(k.breaches)} sub={<><span className="bad">No comment past 2h or resolution past category SLA</span> · comment compliance {fmtPct(k.responseSlaPct)}</>} icon="alert" tone="r" hot={k.breaches > 0} />
-        <Kpi label="Median first response" value={<>{fmtH(k.medianResponseHours)}</>} sub={`Median pick ${fmtH(k.medianPickHours)}`} icon="clock" tone="g" />
-        <Kpi label="Resolved" value={fmtN(k.resolved)} sub={`${fmtPct(k.resolvedPct)} resolution rate`} icon="check" tone="g" />
-      </div>
-
-      <div className="card only-desk dchart mt">
+      <div className="card mt">
         <div className="card-h">
           <div><h2>Escalation flow</h2><small>Submitted, picked and first response · last 14 days · Asia/Dhaka</small></div>
-          <DLegend items={[{ c: '#08090B', l: 'Submitted' }, { c: '#37A9FF', l: 'Picked' }, { c: '#0A7A56', l: 'Responded' }]} />
+          <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#37A9FF', l: 'Picked' }, { c: '#0A7A56', l: 'Responded' }])} />
         </div>
-        <WaveChart
-          label="Escalation flow"
-          labels={data.trend.map((d) => d.date.slice(5).split('-').reverse().join(' '))}
-          every={1}
-          h={250}
-          series={[
-            { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0.1 },
-            { data: data.trend.map((d) => d.picked), color: '#37A9FF', fillOpacity: 0.12 },
-            { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.18 },
-          ]}
-        />
+        <Html html={wave({ labels, every: 1, label: 'Escalation flow', bg: '#FFFFFF', h: 250, series: flowSeries })} />
       </div>
 
-      <div className="grid g3 only-desk mt dchart">
+      <div className="grid g3 mt">
         <div className="card">
-          <div className="card-h"><div><h2>Open by zone</h2><small>Open backlog per zone</small></div></div>
-          <BarChart
-            label="Open by zone"
-            h={200}
-            items={data.zones.map((z) => ({ label: z.zone, value: z.open, color: ZONE_COLOR[z.zone] || '#FFCC00' }))}
-          />
-          <div className="lst" style={{ marginTop: 10 }}>
+          <div className="card-h"><h2>Open by zone</h2><small>{fmtN(k.open)}</small></div>
+          <Html html={bars({ items: zoneItems, h: 200 })} />
+          <div style={{ marginTop: 10 }}>
             {data.zones.map((z) => (
-              <div key={z.zone} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, gap: 8, flexWrap: 'wrap' }}>
+              <div key={z.zone} className="small" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', margin: '4px 0' }}>
                 <b><span aria-hidden="true" style={{ color: ZONE_COLOR[z.zone] || '#FFCC00' }}>● </span>{z.zone} Zone</b>
                 <span>{fmtN(z.open)} open · {fmtN(z.resolved)} resolved · <span className={z.breaches ? 'bad' : ''}>{fmtN(z.breaches)} breached</span></span>
               </div>
@@ -90,22 +76,16 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <div className="card-h"><div><h2>Priority mix</h2><small>open</small></div></div>
+          <div className="card-h"><h2>Priority mix</h2><small>open</small></div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
-            <DonutChart
-              segments={data.priorities.map((p) => ({ label: p.label, value: p.open, color: PRI_COLOR[p.label] || '#A3A1A8' }))}
-              center={fmtN(k.open)}
-              sub="open"
-              size={140}
-              stroke={18}
-            />
-            <div className="lst" style={{ flex: '1 1 180px', minWidth: 0 }}>
+            <Html html={donut({ segments: priSegs, center: fmtN(k.open), sub: 'open', size: 140, stroke: 18 })} />
+            <div className="stack" style={{ gap: 10, flex: '1 1 180px', minWidth: 0 }}>
               {data.priorities.map((p) => (
-                <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
-                  <i style={{ width: 9, height: 9, borderRadius: '50%', background: PRI_COLOR[p.label], flex: '0 0 auto' }} />
+                <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                  <i style={{ width: 9, height: 9, borderRadius: '50%', background: PRI_COLOR[p.label] || '#A3A9B3', flex: '0 0 auto' }} />
                   <span>{p.label}</span>
                   <b style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{fmtN(p.total)}</b>
-                  <span style={{ color: 'var(--mut)', minWidth: 96, textAlign: 'right' }}>{pct(p.total, k.total)}% · {fmtN(p.open)} open</span>
+                  <span className="muted small" style={{ minWidth: 96, textAlign: 'right' }}>{pct(p.total, k.total)}% · {fmtN(p.open)} open</span>
                 </div>
               ))}
             </div>
@@ -113,144 +93,129 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <div className="card-h"><div><h2>Top categories</h2><small>Highest volume drivers</small></div></div>
-          {data.categories.length === 0 ? <div className="empty">No categories yet</div> : (
-            <HBars rows={data.categories.map((c) => ({ label: c.label, value: c.count }))} color="#111216" />
+          <div className="card-h"><h2>Top categories</h2><small>Highest volume drivers</small></div>
+          {data.categories.length === 0 ? <div className="muted">No categories yet</div> : (
+            <Html html={hbars(data.categories.map((c) => ({ label: c.label, value: c.count })), '#111216')} />
           )}
         </div>
       </div>
 
-      <div className="grid g2">
-        <div className="card dchart">
-          <div className="card-h"><div><h2>Operational health</h2><small>target met</small></div></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+      <div className="grid g2 mt">
+        <div className="card">
+          <div className="card-h"><h2>Operational health</h2><small>target met</small></div>
+          <div className="grid g3" style={{ gap: 8 }}>
             {[['SLA ≤ 2h', k.responseSlaPct], ['Picked ≤ 4h', k.pickSlaPct], ['Resolved', k.resolvedPct]].map(([sub, v]) => (
-              <div key={sub} className="dchart" style={{ textAlign: 'center' }}>
-                <Gauge value={v ?? 0} color={(v ?? 0) >= 85 ? '#0A7A56' : '#FFCC00'} center={v == null ? '—' : `${v}%`} sub={sub} w={150} />
+              <div key={sub} style={{ textAlign: 'center' }}>
+                <Html html={gauge({ value: v ?? 0, color: (v ?? 0) >= 85 ? '#0A7A56' : '#FFCC00', center: v == null ? '—' : `${v}%`, sub, w: 150 })} />
               </div>
             ))}
           </div>
-          <div className="grid g2e" style={{ marginTop: 14, gap: 10 }}>
-            <div className="card hot" style={{ padding: 12 }}><div className="kl">P1 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--bad)' }}>{fmtN(k.p1Open)}</div></div>
-            <div className="card" style={{ padding: 12 }}><div className="kl">P2 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--warn)' }}>{fmtN(k.p2Open)}</div></div>
+          <div className="grid g2" style={{ marginTop: 14, gap: 10 }}>
+            <div className="card" style={{ padding: 12 }}><div className="muted small">P1 open (Critical)</div><div style={{ font: '700 26px var(--font)', color: 'var(--flare-ink)' }}>{fmtN(k.p1Open)}</div></div>
+            <div className="card" style={{ padding: 12 }}><div className="muted small">P2 open (Urgent)</div><div style={{ font: '700 26px var(--font)', color: '#7A5B00' }}>{fmtN(k.p2Open)}</div></div>
           </div>
           <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span className="pillc p-br">{fmtN(k.breaches)} breached</span>
-            <span className="pillc p-open">{fmtN(k.awaitingResponse)} awaiting first comment</span>
+            <span className="pill p-breach">{fmtN(k.breaches)} breached</span>
+            <span className="pill p-wait">{fmtN(k.awaitingResponse)} awaiting first comment</span>
           </div>
         </div>
-        <div className="card only-desk">
-          <div className="ph">
-            <div><h3>Hub Hotspots</h3><small>Most breaches (first comment or resolution)</small></div>
-            <Link href="/hubs" style={{ fontSize: 12, fontWeight: 700, textDecoration: 'none', color: 'var(--y)' }}>All hubs →</Link>
+
+        <div className="card">
+          <div className="card-h">
+            <div><h2>Hub hotspots</h2><small>Most breaches (first comment or resolution)</small></div>
+            <Link href="/hubs" style={{ fontSize: 12, fontWeight: 700, color: 'var(--mint-ink)' }}>All hubs →</Link>
           </div>
-          {hubsByBreach.length === 0 ? <div className="empty">No hub has a breach right now.</div> : (
-            <div className="lst">
-              {hubsByBreach.slice(0, 5).map((h) => (
-                <div key={h.hub} className="lrow">
-                  <div><div className="n">{h.hub}</div><div className="s">{h.zone || '—'} · median comment {fmtH(h.medianResponseHours)}</div></div>
-                  <div className="r"><b className="bad">{fmtN(h.breaches)}</b><div className="s">breached</div></div>
-                </div>
-              ))}
-            </div>
+          {hubsByBreach.length === 0 ? <div className="muted">No hub has a breach right now.</div> : (
+            <Html html={hbars(hubsByBreach.slice(0, 5).map((h) => ({ label: h.hub, value: h.breaches })), '#FF5470')} />
           )}
         </div>
       </div>
 
-      <div className="card">
-          <div className="ph">
-            <div><h3>Needs attention</h3><small>{data.attentionTotal ? `${fmtN(data.attentionTotal)} open past SLA · most urgent first` : 'Open issues past SLA'}</small></div>
-          </div>
-          {data.attention.length === 0 ? (
-            <div className="empty"><b>All clear</b>No open issue is past its first-comment or pick limit.</div>
-          ) : (
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <thead><tr><th>Priority</th><th>Issue</th><th>Hub · zone</th><th>Open for</th><th>SLA state</th><th>Next action</th></tr></thead>
-                <tbody>
-                  {data.attention.map((a) => (
-                    <tr key={a.issue_id}>
-                      <td><PriPill p={a.priority_scale} /></td>
-                      <td><Link href={`/?open=${encodeURIComponent(a.issue_id)}`} style={{ fontWeight: 700, color: 'var(--blue)' }}>{a.issue_id}</Link><div className="sub">{a.issue_category || 'Uncategorised'}</div></td>
-                      <td>{a.concern_hub || '—'}<div className="sub">{a.zone || '—'}</div></td>
-                      <td>{fmtH(a.ageH)}</td>
-                      <td><span className="sla-bad">{a.kind} · {fmtH(a.overdueH)} over</span></td>
-                      <td className="wrap">{a.nextAction}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {data.attentionTotal > data.attention.length && (
-            <div className="note">Showing {data.attention.length} of {fmtN(data.attentionTotal)}. <Link href="/" style={{ color: 'var(--y)' }}>Open the full queue in the Tracker</Link>.</div>
-          )}
+      <div className="card mt">
+        <div className="card-h">
+          <div><h2>Needs attention</h2><small>{data.attentionTotal ? `${fmtN(data.attentionTotal)} open past SLA · most urgent first` : 'Open issues past SLA'}</small></div>
         </div>
-
-        <div className="card">
-          <div className="ph"><div><h3>What to do next</h3><small>Owner and target on each · lagging and improving teams</small></div></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--bad)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 6 }}>Lagging (score below {LAG_SCORE})</div>
-              {standing.lagging.length === 0 ? <div className="s">No team is below {LAG_SCORE}.</div> : standing.lagging.map((r) => (
-                <div key={r.team} className="lrow" style={{ alignItems: 'flex-start' }}>
-                  <div><div className="n">{r.team} · score {r.score}</div><div className="s">Lead: {r.lead || '—'}. {r.reasons.join(' · ') || 'Below target.'}{r.smallSample ? ` Small sample: ${r.issues} issue${r.issues === 1 ? '' : 's'}.` : ''}</div></div>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--good)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 6 }}>Improving (up {IMPROVE_POINTS}+ points week over week)</div>
-              {standing.improving.length === 0 ? <div className="s">No team has gained {IMPROVE_POINTS}+ points yet. Each week needs at least 3 issues to compare.</div> : standing.improving.map((r) => (
-                <div key={r.team} className="lrow" style={{ alignItems: 'flex-start' }}>
-                  <div><div className="n">{r.team} · {r.from} → {r.to} (+{r.delta})</div><div className="s">Lead: {r.lead || '—'}. {r.score != null && r.score < LAG_SCORE ? `Still below ${LAG_SCORE}, so keep going.` : 'Keep the routine that is working.'}</div></div>
-                </div>
-              ))}
-            </div>
+        {data.attention.length === 0 ? (
+          <div className="muted"><b>All clear.</b> No open issue is past its first-comment or pick limit.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table>
+              <thead><tr><th>Priority</th><th>Issue</th><th>Hub · zone</th><th>Open for</th><th>SLA state</th><th>Next action</th></tr></thead>
+              <tbody>
+                {data.attention.map((a) => (
+                  <tr key={a.issue_id}>
+                    <td><Html html={priHTML(a.priority_scale)} /></td>
+                    <td><Link href={`/?open=${encodeURIComponent(a.issue_id)}`} className="mono" style={{ fontWeight: 600 }}>{a.issue_id}</Link><div className="muted small">{a.issue_category || 'Uncategorised'}</div></td>
+                    <td>{a.concern_hub || '—'}<div className="muted small">{a.zone || '—'}</div></td>
+                    <td className="mono">{fmtH(a.ageH)}</td>
+                    <td><span className="bad" style={{ fontWeight: 600 }}>{a.kind} · {fmtH(a.overdueH)} over</span></td>
+                    <td>{a.nextAction}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          {standing.rows.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--mute)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 6 }}>Team status</div>
-              <div className="lst">
-                {standing.rows.map((r) => {
-                  const label = r.status === 'lagging' ? 'Lagging' : r.status === 'improving' ? 'Improving' : 'Steady';
-                  const color = r.status === 'lagging' ? 'var(--bad)' : r.status === 'improving' ? 'var(--good)' : 'var(--mute)';
-                  return (
-                    <div key={r.team} className="lrow" style={{ alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color, border: `1px solid ${color}`, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>{label}</span>
-                      <div><div className="n">{r.team} · score {r.score ?? '—'}{r.delta != null ? ` (${r.delta >= 0 ? '+' : ''}${r.delta} week over week)` : ''}</div><div className="s">Lead: {r.lead || '—'}. {r.status === 'steady' ? (r.reasons.length ? `Watch: ${r.reasons.join(' · ')}.` : 'On target.') : (r.reasons.join(' · ') || 'Below target.')}{r.smallSample ? ` Small sample: ${r.issues} issue${r.issues === 1 ? '' : 's'}.` : ''}</div></div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {actions.length === 0 ? <div className="empty">Nothing needs action right now.</div> : (
-            <div className="lst">
-              {actions.map((a, i) => (
-                <div key={i} className="lrow" style={{ alignItems: 'flex-start' }}>
-                  <span className="pillc p-B">{i + 1}</span>
-                  <div><div className="n">{a.title}</div><div className="s">Owner: {a.owner}. Target: {a.target}</div><div className="s">How: {a.how}</div></div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
+        {data.attentionTotal > data.attention.length && (
+          <p className="note">Showing {data.attention.length} of {fmtN(data.attentionTotal)}. <Link href="/" style={{ color: 'var(--mint-ink)' }}>Open the full queue in the Tracker</Link>.</p>
+        )}
+      </div>
 
-      <div className="card only-desk">
-        <div className="ph"><div><h3>Latest escalations</h3><small>Last 10 submitted · Dhaka time</small></div></div>
-        {data.recent.length === 0 ? <div className="empty">No escalations yet.</div> : (
-          <div className="tbl-wrap">
-            <table className="tbl">
+      <div className="card mt">
+        <div className="card-h"><div><h2>What to do next</h2><small>Owner and target on each · lagging and improving teams</small></div></div>
+        <div className="grid g2" style={{ gap: 12 }}>
+          <div>
+            <h3 className="bad">Lagging (score below {LAG_SCORE})</h3>
+            {standing.lagging.length === 0 ? <div className="muted small">No team is below {LAG_SCORE}.</div> : standing.lagging.map((r) => (
+              <div key={r.team} className="step"><div><b>{r.team} · score {r.score}</b><div className="small muted">Lead: {r.lead || '—'}. {r.reasons.join(' · ') || 'Below target.'}</div></div></div>
+            ))}
+          </div>
+          <div>
+            <h3 className="good">Improving (up {IMPROVE_POINTS}+ points week over week)</h3>
+            {standing.improving.length === 0 ? <div className="muted small">No team has gained {IMPROVE_POINTS}+ points yet. Each week needs at least 3 issues to compare.</div> : standing.improving.map((r) => (
+              <div key={r.team} className="step"><div><b>{r.team} · {r.from} → {r.to} (+{r.delta})</b><div className="small muted">Lead: {r.lead || '—'}.</div></div></div>
+            ))}
+          </div>
+        </div>
+        {standing.rows.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <h3>Team status</h3>
+            {standing.rows.map((r) => {
+              const label = r.status === 'lagging' ? 'Lagging' : r.status === 'improving' ? 'Improving' : 'Steady';
+              const cls = r.status === 'lagging' ? 'p-breach' : r.status === 'improving' ? 'p-ok' : 'p-res';
+              return (
+                <div key={r.team} className="step">
+                  <span className={`pill ${cls}`}>{label}</span>
+                  <div><b>{r.team} · score {r.score ?? '—'}</b>{r.delta != null && <span className="muted small"> ({r.delta >= 0 ? '+' : ''}{r.delta} week over week)</span>}<div className="small muted">Lead: {r.lead || '—'}.</div></div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {actions.length === 0 ? <div className="muted" style={{ marginTop: 12 }}>Nothing needs action right now.</div> : (
+          <div style={{ marginTop: 12 }}>
+            {actions.map((a, i) => (
+              <div key={i} className="step"><span className="pill p-reg">{i + 1}</span><div><b>{a.title}</b><div className="small muted">Owner: {a.owner}. Target: {a.target}</div><div className="small muted">How: {a.how}</div></div></div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card mt" style={{ padding: '12px 8px 8px' }}>
+        <div className="card-h" style={{ padding: '0 12px' }}><div><h2>Latest escalations</h2><small>Last 10 submitted · Dhaka time</small></div></div>
+        {data.recent.length === 0 ? <div className="muted" style={{ padding: 12 }}>No escalations yet.</div> : (
+          <div style={{ overflowX: 'auto' }}>
+            <table>
               <thead><tr><th>Issue ID</th><th>Submitted (Dhaka)</th><th>Zone</th><th>Hub</th><th>Category</th><th>Priority</th><th>Channel</th><th>Issue status</th><th>Ops status</th></tr></thead>
               <tbody>
                 {data.recent.map((r) => (
                   <tr key={r.issue_id}>
-                    <td><Link href={`/?open=${encodeURIComponent(r.issue_id)}`} className="idc" style={{ textDecoration: 'none' }}>{r.issue_id}</Link></td>
+                    <td><Link href={`/?open=${encodeURIComponent(r.issue_id)}`} className="mono">{r.issue_id}</Link></td>
                     <td className="mono">{formatDhaka(r.submitted_at)}</td>
-                    <td><Zc z={r.zone} /></td>
+                    <td><span className="pill p-res">{r.zone || '—'}</span></td>
                     <td>{r.concern_hub || '—'}</td>
                     <td>{r.issue_category || '—'}</td>
-                    <td><PriPill p={r.priority_scale} /></td>
+                    <td><Html html={priHTML(r.priority_scale)} /></td>
                     <td>{r.channel || '—'}</td>
                     <td>{r.issue_status || '—'}</td>
                     <td>{r.ops_issue_status || '—'}</td>
@@ -261,7 +226,45 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-      <p className="note2">Breach rule: an open issue with no first comment more than 2 hours after being raised. Pick target 4h.</p>
+      <p className="note">Breach rule: an open issue with no first comment more than 2 hours after being raised. Pick target 4h.</p>
+    </div>
+  );
+
+  const phone = (
+    <div className="phone-only"><div className="phone">
+      <div className="kicker" style={{ marginBottom: 10 }}>Phone summary · today</div>
+      <div className="tile t-bee"><div className="lab">Open backlog</div><div className="big">{fmtN(k.open)}</div><small style={{ fontWeight: 600 }}>{fmtN(k.unpicked)} unpicked · {fmtN(k.awaitingResponse)} awaiting reply</small></div>
+      <div className="ptwo" style={{ marginTop: 12 }}>
+        <div className="tile"><div className="lab">Breaches</div><div className="big" style={{ fontSize: 30, color: 'var(--flare-ink)' }}>{fmtN(k.breaches)}</div></div>
+        <div className="tile"><div className="lab">First response</div><div className="big" style={{ fontSize: 30 }}>{fmtH(k.medianResponseHours)}</div></div>
+      </div>
+      <div className="tile t-ink" style={{ marginTop: 12 }}><div className="lab">SLA compliance</div><Html html={gauge({ value: k.responseSlaPct ?? 0, color: '#FFCC00', center: fmtPct(k.responseSlaPct), sub: 'comment within 2h', track: 'rgba(255,255,255,.12)', w: 200 })} /></div>
+      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Escalation flow · 14 days</div><Html html={wave({ labels, every: 3, label: 'Flow', bg: '#FFFFFF', h: 170, series: flowSeries })} /></div>
+      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Open by zone</div><div style={{ marginTop: 10 }}><Html html={bars({ items: zoneItems, h: 170, w: 340 })} /></div></div>
+      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Priority mix</div><div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}><Html html={donut({ segments: priSegs, center: fmtN(k.open), sub: 'open', size: 150, stroke: 16 })} /></div></div>
+    </div></div>
+  );
+
+  return (
+    <div id="dash" className={mode === 'phone' ? 'mode-phone' : ''}>
+      <div className="ph">
+        <div>
+          <div className="kicker">Dashboard · 14 days</div>
+          <h1>Operations overview</h1>
+          <p className="sub">{`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="seg" role="group" aria-label="View mode">
+            <span role="button" tabIndex={0} className={mode === 'desk' ? 'on' : ''} aria-pressed={mode === 'desk'} onClick={() => setMode('desk')}>Desktop</span>
+            <span role="button" tabIndex={0} className={mode === 'phone' ? 'on' : ''} aria-pressed={mode === 'phone'} onClick={() => setMode('phone')}>Phone summary</span>
+          </div>
+          <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : 'Refresh'}</button>
+          <span className="chip"><span className="live" aria-hidden="true" />Live · synced {formatDhaka(data.generatedAt)}</span>
+        </div>
+      </div>
+      {error && <div className="card" role="alert" style={{ marginBottom: 12 }}>Could not refresh: {error}</div>}
+      {desk}
+      {phone}
     </div>
   );
 }

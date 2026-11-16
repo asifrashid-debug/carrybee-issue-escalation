@@ -4,7 +4,6 @@ import SearchSelect from './SearchSelect';
 import { isValidParcelId, matchActiveHub, requestHubLookup, COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE, MISSING_EXTENSION_MESSAGE } from '../lib/hubLookup.mjs';
 import { priorityForIssueType } from '../lib/priority';
 import { formatDhaka } from '../lib/time';
-import { PageHead } from './demo';
 
 const CM = 'CM';
 
@@ -165,11 +164,13 @@ export default function EscalationForm({ channel }) {
 
   return (
     <>
-    <PageHead
-      kicker={`Form · ${channel}`}
-      title={isKam ? 'New KAM escalation' : 'New MX escalation'}
-      sub={`Saved to the database first. The sheet push is queued, and the issue appears in the tracker within 5 seconds. Channel is fixed to ${channel}.`}
-    />
+    <div className="ph">
+      <div>
+        <div className="kicker">{`Form · ${channel}`}</div>
+        <h1>{isKam ? 'New KAM escalation' : 'New MX escalation'}</h1>
+        <p className="sub">{`Saved to the database first. The sheet push is queued, and the issue appears in the tracker within 5 seconds. Channel is fixed to ${channel}.`}</p>
+      </div>
+    </div>
     <div className="kform-layout">
     <div className="fwrap">
       <div className="ph" style={{ padding: "18px 24px 0" }}>
