@@ -54,7 +54,7 @@ export default function Analytics() {
       <Html html={kpiStrip([
         { label: 'SLA compliance', value: fmtPct(k.responseSlaPct), sub: 'First comment within 2h · target 90%', icon: 'sla' },
         { label: 'Open backlog', value: fmtN(k.open), sub: `${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`, icon: 'escalation' },
-        { label: 'SLA breached', value: fmtN(k.breaches), sub: 'No comment past 2h or resolution past category SLA', icon: 'breach', good: false },
+        { label: 'SLA breached', value: fmtN(k.breaches), sub: 'No comment past 2h or resolution past category SLA', icon: 'breach', good: false, spark: data.breachTrend?.daily?.length >= 2 ? data.breachTrend.daily : undefined },
         { label: 'Older than 2 days', value: fmtN(k.olderThan2d), sub: 'Open, needs escalation review', icon: 'followup' },
       ])} />
 

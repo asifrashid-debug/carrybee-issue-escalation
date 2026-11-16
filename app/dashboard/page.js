@@ -42,9 +42,9 @@ export default function Dashboard() {
   const zoneItems = data.zones.map((z) => ({ label: z.zone, value: z.open, color: ZONE_COLOR[z.zone] || '#FFCC00' }));
   const priSegs = data.priorities.map((p) => ({ label: p.label, value: p.open, color: PRI_COLOR[p.label] || '#A3A9B3' }));
   const kpis = kpiStrip([
-    { label: 'Total escalations', value: fmtN(k.total), delta: wkPct != null ? `${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : `${fmtN(k.open)} open · ${fmtN(k.closed)} closed`, good: wkPct == null || wkPct <= 0, icon: 'escalation' },
+    { label: 'Total escalations', value: fmtN(k.total), delta: wkPct != null ? `${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : `${fmtN(k.open)} open · ${fmtN(k.closed)} closed`, good: wkPct == null || wkPct <= 0, icon: 'escalation', spark: data.trend.length >= 2 ? data.trend.map((d) => d.submitted) : undefined },
     { label: 'Open backlog', value: fmtN(k.open), sub: `${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`, icon: 'parcel' },
-    { label: 'SLA breaches', value: fmtN(k.breaches), sub: `No comment past 2h or resolution past category SLA · comment compliance ${fmtPct(k.responseSlaPct)}`, good: false, icon: 'breach' },
+    { label: 'SLA breaches', value: fmtN(k.breaches), sub: `No comment past 2h or resolution past category SLA · comment compliance ${fmtPct(k.responseSlaPct)}`, good: false, icon: 'breach', spark: data.breachTrend?.daily?.length >= 2 ? data.breachTrend.daily : undefined },
     { label: 'Median first response', value: fmtH(k.medianResponseHours), sub: `Median pick ${fmtH(k.medianPickHours)}`, icon: 'sla' },
     { label: 'Resolved', value: fmtN(k.resolved), sub: `${fmtPct(k.resolvedPct)} resolution rate`, icon: 'resolved' },
   ]);

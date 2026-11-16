@@ -13,13 +13,16 @@ const fmt = n => Number(n).toLocaleString('en-US');
 function niceMax(v){ if(!(v>0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); return Math.ceil(v/p)*p; }
 
 /* Catmull-Rom through points, converted to cubic Bezier: a smooth "wave" line */
-function smooth(pts){
+function smooth(pts, lo, hi){
   if(pts.length < 2) return '';
+  // Control points are clamped to the plot box. A Bezier stays inside the hull of its points,
+  // so the line can no longer dip below the zero baseline between two zero values.
+  const cl = v => (lo == null ? v : Math.min(hi, Math.max(lo, v)));
   let d = 'M' + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1);
   for(let i = 0; i < pts.length - 1; i++){
     const p0 = pts[i-1] || pts[i], p1 = pts[i], p2 = pts[i+1], p3 = pts[i+2] || p2;
-    const c1x = p1[0] + (p2[0]-p0[0])/6, c1y = p1[1] + (p2[1]-p0[1])/6;
-    const c2x = p2[0] - (p3[0]-p1[0])/6, c2y = p2[1] - (p3[1]-p1[1])/6;
+    const c1x = p1[0] + (p2[0]-p0[0])/6, c1y = cl(p1[1] + (p2[1]-p0[1])/6);
+    const c2x = p2[0] - (p3[0]-p1[0])/6, c2y = cl(p2[1] - (p3[1]-p1[1])/6);
     d += ' C' + c1x.toFixed(1) + ',' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ',' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
   }
   return d;
@@ -48,7 +51,7 @@ function wave(o){
   let paths = '', defs = '';
   o.series.forEach((s, si) => {
     const pts = s.data.map((v, i) => [x(i), y(v)]);
-    const line = smooth(pts);
+    const line = smooth(pts, pt, pt + ih);
     const gid = id + 'g' + si;
     defs += '<linearGradient id="' + gid + '" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="' + s.color + '" stop-opacity="' + (s.fillOpacity ?? 0.22) + '"/><stop offset="1" stop-color="' + s.color + '" stop-opacity="0"/></linearGradient>';
     if(s.fill !== false) paths += '<path d="' + line + ' L' + x(n-1) + ',' + (pt + ih) + ' L' + x(0) + ',' + (pt + ih) + ' Z" fill="url(#' + gid + ')"/>';
@@ -64,7 +67,7 @@ function spark(data, color){
   const W = 160, H = 40;
   const max = Math.max(...data), min = Math.min(...data), span = (max - min) || 1;
   const pts = data.map((v, i) => [i * W / (data.length - 1), 4 + (H - 8) * (1 - (v - min) / span)]);
-  const d = smooth(pts);
+  const d = smooth(pts, 4, H - 4);
   const id = 's' + (++SEQ);
   return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="' + id + '" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="' + color + '" stop-opacity=".25"/><stop offset="1" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs><path d="' + d + ' L' + W + ',' + H + ' L0,' + H + ' Z" fill="url(#' + id + ')"/><path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>';
 }
@@ -193,7 +196,7 @@ function mins(t){ const h=/(\d+)h/.exec(t), m=/(\d+)m/.exec(t); return (h ? +h[1
 
 /* A-style KPI strip for any list of KPIs */
 function kpiStrip(list){
-  return '<div class="kpis">' + list.map(k => '<div class="kpi"><div class="lab">' + ic(k.icon) + esc(k.label) + '</div><div class="num">' + esc(k.value) + '</div>' + (k.delta ? '<div class="delta ' + (k.good ? 'good' : 'bad') + '">' + esc(k.delta) + '</div>' : '<div class="delta muted">' + esc(k.sub || '') + '</div>') + (k.spark ? spark(k.spark, k.good === false ? BRAND.flare : '#0A7A56') : '') + '</div>').join('') + '</div>';
+  return '<div class="kpis' + (list.length === 5 ? ' k5' : '') + '">' + list.map(k => '<div class="kpi"><div class="lab">' + ic(k.icon) + esc(k.label) + '</div><div class="num">' + esc(k.value) + '</div>' + (k.delta ? '<div class="delta ' + (k.good ? 'good' : 'bad') + '">' + esc(k.delta) + '</div>' : '<div class="delta muted">' + esc(k.sub || '') + '</div>') + (k.spark ? spark(k.spark, k.good === false ? BRAND.flare : '#0A7A56') : '') + '</div>').join('') + '</div>';
 }
 
 function statusDot(st){ const c = {ok:'#00C98D', wait:BRAND.azure, breach:BRAND.flare, res:'#A3A9B3'}[st] || '#A3A9B3'; return '<i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:8px;vertical-align:1px"></i>'; }

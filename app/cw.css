@@ -517,3 +517,15 @@ html[data-theme=dark] svg [stop-color="#0A7A56"]{stop-color:#00E5A0}
 html[data-theme=dark] [style*="background:#08090B"]{background:#F4F4F5!important}
 html[data-theme=dark] [style*="background:#111216"]{background:#C4C9D2!important}
 html[data-theme=dark] [style*="background:#0A7A56"]{background:#00E5A0!important}
+
+/* Five KPI cards (Dashboard, Team): one row on wide screens, same breakpoints as the four-card strip */
+.kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width: 1000px){
+  .kpis.k5{grid-template-columns:1fr 1fr}
+  .kpis.k5 .kpi:nth-child(2){border-right:0}
+  .kpis.k5 .kpi:nth-child(-n+2){border-bottom:1px solid var(--line)}
+}
+@media (max-width: 640px){
+  .kpis.k5{grid-template-columns:1fr}
+  .kpis.k5 .kpi{border-right:0;border-bottom:1px solid var(--line)}
+}

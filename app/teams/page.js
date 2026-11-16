@@ -51,17 +51,17 @@ export default function TeamPerformance() {
 
       <Html html={kpiStrip([
         { label: 'Active teams', value: fmtN(teams.length), sub: `${fmtN(members)} members in teams`, icon: 'team' },
-        { label: 'Total escalations', value: fmtN(k.total), sub: `${fmtN(k.open)} still open`, icon: 'escalation' },
+        { label: 'Total escalations', value: fmtN(k.total), sub: `${fmtN(k.open)} still open`, icon: 'escalation', spark: data.trend.length >= 2 ? data.trend.map((d) => d.submitted) : undefined },
         { label: 'Top team', value: top ? `${fmtN(top.issues)} · ${top.team}` : '—', sub: 'Most escalations raised', icon: 'resolved' },
         { label: 'Issues per member', value: avgPerMember ?? '—', sub: 'Average across teams', icon: 'team' },
       ])} />
 
       <div className="card mt">
         <div className="card-h">
-          <div><h2>Escalations by day</h2><small>Submitted and first responses, last 14 days (Dhaka)</small></div>
+          <div><h2>Responses per day</h2><small>Submitted and first responses, last 14 days (Dhaka)</small></div>
           <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#0A7A56', l: 'First response' }])} />
         </div>
-        <Html html={wave({ labels, every: 1, label: 'Escalations by day', bg: '#FFFFFF', series: [
+        <Html html={wave({ labels, every: 1, label: 'Responses per day', bg: '#FFFFFF', series: [
           { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.14 },
           { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0 },
         ] })} />
