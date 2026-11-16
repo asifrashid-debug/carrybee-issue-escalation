@@ -10,7 +10,7 @@ const PRI_COLOR = { P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' }
 
 // Operations Command Centre (demo layout). Exception-first: SLA breaches, owners and next actions.
 export default function Dashboard() {
-  const { data, error, loading, mode, setMode, reload } = useAnalytics();
+  const { data, error, loading, reload } = useAnalytics();
 
   if (!data) {
     return (
@@ -38,12 +38,10 @@ export default function Dashboard() {
   return (
     <div className="dm">
       <PageHead kicker="Command centre" title="Operations Command Centre" sub={`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}>
-        <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
       </PageHead>
 
-      {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
       <div className="grid g5 kpi-strip">

@@ -1,28 +1,23 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// Live data only. Generated sample figures are not shown on any tracker page.
 export function useAnalytics() {
-  const [mode, setMode] = useState('live');
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Honour ?sample=1 on first load so previews can be shared as links.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('sample') === '1') setMode('sample');
-  }, []);
-
-  // Ignore responses from superseded requests so a slow live fetch cannot overwrite sample data (or vice versa).
+  // Ignore responses from superseded requests so a slow earlier response cannot overwrite a newer one.
   const latest = useRef(0);
   const load = useCallback(async () => {
     const id = ++latest.current;
     setLoading(true);
     try {
-      const r = await fetch(`/api/analytics${mode === 'sample' ? '?sample=1' : ''}`, { cache: 'no-store' });
+      const r = await fetch('/api/analytics', { cache: 'no-store' });
       const j = await r.json();
       if (id !== latest.current) return;
       if (!r.ok) throw new Error(j.error || 'Failed to load analytics');
-      setData({ ...j, _mode: mode });
+      setData({ ...j, _mode: 'live' });
       setError(null);
     } catch (e) {
       if (id !== latest.current) return;
@@ -30,7 +25,7 @@ export function useAnalytics() {
     } finally {
       if (id === latest.current) setLoading(false);
     }
-  }, [mode]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -38,5 +33,5 @@ export function useAnalytics() {
     return () => clearInterval(t);
   }, [load]);
 
-  return { data, error, loading, mode, setMode, reload: load };
+  return { data, error, loading, reload: load };
 }

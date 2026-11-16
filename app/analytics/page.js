@@ -8,7 +8,7 @@ const STATUS_COLOR = { New: '#A3A1A8', Picked: '#F8C800', 'In Progress': '#FFB02
 
 // Analytics & Insights (demo layout). Same numbers as before, scoped to the viewer's access.
 export default function Analytics() {
-  const { data, error, loading, mode, setMode, reload } = useAnalytics();
+  const { data, error, loading, reload } = useAnalytics();
 
   if (!data) {
     return (
@@ -34,12 +34,10 @@ export default function Analytics() {
   return (
     <div className="dm">
       <PageHead kicker="Insights" title="Analytics & Insights" sub={`Trend, distribution, SLA funnel and operational patterns · last 14 days · ${busiest ? `busiest zone ${busiest.zone}` : ''}`}>
-        <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
       </PageHead>
 
-      {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
       <div className="grid g4 kpi-strip">

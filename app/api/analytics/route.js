@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { computeAnalytics } from '../../../lib/analytics';
-import { sampleData } from '../../../lib/sample';
-import hubsJson from '../../../data/hubs.json';
-import categoriesJson from '../../../data/categories.json';
 import { requireUser } from '../../../lib/session';
 import { loadScope, isVisible } from '../../../lib/visibility';
 
@@ -14,10 +11,6 @@ const COLS = 'issue_id,cm_assigned,submitted_at,email,channel,zone,concern_hub,d
 export async function GET(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const now = new Date();
-  const sample = new URL(req.url).searchParams.get('sample') === '1';
-  if (sample) {
-    return NextResponse.json({ mode: 'sample', ...computeAnalytics({ ...sampleData({ hubsJson, categoriesJson, now }), categories: categoriesJson }) });
-  }
   try {
     const sb = supabaseAdmin();
     // PostgREST returns max 1000 rows per request; page through all escalations.

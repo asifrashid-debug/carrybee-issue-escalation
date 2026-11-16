@@ -9,7 +9,7 @@ const ZONES = ['ISD', 'OSD', 'CTG'];
 
 // HUB Performance (demo layout). Hub score = share of first comments within 2h (grade A ≥90, B ≥75, C ≥50, D below).
 export default function HubPerformance() {
-  const { data, error, loading, mode, setMode, reload } = useAnalytics();
+  const { data, error, loading, reload } = useAnalytics();
   const [zone, setZone] = useState('All Zones');
   const [q, setQ] = useState('');
   const [sort, setSort] = useState({ key: 'breaches', desc: true });
@@ -62,12 +62,10 @@ export default function HubPerformance() {
     <div className="dm">
       <PageHead kicker="Hubs" title="HUB Performance" sub={`${fmtN(data.hubCount.withIssues)} hubs with escalations, of ${fmtN(data.hubCount.active)} active · ranked by first-comment SLA · all escalations in your scope`}>
         <Seg label="Zone" items={['All Zones', ...ZONES]} value={zone} onChange={setZone} />
-        <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
       </PageHead>
 
-      {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
       <div className="grid g4 kpi-strip">

@@ -7,7 +7,7 @@ const PALETTE = ['#F8C800', '#3B9CFF', '#A78BFA', '#3DDC97', '#FF9F1C', '#FF5D73
 
 // Team Performance (demo layout). Team scope follows the same rules as the tracker.
 export default function TeamPerformance() {
-  const { data, error, loading, mode, setMode, reload } = useAnalytics();
+  const { data, error, loading, reload } = useAnalytics();
 
   if (!data) {
     return (
@@ -70,12 +70,10 @@ export default function TeamPerformance() {
   return (
     <div className="dm">
       <PageHead kicker="Teams" title="Team Performance" sub="Team and member scorecards · issues raised by each team's members · same scope as the tracker">
-        <Seg label="Data source" items={[{ value: 'live', label: 'Live data' }, { value: 'sample', label: 'Sample preview' }]} value={mode} onChange={setMode} />
         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
       </PageHead>
 
-      {mode === 'sample' && <div className="box box-warn" role="note">Sample preview: generated data for layout review only. Nothing here is stored or synced.</div>}
       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
 
       <div className="grid g4 kpi-strip">
