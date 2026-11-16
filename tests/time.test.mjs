@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 // formatDhaka must give Dhaka wall time no matter the viewer's timezone.
 // The check runs in child processes because TZ is fixed when Node starts.
-const lib = fileURLToPath(new URL('../lib/time.js', import.meta.url));
+// Use a file URL: a raw Windows path (E:\\...) is read as a URL scheme by dynamic import().
+const lib = pathToFileURL(fileURLToPath(new URL('../lib/time.js', import.meta.url))).href;
 const probe = `import(${JSON.stringify(lib)}).then(m => {
   process.stdout.write(m.formatDhaka('2026-11-14T14:16:00Z') + '|' + m.isoWeek(new Date('2026-11-14T14:16:00Z')));
 });`;
