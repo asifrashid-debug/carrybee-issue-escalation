@@ -1,6 +1,9 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import IssueDrawer from '../components/IssueDrawer';
+import dynamic from 'next/dynamic';
+import { useVisibleInterval } from '../components/cw/useVisibleInterval';
+import { getMe } from '../components/cw/meClient';
+const IssueDrawer = dynamic(() => import('../components/IssueDrawer'), { ssr: false });
 import CopyButton from '../components/CopyButton';
 import { useAnalytics } from '../components/useAnalytics';
 import { fmtN } from '../components/cw/format';
@@ -197,12 +200,13 @@ export default function Tracker() {
   }, [zone, view, search, prio, channel, istat, ostat, page]);
 
   useEffect(() => {
-    fetch('/api/me', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {});
+    getMe().then(setMe).catch(() => {});
     const o = new URLSearchParams(window.location.search).get('open');
     if (o) setOpenId(o);
   }, []);
 
-  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]);
+  useEffect(() => { load(); }, [load]);
+  useVisibleInterval(load, 30000);
   // Counts for the My and Feedback failures chips: count-only requests (pageSize 1), same 30s refresh.
   const loadCounts = useCallback(async () => {
     const want = ['mine', ...(canSeeFailures ? ['failures'] : [])];
@@ -215,7 +219,8 @@ export default function Tracker() {
     }));
     setViewCounts((c) => ({ ...c, ...out }));
   }, [canSeeFailures]);
-  useEffect(() => { loadCounts(); const t = setInterval(loadCounts, 30000); return () => clearInterval(t); }, [loadCounts]);
+  useEffect(() => { loadCounts(); }, [loadCounts]);
+  useVisibleInterval(loadCounts, 30000);
   useEffect(() => { setPage(1); }, [search, prio, channel, istat, ostat, zone, view]);
   useEffect(() => { setSelected(new Set()); }, [zone, view, page, search, prio, channel, istat, ostat]);
 
@@ -601,7 +606,7 @@ export default function Tracker() {
 
       <p className="note">Paged on the server, 20 per page, newest first. Click a card for the issue detail. Times are Asia/Dhaka. Exports include every row in the current view.</p>
 
-      <IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={() => { load(); analytics.reload(); }} onOpen={setOpenId} />
+      {openId && <IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={() => { load(); analytics.reload(); }} onOpen={setOpenId} />}
     </div>
   );
 }

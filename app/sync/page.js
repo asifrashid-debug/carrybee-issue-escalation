@@ -1,4 +1,5 @@
 'use client';
+import { useVisibleInterval } from '../../components/cw/useVisibleInterval';
 import { useEffect, useState } from 'react';
 import { kpiStrip } from '../../components/cw/chartlib';
 import { fmtN } from '../../components/cw/format';
@@ -29,7 +30,8 @@ export default function SyncHealth() {
     } catch (e) { setError(String(e.message || e)); }
     finally { setLoading(false); }
   }
-  useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); }, []);
+  useEffect(() => { load(); }, []);
+  useVisibleInterval(load, 60000);
 
   async function reconcile() {
     setBusy(true); setMsg(null);

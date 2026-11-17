@@ -1,4 +1,5 @@
 'use client';
+import { getMe } from './cw/meClient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import SearchSelect from './SearchSelect';
 import { isValidParcelId, matchActiveHub, requestHubLookup, COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE, MISSING_EXTENSION_MESSAGE } from '../lib/hubLookup.mjs';
@@ -28,7 +29,7 @@ export default function EscalationForm({ channel }) {
 
   useEffect(() => { fetch('/api/masters', { cache: 'no-store' }).then((r) => r.json()).then(setMasters); }, []);
   useEffect(() => {
-    fetch('/api/me', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((m) => {
+    getMe().then((m) => {
       setMe(m);
       if (m?.email) setForm((f) => ({ ...f, email: m.email }));
     });

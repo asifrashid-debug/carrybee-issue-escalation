@@ -8,17 +8,28 @@ const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/api/webhook/sheet', '/_next/'
 const ANY_ROLE_API = ['/api/me'];
 
 // Role of the signed-in user, from users_roles (active rows). Server-side only.
+// Cached per instance for 60 seconds, so every request does not make a database call. A role change or
+// deactivation can take up to 60 seconds to apply.
+const ROLE_TTL = 60000;
+const roleCache = new Map();
 async function roleFor(email) {
+  const hit = roleCache.get(email);
+  if (hit && Date.now() - hit.at < ROLE_TTL) return hit.role;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/users_roles?select=role&is_active=eq.true&email=eq.${encodeURIComponent(email)}`;
   const r = await fetch(url, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' });
   if (!r.ok) return null;
   const rows = await r.json();
-  return rows?.[0]?.role || null;
+  const role = rows?.[0]?.role || null;
+  if (roleCache.size > 500) roleCache.clear();
+  roleCache.set(email, { role, at: Date.now() });
+  return role;
 }
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
+  // Static files need no session check: skip the auth call for them.
+  if (pathname.startsWith('/icons/') || ['/favicon.ico', '/manifest.webmanifest', '/sw.js', '/carrybee-logo.png'].includes(pathname)) return NextResponse.next();
   const res = NextResponse.next({ request: req });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {

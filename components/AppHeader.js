@@ -6,6 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 
 import { navFor } from '../lib/access';
 import NotificationBell from './NotificationBell';
+import { getMe } from './cw/meClient';
 
 // Folder icon per tab (demo FOLDER_ICON map). Unknown tabs fall back to the escalation icon.
 const FOLDER_ICON = { overview: 'zone', analytics: 'trend', tracker: 'escalation', hubs: 'hub', teams: 'team', kam_form: 'kam', mx_form: 'mx', admin: 'layers', sync: 'sync' };
@@ -26,8 +27,7 @@ export default function AppHeader() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/me', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
+    getMe()
       .then((d) => { if (!cancelled && d) setMe(d); })
       .catch(() => {});
     return () => { cancelled = true; };

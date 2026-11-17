@@ -1,4 +1,5 @@
 'use client';
+import { useVisibleInterval } from './cw/useVisibleInterval';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatDhaka } from '../lib/time';
 
@@ -19,11 +20,8 @@ export default function NotificationBell() {
     } catch (e) { /* offline: keep the last list */ }
   }, []);
 
-  useEffect(() => {
-    load();
-    const t = setInterval(load, 30000);
-    return () => clearInterval(t);
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
+  useVisibleInterval(load, 30000);
 
   // Close when clicking outside the bell.
   useEffect(() => {

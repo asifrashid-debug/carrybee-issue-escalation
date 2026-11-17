@@ -8,18 +8,29 @@ export const dynamic = 'force-dynamic';
 
 const COLS = 'issue_id,cm_assigned,submitted_at,email,channel,zone,concern_hub,division,regional_lead,issue_status,kam_feedback_status,issue_category,issue_sub_category,priority_scale,issue_pick_time,issue_response_datetime,ops_issue_status,is_archived,updated_at';
 
+// The escalation list is the same for every viewer (visibility is applied per request below), so it is
+// read once and reused for 30 seconds per instance instead of paging the whole table on every poll.
+const ESC_TTL = 30000;
+let escCache = { at: 0, rows: null };
+
 export async function GET(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const now = new Date();
   try {
     const sb = supabaseAdmin();
     // PostgREST returns max 1000 rows per request; page through all escalations.
-    const escalations = [];
-    for (let from = 0; ; from += 1000) {
-      const { data, error } = await sb.from('escalations').select(COLS).order('submitted_at', { ascending: false }).range(from, from + 999);
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      escalations.push(...data);
-      if (data.length < 1000) break;
+    let escalations;
+    if (escCache.rows && Date.now() - escCache.at < ESC_TTL) {
+      escalations = escCache.rows;
+    } else {
+      escalations = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await sb.from('escalations').select(COLS).order('submitted_at', { ascending: false }).range(from, from + 999);
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        escalations.push(...data);
+        if (data.length < 1000) break;
+      }
+      escCache = { at: Date.now(), rows: escalations };
     }
     const [{ data: users, error: uErr }, { data: hubs, error: hErr }, { data: cats, error: cErr }] = await Promise.all([
       sb.from('users_roles').select('email, display_name, role, teams').eq('is_active', true),

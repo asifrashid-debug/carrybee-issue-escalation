@@ -1,4 +1,5 @@
 'use client';
+import { useVisibleInterval } from './cw/useVisibleInterval';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Live data only. Generated sample figures are not shown on any tracker page.
@@ -27,11 +28,8 @@ export function useAnalytics() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-    const t = setInterval(load, 60000);
-    return () => clearInterval(t);
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
+  useVisibleInterval(load, 60000);
 
   return { data, error, loading, reload: load };
 }
