@@ -40,7 +40,7 @@ export default function RootLayout({ children }) {
         <div className="shell">
           <AppHeader />
           <main className="sheet">{children}</main>
-          <footer className="note" style={{ margin: '0 24px 24px' }}>
+          <footer className="note site-foot">
             <span>CarryBee · Issue ID is the sync key (CB-DD-MM-XXXX) · Times in Asia/Dhaka · Never hard-delete (use Not possible)</span>
             <InstallApp />
           </footer>

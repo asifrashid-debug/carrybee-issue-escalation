@@ -287,3 +287,18 @@
 .box-warn{background:#FFF3C2;border-color:transparent;color:#5C4300}
 
 .bell{position:relative;display:inline-flex}
+
+/* ===== Full-width site layout: no side gutters or framed column on wide screens ===== */
+:root{--gutter:clamp(16px,2.2vw,40px)}
+.shell{max-width:none;margin:0;min-height:100vh;display:flex;flex-direction:column}
+.hdr{background:var(--surface);border-bottom:1px solid var(--line)}
+.hdrbar{height:64px;padding:0 var(--gutter)}
+.folders{padding:16px var(--gutter) 0}
+.sheet{flex:1 0 auto;max-width:none;margin:0;padding:24px var(--gutter) 48px;background:var(--surface);border:0;border-radius:0;box-shadow:none}
+.site-foot{margin:0;padding:16px var(--gutter) 24px;background:transparent}
+@media (max-width:640px){
+  .hdrbar{padding:0 12px}
+  .folders{padding:12px 12px 0}
+  .sheet{padding:16px 12px 40px}
+  .site-foot{padding:14px 12px 20px}
+}
