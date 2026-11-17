@@ -141,9 +141,10 @@ export async function POST(req) {
   if (!priority_scale) return NextResponse.json({ error: 'This sub category has no priority set. Contact admin.' }, { status: 400 });
   // Business (MX only): a business ID or name is resolved to the business name and its KAM. No match -> 'CM'.
   let merchant_name = body.merchant_name?.trim() || null;
-  let kam_name = body.kam_name?.trim() || null;
+  let kam_name = null; // KAM form: set from the signed-in account below. MX form: from the business.
   if (isKam) {
     merchant_name = null; // KAM form does not capture a merchant
+    kam_name = (session.display_name || '').trim() || session.email; // stored account name (users_roles.display_name)
   } else {
     try {
       const biz = await lookupBusiness(sb, body.merchant_name);

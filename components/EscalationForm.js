@@ -131,9 +131,9 @@ export default function EscalationForm({ channel }) {
     if (isKam && !form.consignment_id.trim()) { setErr('Consignment ID is required.'); return; }
     if (!isKam && !form.consignment_id.trim() && !form.merchant_name.trim()) { setErr('Consignment ID and Merchant name cannot both be empty. Provide at least one.'); return; }
     if (form.issue_details.trim().length < 20) { setErr('Issue Details must be at least 20 characters.'); return; }
-    // Zone and KAM are set by the server. KAM form sends its typed KAM name; MX form sends the merchant only.
+    // Zone and KAM are set by the server. The KAM name comes from the signed-in account; MX form sends the merchant only.
     const body = { channel, email: form.email, consignment_id: form.consignment_id, concern_hub: form.concern_hub, issue_category: form.issue_category, issue_sub_category: form.issue_sub_category, issue_details: form.issue_details };
-    if (isKam) body.kam_name = form.kam_name; else body.merchant_name = form.merchant_name;
+    if (!isKam) body.merchant_name = form.merchant_name;
     setBusy(true);
     const res = await fetch('/api/escalations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await res.json().catch(() => ({})); setBusy(false);
@@ -224,8 +224,8 @@ export default function EscalationForm({ channel }) {
             </div>
             {isKam ? (
               <div>
-                <label className="flabel">KAM Name * <small>(typed in)</small></label>
-                <div className="fctl"><input value={form.kam_name} onChange={(e) => set('kam_name', e.target.value)} placeholder="KAM name" /></div>
+                <label className="flabel">KAM Name <small>(from your account)</small></label>
+                <div className="fctl lk"><input value={me?.display_name || me?.email || ''} readOnly aria-readonly="true" placeholder="Loading your name…" /></div>
               </div>
             ) : (
               <div>
