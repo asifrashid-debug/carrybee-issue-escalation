@@ -310,3 +310,6 @@
 
 /* Tracker cards: empty stacked bar shows a track, not nothing */
 .stackbar{background:var(--track);min-height:14px}
+
+/* Form submit: same bee animation as the sign-in button. Keep the colour bright while busy. */
+.submit.lg-busy:disabled{opacity:.92;cursor:progress}

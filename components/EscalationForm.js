@@ -272,7 +272,7 @@ export default function EscalationForm({ channel }) {
       <div className="kside-card">
         <h3>Submit</h3>
         <p className="small muted" style={{ margin: '0 0 12px' }}>Writes to the database. Nothing is sent until you submit.</p>
-        <button type="submit" form="escalation-form" className="submit" disabled={busy} style={{ width: '100%' }}>{busy ? 'Submitting…' : `Submit ${isKam ? 'KAM' : 'MX'} Escalation`}</button>
+        <button type="submit" form="escalation-form" className={'submit' + (busy ? ' lg-busy' : '')} disabled={busy} style={{ width: '100%' }}>{busy ? <span className="lg-loading"><svg className="lg-bee-fly" viewBox="0 0 60 40" aria-hidden="true"><ellipse className="lg-wing" cx="26" cy="11" rx="8" ry="6" fill="currentColor" opacity=".85" /><ellipse className="lg-wing lg-wing-b" cx="36" cy="10" rx="8" ry="6" fill="currentColor" opacity=".6" /><path d="M14 22c6-1 12 0 18 2 9 3 14 0 16 4-1 6-12 10-22 8-6-1-10-6-12-14z" fill="currentColor" /><path d="M22 22v9M30 23v8M38 24v6" stroke="var(--bee)" strokeWidth="2.4" strokeLinecap="round" /></svg>Submitting…</span> : `Submit ${isKam ? 'KAM' : 'MX'} Escalation`}</button>
       </div>
     </aside>
     </div>
