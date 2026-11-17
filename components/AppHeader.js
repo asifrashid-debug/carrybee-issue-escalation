@@ -26,6 +26,7 @@ export default function AppHeader() {
   const [now, setNow] = useState('');
 
   useEffect(() => {
+    if (path === '/login') return undefined; // signed-out page: no /api/me call (it would return 401)
     let cancelled = false;
     getMe()
       .then((d) => { if (!cancelled && d) setMe(d); })

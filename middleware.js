@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { canOpenTab, tabForPath, tabsFor } from './lib/access';
 
 // Everything except the sign-in page, auth endpoints, the sheet webhook (secret-checked) and static assets needs a session.
-const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/api/webhook/sheet', '/_next/', '/carrybee-logo.png', '/favicon.ico', '/manifest.webmanifest', '/sw.js', '/icons/'];
+const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/api/webhook/sheet', '/_next/', '/carrybee-logo.png', '/logo-light.png', '/logo-dark.png', '/favicon.ico', '/manifest.webmanifest', '/sw.js', '/icons/'];
 // Signed-in users of any role may call these (the header reads /api/me to build the nav).
 const ANY_ROLE_API = ['/api/me'];
 
@@ -29,7 +29,7 @@ async function roleFor(email) {
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
   // Static files need no session check: skip the auth call for them.
-  if (pathname.startsWith('/icons/') || ['/favicon.ico', '/manifest.webmanifest', '/sw.js', '/carrybee-logo.png'].includes(pathname)) return NextResponse.next();
+  if (pathname.startsWith('/icons/') || ['/favicon.ico', '/manifest.webmanifest', '/sw.js', '/carrybee-logo.png', '/logo-light.png', '/logo-dark.png'].includes(pathname)) return NextResponse.next();
   const res = NextResponse.next({ request: req });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {
