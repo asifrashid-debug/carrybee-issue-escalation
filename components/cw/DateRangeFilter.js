@@ -38,7 +38,10 @@ export default function DateRangeFilter() {
         {rangeLabel(range)}
       </button>
       {open && (
+        <>
+        <div className="dr-scrim" aria-hidden="true" onClick={() => setOpen(false)} />
         <div className="dr-pop" role="dialog" aria-label="Choose date range">
+          <div className="dr-head"><b>Date range</b><button type="button" className="dr-close" onClick={() => setOpen(false)}>Close</button></div>
           <div className="dr-presets">
             <button type="button" className={range.key === 'all' ? 'on' : ''} onClick={() => { choose({ key: 'all' }); setOpen(false); }}>All time</button>
             {PRESETS.map((p) => (
@@ -54,6 +57,7 @@ export default function DateRangeFilter() {
             <button type="button" className="submit" disabled={!from && !to} onClick={applyCustom}>Apply</button>
           </div>
         </div>
+        </>
       )}
     </div>
   );
