@@ -180,6 +180,26 @@ export default function Admin() {
   const [newUser, setNewUser] = useState(EMPTY_USER);
   const [newSetting, setNewSetting] = useState(EMPTY_SETTING);
   const [loadedAt, setLoadedAt] = useState(null);
+  const [saving, setSaving] = useState(null); // entity being saved, or null
+  const [saveMsg, setSaveMsg] = useState(null); // { entity, kind: 'ok' | 'bad', text }
+
+  // Saves one Add form (super admin). The server validates and audits; the form resets on success.
+  async function saveMaster(entity, data, reset) {
+    setSaving(entity); setSaveMsg(null);
+    try {
+      const r = await fetch('/api/masters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entity, data }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+      setSaveMsg({ entity, kind: 'ok', text: `Saved ${j.entity_key}. The change is in the audit log.` });
+      reset();
+      load();
+    } catch (e) {
+      setSaveMsg({ entity, kind: 'bad', text: String(e.message || e) });
+    } finally { setSaving(null); }
+  }
+  const msgFor = (entity) => (saveMsg && saveMsg.entity === entity ? (
+    <div className={`box ${saveMsg.kind === 'ok' ? 'box-ok' : 'box-bad'}`} role={saveMsg.kind === 'ok' ? 'status' : 'alert'}>{saveMsg.text}</div>
+  ) : null);
 
   async function load() {
     try {
@@ -267,7 +287,7 @@ export default function Admin() {
             </div>
 
             <aside className="card admin-add" aria-label="Add hub">
-              <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add hub</h2><small>Super admin only · syncs to the hub response sheet</small></div></div>
+              <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add hub</h2><small>Super admin only · saves to the database</small></div></div>
               <div className="stack" style={{ gap: 12, marginTop: 14 }}>
                 <div className="field">
                   <label htmlFor="new-hub-name">Hub name *</label>
@@ -294,8 +314,9 @@ export default function Admin() {
                   <label htmlFor="new-hub-cluster">Cluster lead</label>
                   <div className="fctl"><input id="new-hub-cluster" value={newHub.cluster_lead} onChange={(e) => setHubField('cluster_lead', e.target.value)} /></div>
                 </div>
-                <div className="box box-warn" role="status">Sync is off. Nothing is written to the database or the hub response sheet until the sheet ID, tab name and header row are confirmed.</div>
-                <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save hub (sync off)</button>
+                <p className="note" style={{ margin: 0 }}>Saves to the database only. The hub response sheet is not changed.</p>
+                {msgFor('hub')}
+                <button type="button" className="btn bee" disabled={saving === 'hub'} onClick={() => saveMaster('hub', newHub, () => setNewHub(EMPTY_HUB))} style={{ justifyContent: 'center' }}>{saving === 'hub' ? 'Saving…' : 'Save hub'}</button>
               </div>
             </aside>
           </div>
@@ -331,7 +352,7 @@ export default function Admin() {
             </div>
             {addFor === 'cats' && (
               <aside className="card admin-add" aria-label="Add category">
-                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add category</h2><small>Super admin only · saving not connected yet</small></div></div>
+                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add category</h2><small>Super admin only · saves to the category master</small></div></div>
                 <div className="stack" style={{ gap: 12, marginTop: 14 }}>
                   <Field id="new-cat-category" label="Issue category" required><input id="new-cat-category" value={newCat.category} onChange={(e) => setNewCat({ ...newCat, category: e.target.value })} placeholder="e.g. Pickup Issue" /></Field>
                   <Field id="new-cat-sub" label="Sub-category" required><input id="new-cat-sub" value={newCat.sub_category} onChange={(e) => setNewCat({ ...newCat, sub_category: e.target.value })} /></Field>
@@ -351,8 +372,8 @@ export default function Admin() {
                       <input id={`new-cat-${k}`} type="number" min="1" value={newCat[k]} onChange={(e) => setNewCat({ ...newCat, [k]: e.target.value })} />
                     </Field>
                   ))}
-                  <div className="box box-warn" role="status">Saving is not connected yet. Nothing is written to the category master from this form.</div>
-                  <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save category (not connected)</button>
+                  {msgFor('category')}
+                  <button type="button" className="btn bee" disabled={saving === 'category'} onClick={() => saveMaster('category', newCat, () => setNewCat(EMPTY_CAT))} style={{ justifyContent: 'center' }}>{saving === 'category' ? 'Saving…' : 'Save category'}</button>
                 </div>
               </aside>
             )}
@@ -390,7 +411,7 @@ export default function Admin() {
             </div>
             {addFor === 'users' && (
               <aside className="card admin-add" aria-label="Add user">
-                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add user</h2><small>Super admin only · saving not connected yet</small></div></div>
+                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add user</h2><small>Super admin only · the user can sign in with this role once saved</small></div></div>
                 <div className="stack" style={{ gap: 12, marginTop: 14 }}>
                   <Field id="new-user-name" label="Name" required><input id="new-user-name" value={newUser.display_name} onChange={(e) => setNewUser({ ...newUser, display_name: e.target.value })} placeholder="e.g. Md. Rahim Uddin" /></Field>
                   <Field id="new-user-email" label="Email" required><input id="new-user-email" type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="name@carrybee.com" /></Field>
@@ -401,8 +422,8 @@ export default function Admin() {
                   </Field>
                   <Field id="new-user-teams" label="Teams (comma separated)"><input id="new-user-teams" value={newUser.teams} onChange={(e) => setNewUser({ ...newUser, teams: e.target.value })} placeholder="e.g. KAM, CM" /></Field>
                   <Field id="new-user-zone" label="Zone"><select id="new-user-zone" value={newUser.zone} onChange={(e) => setNewUser({ ...newUser, zone: e.target.value })}><option value="">None</option>{ZONES_LIST.map((x) => <option key={x} value={x}>{x}</option>)}</select></Field>
-                  <div className="box box-warn" role="status">Saving is not connected yet. Nothing is written to users or access rules from this form.</div>
-                  <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save user (not connected)</button>
+                  {msgFor('user')}
+                  <button type="button" className="btn bee" disabled={saving === 'user'} onClick={() => saveMaster('user', newUser, () => setNewUser(EMPTY_USER))} style={{ justifyContent: 'center' }}>{saving === 'user' ? 'Saving…' : 'Save user'}</button>
                 </div>
               </aside>
             )}
@@ -430,13 +451,13 @@ export default function Admin() {
               </div>
               {addFor === 'sla' && (
                 <aside className="card admin-add" aria-label="Add setting">
-                  <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add setting</h2><small>Super admin only · saving not connected yet</small></div></div>
+                  <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add setting</h2><small>Super admin only · saves to app settings</small></div></div>
                   <div className="stack" style={{ gap: 12, marginTop: 14 }}>
                     <Field id="new-set-key" label="Setting key" required><input id="new-set-key" value={newSetting.key} onChange={(e) => setNewSetting({ ...newSetting, key: e.target.value })} placeholder="e.g. pick_hours" /></Field>
                     <Field id="new-set-value" label="Value (text or JSON)" required><input id="new-set-value" value={newSetting.value} onChange={(e) => setNewSetting({ ...newSetting, value: e.target.value })} placeholder='e.g. 4 or {"hours": 4}' /></Field>
                     <Field id="new-set-desc" label="Description"><input id="new-set-desc" value={newSetting.description} onChange={(e) => setNewSetting({ ...newSetting, description: e.target.value })} /></Field>
-                    <div className="box box-warn" role="status">Saving is not connected yet. Nothing is written to app settings from this form.</div>
-                    <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save setting (not connected)</button>
+                    {msgFor('setting')}
+                    <button type="button" className="btn bee" disabled={saving === 'setting'} onClick={() => saveMaster('setting', newSetting, () => setNewSetting(EMPTY_SETTING))} style={{ justifyContent: 'center' }}>{saving === 'setting' ? 'Saving…' : 'Save setting'}</button>
                   </div>
                 </aside>
               )}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
-import { requireUser } from '../../../lib/session';
+import { requireUser, requireRole } from '../../../lib/session';
+import { MasterInputError, BUILDERS, TABLES, entityKey } from '../../../lib/mastersWrite';
 export const dynamic = 'force-dynamic';
 export async function GET() {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
@@ -15,4 +16,44 @@ export async function GET() {
   // The user list and app settings are admin-only.
   const isAdmin = session.role === 'admin';
   return NextResponse.json({ hubs: hubs||[], categories: cats||[], users: isAdmin ? (users||[]) : [], config: isAdmin ? (cfg||[]) : [] });
+}
+
+// Super admin adds one row to a master, then writes an audit entry. Body: { entity, data }.
+// Writes only to the database. Nothing is written to the zone or hub response sheets.
+export async function POST(request) {
+  const auth = await requireUser(); if (auth.response) return auth.response;
+  const user = auth.user;
+  const denied = requireRole(user, ['admin']); if (denied) return denied;
+
+  let body;
+  try { body = await request.json(); } catch { return NextResponse.json({ error: 'Send the form as JSON.' }, { status: 400 }); }
+  const entity = body?.entity;
+  const build = BUILDERS[entity];
+  if (!build) return NextResponse.json({ error: 'Unknown form.' }, { status: 400 });
+
+  let row;
+  try { row = build(body.data || {}); }
+  catch (e) {
+    if (e instanceof MasterInputError) return NextResponse.json({ error: e.message }, { status: 400 });
+    throw e;
+  }
+
+  const sb = supabaseAdmin();
+  const { error } = await sb.from(TABLES[entity]).insert(row);
+  if (error) {
+    if (error.code === '23505') {
+      return NextResponse.json({ error: `That ${entity} already exists: ${entityKey(entity, row)}.` }, { status: 409 });
+    }
+    return NextResponse.json({ error: `Could not save: ${error.message}` }, { status: 500 });
+  }
+
+  const key = entityKey(entity, row);
+  const { error: auditErr } = await sb.from('masters_audit_log').insert({
+    entity, entity_key: key, action: 'add', actor_email: user.email, details: row,
+  });
+  if (auditErr) {
+    // The row is saved. Report it so the admin can record it by hand.
+    return NextResponse.json({ error: `Saved ${key}, but the audit entry failed: ${auditErr.message}` }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, entity, entity_key: key });
 }
