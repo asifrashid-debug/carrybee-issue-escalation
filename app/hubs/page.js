@@ -1,4 +1,7 @@
 'use client';
+import DateRangeFilter from '../../components/cw/DateRangeFilter';
+import { useDateRange } from '../../components/cw/useDateRange';
+import { rangeLabel, rangePhrase } from '../../lib/dateRange';
 import { useMemo, useState } from 'react';
 import { useAnalytics } from '../../components/useAnalytics';
 import { bars, hbars, gauge, gradePill, sbar, kpiStrip } from '../../components/cw/chartlib';
@@ -15,6 +18,7 @@ const gradeOf = (pct) => (pct == null ? null : pct >= 90 ? 'A' : pct >= 75 ? 'B'
 // HUB Performance, demo layout (carrybee-complete-web.html pHubs). Live hub numbers only.
 export default function HubPerformance() {
   const { data, error, loading, reload } = useAnalytics();
+  const { range } = useDateRange();
   const [zone, setZone] = useState('All Zones');
   const [q, setQ] = useState('');
   const [sort, setSort] = useState({ key: 'breaches', desc: true });
@@ -36,7 +40,7 @@ export default function HubPerformance() {
   if (!data) {
     return (
       <div>
-        <div className="ph"><div><div className="kicker">HUB performance · 14 days</div><h1>Hub performance</h1><p className="sub">Hub-level scorecards ranked by first-comment SLA</p></div></div>
+        <div className="ph"><div><div className="kicker">{`HUB performance · ${rangeLabel(range)}`}</div><h1>Hub performance</h1><p className="sub">Hub-level scorecards ranked by first-comment SLA</p></div><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><DateRangeFilter /></div></div>
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -64,7 +68,7 @@ export default function HubPerformance() {
     <div>
       <div className="ph">
         <div>
-          <div className="kicker">HUB performance · 14 days</div>
+          <div className="kicker">{`HUB performance · ${rangeLabel(range)}`}</div>
           <h1>Hub performance</h1>
           <p className="sub">{`${fmtN(data.hubCount.withIssues)} hubs with escalations, of ${fmtN(data.hubCount.active)} active · ranked by first-comment SLA`}</p>
         </div>
@@ -74,6 +78,7 @@ export default function HubPerformance() {
               <span key={z} role="button" tabIndex={0} className={zone === z ? 'on' : ''} aria-pressed={zone === z} onClick={() => setZone(z)} onKeyDown={(e) => { if (e.key === 'Enter') setZone(z); }}>{z}</span>
             ))}
           </div>
+          <DateRangeFilter />
           <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : 'Refresh'}</button>
           <span className="chip"><span className="live" aria-hidden="true" />Live · synced {formatDhaka(data.generatedAt)}</span>
         </div>

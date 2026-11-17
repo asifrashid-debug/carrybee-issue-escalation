@@ -1,5 +1,6 @@
 'use client';
 import { useVisibleInterval } from './cw/useVisibleInterval';
+import { useDateRange } from './cw/useDateRange';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Live data only. Generated sample figures are not shown on any tracker page.
@@ -10,11 +11,17 @@ export function useAnalytics() {
 
   // Ignore responses from superseded requests so a slow earlier response cannot overwrite a newer one.
   const latest = useRef(0);
+  const { range, ready } = useDateRange();
+  const { from, to } = range;
   const load = useCallback(async () => {
+    if (!ready) return;
     const id = ++latest.current;
     setLoading(true);
     try {
-      const r = await fetch('/api/analytics', { cache: 'no-store' });
+      const qs = new URLSearchParams();
+      if (from) qs.set('from', from);
+      if (to) qs.set('to', to);
+      const r = await fetch(`/api/analytics?${qs}`, { cache: 'no-store' });
       const j = await r.json();
       if (id !== latest.current) return;
       if (!r.ok) throw new Error(j.error || 'Failed to load analytics');
@@ -26,7 +33,7 @@ export function useAnalytics() {
     } finally {
       if (id === latest.current) setLoading(false);
     }
-  }, []);
+  }, [ready, from, to]);
 
   useEffect(() => { load(); }, [load]);
   useVisibleInterval(load, 60000);

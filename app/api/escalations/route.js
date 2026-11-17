@@ -4,6 +4,7 @@ import { pushToSheet } from '../../../lib/sheets';
 import { isoWeek } from '../../../lib/time';
 import { loadScope, scopeFilter } from '../../../lib/visibility';
 import { requireUser } from '../../../lib/session';
+import { resolveRange, rangeBounds } from '../../../lib/dateRange';
 import { lookupBusiness } from '../../../lib/business';
 import { priorityForIssueType } from '../../../lib/priority';
 import { feedbackPhase, windowEndFrom, FEEDBACK_PENDING } from '../../../lib/feedback';
@@ -58,6 +59,10 @@ export async function GET(req) {
   eq('ops_status','ops_status'); eq('validation','validation'); eq('priority_scale','priority_scale'); eq('week','week');
   eq('concern_hub','concern_hub'); eq('regional_lead','regional_lead'); eq('division','division');
   eq('issue_category','issue_category'); eq('issue_sub_category','issue_sub_category');
+  // Date range (Dhaka days, by submitted date). Empty = all time.
+  const rb = rangeBounds(resolveRange({ key: 'custom', from: searchParams.get('from'), to: searchParams.get('to') }));
+  if (rb?.start != null) q = q.gte('submitted_at', new Date(rb.start).toISOString());
+  if (rb?.end != null) q = q.lt('submitted_at', new Date(rb.end).toISOString());
   const mine = searchParams.get('mine'); if (mine) q = q.eq('email', mine);
   // Visibility comes from the signed-in session, not the URL (lib/roles.js rules)
   const scope = await loadScope(sb, session);

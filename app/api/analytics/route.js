@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../../../lib/supabase';
 import { computeAnalytics } from '../../../lib/analytics';
 import { requireUser } from '../../../lib/session';
 import { loadScope, isVisible } from '../../../lib/visibility';
+import { resolveRange, rangeBounds, rangeDays } from '../../../lib/dateRange';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,14 @@ export async function GET(req) {
     // Team Performance and HUB Performance show only the issues this viewer can see (same rules as the tracker)
     const scope = await loadScope(sb, session);
     const visible = escalations.filter((e) => isVisible(scope, e));
-    const result = computeAnalytics({ escalations: visible, users: users || [], hubs: hubs || [], categories: cats || [], now });
+    // Date range from the calendar (Dhaka days). The trend and ageing end at the range end, or now.
+    const qs = new URL(req.url).searchParams;
+    const range = resolveRange({ key: 'custom', from: qs.get('from'), to: qs.get('to') });
+    const rb = rangeBounds(range);
+    const inRange = rb ? visible.filter((e) => { const t = Date.parse(e.submitted_at); return (rb.start == null || t >= rb.start) && (rb.end == null || t < rb.end); }) : visible;
+    const calcNow = rb?.end != null ? new Date(Math.min(now.getTime(), rb.end)) : now;
+    const days = rangeDays(range, calcNow.getTime());
+    const result = computeAnalytics({ escalations: inRange, users: users || [], hubs: hubs || [], categories: cats || [], now: calcNow, days });
     // Team leads and CM leads see only their own team(s) in Team Performance (members and admin keep the full list)
     if (['team_lead', 'cm_lead'].includes(session.role)) {
       const mine = new Set(session.teams || []);

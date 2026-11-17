@@ -1,4 +1,7 @@
 'use client';
+import DateRangeFilter from '../../components/cw/DateRangeFilter';
+import { useDateRange } from '../../components/cw/useDateRange';
+import { rangeLabel, rangePhrase } from '../../lib/dateRange';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAnalytics } from '../../components/useAnalytics';
@@ -14,12 +17,12 @@ const Html = ({ html, className }) => <div className={className} dangerouslySetI
 // Dashboard, demo layout (carrybee-complete-web.html pDash). Every number comes from the live analytics payload.
 export default function Dashboard() {
   const { data, error, loading, reload } = useAnalytics();
-  const [mode, setMode] = useState('desk');
+  const { range } = useDateRange();
 
   if (!data) {
     return (
       <div id="dash">
-        <div className="ph"><div><div className="kicker">Dashboard · 14 days</div><h1>Operations overview</h1><p className="sub">All teams and zones, scoped to your access</p></div></div>
+        <div className="ph"><div><div className="kicker">{`Dashboard · ${rangeLabel(range)}`}</div><h1>Operations overview</h1><p className="sub">All teams and zones, scoped to your access</p></div><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><DateRangeFilter /></div></div>
         {error ? <div className="card" role="alert"><b>Could not load data.</b> {error}</div> : <div className="card">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -56,7 +59,7 @@ export default function Dashboard() {
 
       <div className="card mt">
         <div className="card-h">
-          <div><h2>Escalation flow</h2><small>Submitted, picked and first response · last 14 days · Asia/Dhaka</small></div>
+          <div><h2>Escalation flow</h2><small>{`Submitted, picked and first response · ${rangePhrase(range)} · Asia/Dhaka`}</small></div>
           <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#37A9FF', l: 'Picked' }, { c: '#0A7A56', l: 'Responded' }])} />
         </div>
         <Fit render={(w) => wave({ w, labels, every: 1, label: 'Escalation flow', bg: '#FFFFFF', h: 250, series: flowSeries })} />
@@ -231,41 +234,22 @@ export default function Dashboard() {
     </div>
   );
 
-  const phone = (
-    <div className="phone-only"><div className="phone">
-      <div className="kicker" style={{ marginBottom: 10 }}>Phone summary · today</div>
-      <div className="tile t-bee"><div className="lab">Open backlog</div><div className="big">{fmtN(k.open)}</div><small style={{ fontWeight: 600 }}>{fmtN(k.unpicked)} unpicked · {fmtN(k.awaitingResponse)} awaiting reply</small></div>
-      <div className="ptwo" style={{ marginTop: 12 }}>
-        <div className="tile"><div className="lab">Breaches</div><div className="big" style={{ fontSize: 30, color: 'var(--flare-ink)' }}>{fmtN(k.breaches)}</div></div>
-        <div className="tile"><div className="lab">First response</div><div className="big" style={{ fontSize: 30 }}>{fmtH(k.medianResponseHours)}</div></div>
-      </div>
-      <div className="tile t-ink" style={{ marginTop: 12 }}><div className="lab">SLA compliance</div><Html html={gauge({ value: k.responseSlaPct ?? 0, color: '#FFCC00', center: fmtPct(k.responseSlaPct), sub: 'comment within 2h', track: 'rgba(255,255,255,.12)', w: 200 })} /></div>
-      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Escalation flow · 14 days</div><Fit render={(w) => wave({ w, labels, every: 3, label: 'Flow', bg: '#FFFFFF', h: 170, series: flowSeries })} /></div>
-      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Open by zone</div><div style={{ marginTop: 10 }}><Fit render={(w) => bars({ w, items: zoneItems, h: 170 })} /></div></div>
-      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Priority mix</div><div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}><Html html={donut({ segments: priSegs, center: fmtN(k.open), sub: 'open', size: 150, stroke: 16 })} /></div></div>
-    </div></div>
-  );
-
   return (
-    <div id="dash" className={mode === 'phone' ? 'mode-phone' : ''}>
+    <div id="dash">
       <div className="ph">
         <div>
-          <div className="kicker">Dashboard · 14 days</div>
+          <div className="kicker">{`Dashboard · ${rangeLabel(range)}`}</div>
           <h1>Operations overview</h1>
-          <p className="sub">{`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · last 14 days`}</p>
+          <p className="sub">{`All teams and zones · ${data.meta.rows ? `${fmtN(data.meta.rows)} escalations in your scope` : 'your scope'} · ${rangePhrase(range)}`}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="seg" role="group" aria-label="View mode">
-            <span role="button" tabIndex={0} className={mode === 'desk' ? 'on' : ''} aria-pressed={mode === 'desk'} onClick={() => setMode('desk')}>Desktop</span>
-            <span role="button" tabIndex={0} className={mode === 'phone' ? 'on' : ''} aria-pressed={mode === 'phone'} onClick={() => setMode('phone')}>Phone summary</span>
-          </div>
+          <DateRangeFilter />
           <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : 'Refresh'}</button>
           <span className="chip"><span className="live" aria-hidden="true" />Live · synced {formatDhaka(data.generatedAt)}</span>
         </div>
       </div>
       {error && <div className="card" role="alert" style={{ marginBottom: 12 }}>Could not refresh: {error}</div>}
       {desk}
-      {phone}
     </div>
   );
 }

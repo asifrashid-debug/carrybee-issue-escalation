@@ -1,4 +1,6 @@
 'use client';
+import DateRangeFilter from '../components/cw/DateRangeFilter';
+import { useDateRange } from '../components/cw/useDateRange';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useVisibleInterval } from '../components/cw/useVisibleInterval';
@@ -76,6 +78,8 @@ function pickLine(e) {
 function buildQuery(f, extra = {}) {
   const p = new URLSearchParams();
   if (f.zone) p.set('zone', f.zone);
+  if (f.from) p.set('from', f.from);
+  if (f.to) p.set('to', f.to);
   const listView = LIST_VIEWS.includes(f.view) ? f.view : '';
   const base = {
     view: listView,
@@ -147,6 +151,7 @@ export default function Tracker() {
   const [channel, setChannel] = useState('');
   const [istat, setIstat] = useState('');
   const [ostat, setOstat] = useState('');
+  const { range, ready } = useDateRange();
   const [panel, setPanel] = useState(null); // null | 'filters' | 'columns'
   const [extraCols, setExtraCols] = useState({});
   const [page, setPage] = useState(1);
@@ -171,12 +176,13 @@ export default function Tracker() {
   const filterCount = [prio, channel, istat, ostat].filter(Boolean).length;
 
   const load = useCallback(async () => {
+    if (!ready) return;
     setLoading(true);
-    const f = { zone, view, search, prio, channel, istat, ostat, page };
+    const f = { zone, view, search, prio, channel, istat, ostat, page, from: range.from, to: range.to };
     try {
       if (view === 'board') {
         const res = await Promise.all(COLUMNS.map((c) =>
-          fetch(`/api/escalations?${buildQuery({ zone }, { ...c.params, pageSize: 6 })}`, { cache: 'no-store' }).then((r) => r.json())));
+          fetch(`/api/escalations?${buildQuery({ zone, from: range.from, to: range.to }, { ...c.params, pageSize: 6 })}`, { cache: 'no-store' }).then((r) => r.json())));
         const failed = res.find((r) => r.error);
         if (failed) throw new Error(failed.error);
         const b = {};
@@ -197,7 +203,7 @@ export default function Tracker() {
     } finally {
       setLoading(false);
     }
-  }, [zone, view, search, prio, channel, istat, ostat, page]);
+  }, [zone, view, search, prio, channel, istat, ostat, page, ready, range.from, range.to]);
 
   useEffect(() => {
     getMe().then(setMe).catch(() => {});
@@ -209,16 +215,17 @@ export default function Tracker() {
   useVisibleInterval(load, 30000);
   // Counts for the My and Feedback failures chips: count-only requests (pageSize 1), same 30s refresh.
   const loadCounts = useCallback(async () => {
+    if (!ready) return;
     const want = ['mine', ...(canSeeFailures ? ['failures'] : [])];
     const out = {};
     await Promise.all(want.map(async (v) => {
       try {
-        const j = await fetch(`/api/escalations?${buildQuery({ view: v }, { pageSize: 1 })}`, { cache: 'no-store' }).then((r) => r.json());
+        const j = await fetch(`/api/escalations?${buildQuery({ view: v, from: range.from, to: range.to }, { pageSize: 1 })}`, { cache: 'no-store' }).then((r) => r.json());
         if (!j.error) out[v] = j.count || 0;
       } catch { /* chip stays hidden */ }
     }));
     setViewCounts((c) => ({ ...c, ...out }));
-  }, [canSeeFailures]);
+  }, [canSeeFailures, ready, range.from, range.to]);
   useEffect(() => { loadCounts(); }, [loadCounts]);
   useVisibleInterval(loadCounts, 30000);
   useEffect(() => { setPage(1); }, [search, prio, channel, istat, ostat, zone, view]);
@@ -246,7 +253,7 @@ export default function Tracker() {
   async function exportRows() {
     const out = [];
     for (let p = 1; p <= 10; p++) {
-      const j = await fetch(`/api/escalations?${buildQuery({ zone, view, search, prio, channel, istat, ostat, page: p }, { pageSize: 100 })}`, { cache: 'no-store' }).then((r) => r.json());
+      const j = await fetch(`/api/escalations?${buildQuery({ zone, view, search, prio, channel, istat, ostat, page: p, from: range.from, to: range.to }, { pageSize: 100 })}`, { cache: 'no-store' }).then((r) => r.json());
       if (j.error) throw new Error(j.error);
       out.push(...(j.data || []));
       if ((j.data || []).length < 100) break;
@@ -354,6 +361,7 @@ export default function Tracker() {
           <p className="sub">Triage first. The queue is the main column and charts give context beside it.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <DateRangeFilter />
           <label className="search">
             <span aria-hidden="true">⌕</span>
             <input type="search" placeholder="Search issue ID, consignment or merchant" aria-label="Search issues" value={search} onChange={(e) => setSearch(e.target.value)} style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, minWidth: 0, font: 'inherit', color: 'inherit' }} />

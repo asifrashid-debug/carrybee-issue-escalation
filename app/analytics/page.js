@@ -1,4 +1,7 @@
 'use client';
+import DateRangeFilter from '../../components/cw/DateRangeFilter';
+import { useDateRange } from '../../components/cw/useDateRange';
+import { rangeLabel, rangePhrase } from '../../lib/dateRange';
 import { useAnalytics } from '../../components/useAnalytics';
 import { wave, bars, hbars, donut, gauge, legend, kpiStrip } from '../../components/cw/chartlib';
 import Fit from '../../components/cw/Fit';
@@ -13,11 +16,12 @@ const FB_COLOR = ['#00E5A0', '#37A9FF', '#FF5470', '#A3A1A8'];
 // Analytics, demo layout (carrybee-complete-web.html pAnalytics). Every number is live and scoped to the viewer's access.
 export default function Analytics() {
   const { data, error, loading, reload } = useAnalytics();
+  const { range } = useDateRange();
 
   if (!data) {
     return (
       <div>
-        <div className="ph"><div><div className="kicker">Analytics · 14 days</div><h1>Escalation analytics</h1><p className="sub">Trend, distribution, SLA funnel and operational patterns</p></div></div>
+        <div className="ph"><div><div className="kicker">{`Analytics · ${rangeLabel(range)}`}</div><h1>Escalation analytics</h1><p className="sub">Trend, distribution, SLA funnel and operational patterns</p></div><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><DateRangeFilter /></div></div>
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -40,11 +44,12 @@ export default function Analytics() {
     <div>
       <div className="ph">
         <div>
-          <div className="kicker">Analytics · 14 days</div>
+          <div className="kicker">{`Analytics · ${rangeLabel(range)}`}</div>
           <h1>Escalation analytics</h1>
-          <p className="sub">{`Trend, distribution, SLA funnel and operational patterns · last 14 days${busiest ? ` · busiest zone ${busiest.zone}` : ''}`}</p>
+          <p className="sub">{`Trend, distribution, SLA funnel and operational patterns · ${rangePhrase(range)}${busiest ? ` · busiest zone ${busiest.zone}` : ''}`}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <DateRangeFilter />
           <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : 'Refresh'}</button>
           <span className="chip"><span className="live" aria-hidden="true" />Live · synced {formatDhaka(data.generatedAt)}</span>
         </div>
@@ -61,7 +66,7 @@ export default function Analytics() {
 
       <div className="card mt">
         <div className="card-h">
-          <div><h2>Daily volume</h2><small>Submitted and first responses, last 14 days (Dhaka)</small></div>
+          <div><h2>Daily volume</h2><small>{`Submitted and first responses, ${rangePhrase(range)} (Dhaka)`}</small></div>
           <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#0A7A56', l: 'Responded' }])} />
         </div>
         <Fit render={(w) => wave({ w, labels, every: 1, label: 'Daily volume', bg: '#FFFFFF', h: 240, series: [

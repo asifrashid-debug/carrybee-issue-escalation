@@ -1,4 +1,7 @@
 'use client';
+import DateRangeFilter from '../../components/cw/DateRangeFilter';
+import { useDateRange } from '../../components/cw/useDateRange';
+import { rangeLabel, rangePhrase } from '../../lib/dateRange';
 import { useAnalytics } from '../../components/useAnalytics';
 import { wave, hbars, kpiStrip, legend } from '../../components/cw/chartlib';
 import Fit from '../../components/cw/Fit';
@@ -11,11 +14,12 @@ const PALETTE = ['#FFCC00', '#37A9FF', '#A78BFA', '#00E5A0', '#FF9F1C', '#FF5470
 // Team Performance, demo layout (carrybee-complete-web.html pTeams). Team scope follows the same rules as the tracker.
 export default function TeamPerformance() {
   const { data, error, loading, reload } = useAnalytics();
+  const { range } = useDateRange();
 
   if (!data) {
     return (
       <div>
-        <div className="ph"><div><div className="kicker">Team performance · 14 days</div><h1>Team performance</h1><p className="sub">Team and member scorecards</p></div></div>
+        <div className="ph"><div><div className="kicker">{`Team performance · ${rangeLabel(range)}`}</div><h1>Team performance</h1><p className="sub">Team and member scorecards</p></div><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><DateRangeFilter /></div></div>
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </div>
     );
@@ -38,11 +42,12 @@ export default function TeamPerformance() {
     <div>
       <div className="ph">
         <div>
-          <div className="kicker">Team performance · 14 days</div>
+          <div className="kicker">{`Team performance · ${rangeLabel(range)}`}</div>
           <h1>Team performance</h1>
           <p className="sub">Team and member scorecards · issues raised by each team&apos;s members · same scope as the tracker</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <DateRangeFilter />
           <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : 'Refresh'}</button>
           <span className="chip"><span className="live" aria-hidden="true" />Live · synced {formatDhaka(data.generatedAt)}</span>
         </div>
@@ -59,7 +64,7 @@ export default function TeamPerformance() {
 
       <div className="card mt">
         <div className="card-h">
-          <div><h2>Responses per day</h2><small>Submitted and first responses, last 14 days (Dhaka)</small></div>
+          <div><h2>Responses per day</h2><small>{`Submitted and first responses, ${rangePhrase(range)} (Dhaka)`}</small></div>
           <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#0A7A56', l: 'First response' }])} />
         </div>
         <Fit render={(w) => wave({ w, labels, every: 1, label: 'Responses per day', bg: '#FFFFFF', series: [
