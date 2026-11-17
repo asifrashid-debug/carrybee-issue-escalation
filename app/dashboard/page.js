@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useAnalytics } from '../../components/useAnalytics';
 import { wave, bars, hbars, donut, gauge, legend, kpiStrip } from '../../components/cw/chartlib';
+import Fit from '../../components/cw/Fit';
 import { fmtN, fmtH, fmtPct, PRI_COLOR, ZONE_COLOR, priHTML } from '../../components/cw/format';
 import { formatDhaka } from '../../lib/time';
 import { teamActions, LAG_SCORE, IMPROVE_POINTS } from '../../lib/teamGuidance';
@@ -58,13 +59,13 @@ export default function Dashboard() {
           <div><h2>Escalation flow</h2><small>Submitted, picked and first response · last 14 days · Asia/Dhaka</small></div>
           <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#37A9FF', l: 'Picked' }, { c: '#0A7A56', l: 'Responded' }])} />
         </div>
-        <Html html={wave({ labels, every: 1, label: 'Escalation flow', bg: '#FFFFFF', h: 250, series: flowSeries })} />
+        <Fit render={(w) => wave({ w, labels, every: 1, label: 'Escalation flow', bg: '#FFFFFF', h: 250, series: flowSeries })} />
       </div>
 
       <div className="grid g3 mt">
         <div className="card">
           <div className="card-h"><h2>Open by zone</h2><small>{fmtN(k.open)}</small></div>
-          <Html html={bars({ items: zoneItems, h: 200 })} />
+          <Fit render={(w) => bars({ w, items: zoneItems, h: 200 })} />
           <div style={{ marginTop: 10 }}>
             {data.zones.map((z) => (
               <div key={z.zone} className="small" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', margin: '4px 0' }}>
@@ -239,8 +240,8 @@ export default function Dashboard() {
         <div className="tile"><div className="lab">First response</div><div className="big" style={{ fontSize: 30 }}>{fmtH(k.medianResponseHours)}</div></div>
       </div>
       <div className="tile t-ink" style={{ marginTop: 12 }}><div className="lab">SLA compliance</div><Html html={gauge({ value: k.responseSlaPct ?? 0, color: '#FFCC00', center: fmtPct(k.responseSlaPct), sub: 'comment within 2h', track: 'rgba(255,255,255,.12)', w: 200 })} /></div>
-      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Escalation flow · 14 days</div><Html html={wave({ labels, every: 3, label: 'Flow', bg: '#FFFFFF', h: 170, series: flowSeries })} /></div>
-      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Open by zone</div><div style={{ marginTop: 10 }}><Html html={bars({ items: zoneItems, h: 170, w: 340 })} /></div></div>
+      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Escalation flow · 14 days</div><Fit render={(w) => wave({ w, labels, every: 3, label: 'Flow', bg: '#FFFFFF', h: 170, series: flowSeries })} /></div>
+      <div className="tile" style={{ marginTop: 12 }}><div className="lab">Open by zone</div><div style={{ marginTop: 10 }}><Fit render={(w) => bars({ w, items: zoneItems, h: 170 })} /></div></div>
       <div className="tile" style={{ marginTop: 12 }}><div className="lab">Priority mix</div><div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}><Html html={donut({ segments: priSegs, center: fmtN(k.open), sub: 'open', size: 150, stroke: 16 })} /></div></div>
     </div></div>
   );

@@ -1,6 +1,7 @@
 'use client';
 import { useAnalytics } from '../../components/useAnalytics';
 import { wave, hbars, kpiStrip, legend } from '../../components/cw/chartlib';
+import Fit from '../../components/cw/Fit';
 import { fmtN, fmtH, fmtPct } from '../../components/cw/format';
 import { formatDhaka } from '../../lib/time';
 
@@ -61,7 +62,7 @@ export default function TeamPerformance() {
           <div><h2>Responses per day</h2><small>Submitted and first responses, last 14 days (Dhaka)</small></div>
           <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#0A7A56', l: 'First response' }])} />
         </div>
-        <Html html={wave({ labels, every: 1, label: 'Responses per day', bg: '#FFFFFF', series: [
+        <Fit render={(w) => wave({ w, labels, every: 1, label: 'Responses per day', bg: '#FFFFFF', series: [
           { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.14 },
           { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0 },
         ] })} />

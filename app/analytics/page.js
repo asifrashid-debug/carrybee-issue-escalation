@@ -1,6 +1,7 @@
 'use client';
 import { useAnalytics } from '../../components/useAnalytics';
 import { wave, bars, hbars, donut, gauge, legend, kpiStrip } from '../../components/cw/chartlib';
+import Fit from '../../components/cw/Fit';
 import { fmtN, fmtH, fmtPct } from '../../components/cw/format';
 import { formatDhaka } from '../../lib/time';
 
@@ -63,7 +64,7 @@ export default function Analytics() {
           <div><h2>Daily volume</h2><small>Submitted and first responses, last 14 days (Dhaka)</small></div>
           <Html html={legend([{ c: '#08090B', l: 'Submitted' }, { c: '#0A7A56', l: 'Responded' }])} />
         </div>
-        <Html html={wave({ labels, every: 1, label: 'Daily volume', bg: '#FFFFFF', h: 240, series: [
+        <Fit render={(w) => wave({ w, labels, every: 1, label: 'Daily volume', bg: '#FFFFFF', h: 240, series: [
           { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0.1 },
           { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.18 },
         ] })} />
@@ -73,7 +74,7 @@ export default function Analytics() {
         <div className="card">
           <div className="card-h"><div><h2>Ageing of open cases</h2><small>Whole days since submission · open issues</small></div></div>
           {k.open === 0 ? <div className="empty">No open cases</div> : (
-            <Html html={bars({ w: 420, h: 210, items: data.ageing.map((a, i) => ({ label: a.label, value: a.count, color: ['#00E5A0', '#FFCC00', '#FF5470'][i] || '#A3A1A8' })) })} />
+            <Fit render={(w) => bars({ w, h: 210, items: data.ageing.map((a, i) => ({ label: a.label, value: a.count, color: ['#00E5A0', '#FFCC00', '#FF5470'][i] || '#A3A1A8' })) })} />
           )}
         </div>
         <div className="card">

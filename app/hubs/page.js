@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useAnalytics } from '../../components/useAnalytics';
 import { bars, hbars, gauge, gradePill, sbar, kpiStrip } from '../../components/cw/chartlib';
+import Fit from '../../components/cw/Fit';
 import { fmtN, fmtH, fmtPct } from '../../components/cw/format';
 import { formatDhaka } from '../../lib/time';
 
@@ -91,7 +92,7 @@ export default function HubPerformance() {
         <div className="card">
           <div className="card-h"><div><h2>Median first comment by hub</h2><small>Top 6 hubs by volume · target 2h</small></div></div>
           {hubsMed.length === 0 ? <div className="empty">No first comments yet</div> : (
-            <Html html={bars({ w: 460, h: 210, items: hubsMed.map((h) => ({ label: h.hub, value: h.medianResponseHours, color: h.medianResponseHours <= 2 ? '#0A7A56' : '#FF5470' })) })} />
+            <Fit render={(w) => bars({ w, h: 210, items: hubsMed.map((h) => ({ label: h.hub, value: h.medianResponseHours, color: h.medianResponseHours <= 2 ? '#0A7A56' : '#FF5470' })) })} />
           )}
         </div>
         <div className="card">
