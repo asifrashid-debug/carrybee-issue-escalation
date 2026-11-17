@@ -139,7 +139,7 @@ function gauge(o){
   const start = pnt(Math.PI), end = pnt(2 * Math.PI);
   const endAng = Math.PI + Math.PI * t, tip = pnt(endAng);
   const large = t > 0.5 ? 1 : 0;
-  return '<svg class="gauge" viewBox="0 0 ' + W + ' ' + (W/2 + 16) + '" width="100%" role="img" aria-label="' + esc(o.label || 'Gauge') + ' ' + esc(o.center) + '">' +
+  return '<svg class="gauge" viewBox="0 0 ' + W + ' ' + (W/2 + 16) + '" width="' + W + '" role="img" aria-label="' + esc(o.label || 'Gauge') + ' ' + esc(o.center) + '">' +
     '<path d="M' + start[0] + ',' + start[1] + ' A' + R + ',' + R + ' 0 0 1 ' + end[0] + ',' + end[1] + '" fill="none" stroke="' + (o.track || 'rgba(128,128,128,.14)') + '" stroke-width="14" stroke-linecap="round"/>' +
     (t > 0 ? '<path d="M' + start[0] + ',' + start[1] + ' A' + R + ',' + R + ' 0 0 1 ' + tip[0] + ',' + tip[1] + '" fill="none" stroke="' + o.color + '" stroke-width="14" stroke-linecap="round"/>' : '') +
     '<text class="gv" x="' + cx + '" y="' + (cy - 6) + '" text-anchor="middle">' + esc(o.center) + '</text>' +

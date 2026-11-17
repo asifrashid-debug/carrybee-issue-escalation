@@ -302,3 +302,8 @@
   .sheet{padding:16px 12px 40px}
   .site-foot{padding:14px 12px 20px}
 }
+
+/* ===== Gauges and bar rows: keep their design size on wide screens ===== */
+.gauge{display:block;margin:0 auto;max-width:100%;height:auto}
+.hbar{grid-template-columns:clamp(112px,12vw,220px) minmax(0,1fr) 44px}
+@media (max-width:600px){.hbar{grid-template-columns:96px minmax(0,1fr) 36px}}
