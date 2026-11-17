@@ -124,6 +124,7 @@ function fbText(e) {
     const left = Math.max(0, (new Date(e.feedback_due_at).getTime() - Date.now()) / 3600e3);
     return { cls: 'sla-warn', text: `Feedback due in ${left.toFixed(1)}h` };
   }
+  if (e.kam_feedback_status === 'Resolved') return { cls: 'sla-ok', text: 'Closed · KAM feedback Resolved' };
   return { cls: 'sla-ok', text: `Feedback: ${e.kam_feedback_status}` };
 }
 
@@ -493,6 +494,7 @@ export default function Tracker() {
                         )}
                         <span className={`pill ${PRI_PILL[e.priority_scale] || 'p-res'}`}>{e.priority_scale || '—'}</span>
                         <span className={`pill ${stCls}`}>{s.state === 'br' ? 'SLA breach' : s.state === 'risk' ? 'Due soon' : s.text === 'Resolved' ? 'Resolved' : 'On track'}</span>
+                        {e.kam_feedback_status === 'Resolved' && <span className="pill p-res">Closed</span>}
                         {e.channel && <span className="muted small">{e.channel}</span>}
                       </div>
                       <div style={{ marginTop: 8, display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>

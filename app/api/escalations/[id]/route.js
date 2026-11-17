@@ -67,6 +67,14 @@ export async function PATCH(req, ctx) {
     patch.kam_feedback_status = body.kam_feedback_status;
     patch.feedback_given_at = nowIso;
     audits.push({ issue_id: id, field_name: 'kam_feedback_status', old_value: cur.kam_feedback_status, new_value: body.kam_feedback_status, actor_email: actor, source });
+    // Resolved feedback closes the issue. Changing the outcome away from Resolved reopens a closed issue.
+    if (body.kam_feedback_status === 'Resolved' && cur.issue_status !== 'Closed') {
+      patch.issue_status = 'Closed';
+      audits.push({ issue_id: id, field_name: 'issue_status', old_value: cur.issue_status, new_value: 'Closed', actor_email: actor, source });
+    } else if (body.kam_feedback_status !== 'Resolved' && cur.issue_status === 'Closed') {
+      patch.issue_status = 'Reopened';
+      audits.push({ issue_id: id, field_name: 'issue_status', old_value: cur.issue_status, new_value: 'Reopened', actor_email: actor, source });
+    }
   }
   // Completed At drives the Issue Resolution SLA column in the sheets.
   if (body.ops_status !== undefined && body.ops_status !== cur.ops_status) patch.completed_at = body.ops_status === 'Completed' ? nowIso : null;

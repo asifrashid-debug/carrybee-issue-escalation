@@ -252,6 +252,7 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                         title="KAM feedback"
                         meta={`${fb.status || 'Pending'} · ${fb.phase_label || ''}${fb.phase === 'pending' && fb.due_at ? ` · due ${formatDhaka(fb.due_at)}` : ''}`}
                       >
+                        {fb.status === 'Resolved' && <div className="box" style={{ borderColor: '#00C98D' }}><b>Closed.</b> KAM feedback is Resolved, so this issue is closed.</div>}
                         {fb.phase === 'justification_due' && <div className="box box-warn">Feedback was not given within 24h. Give a justification ({fb.justifications_used + 1} of {fb.justification_limit}) to reopen the 24h window.</div>}
                         {fb.phase === 'escalated' && <div className="box box-bad">Raised to the Team Lead as a Feedback failure after {fb.justification_limit} justifications.</div>}
                         {fb.justifications.length > 0 && (
