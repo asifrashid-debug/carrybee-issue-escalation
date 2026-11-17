@@ -4,7 +4,7 @@ import IssueDrawer from '../components/IssueDrawer';
 import CopyButton from '../components/CopyButton';
 import { useAnalytics } from '../components/useAnalytics';
 import { fmtN } from '../components/cw/format';
-import { kpiStrip, pie, stackbar, legend } from '../components/cw/chartlib';
+import { kpiStrip, pie, stackbar } from '../components/cw/chartlib';
 const BRAND = { bee: '#FFCC00', mint: '#00E5A0', flare: '#FF5470', azure: '#37A9FF', violet: '#A78BFA' };
 const ZONE_COLOR = { ISD: BRAND.bee, OSD: BRAND.azure, CTG: BRAND.violet };
 const PRI_COLOR = { P1: BRAND.flare, P2: BRAND.bee, P3: BRAND.mint, P4: '#A3A1A8' };
@@ -339,7 +339,6 @@ export default function Tracker() {
   const kpiHtml = kpiStrip(kpiItems);
   const pieHtml = pie({ segments: priRows.map((p) => ({ value: p.open, color: p.color })), size: 120 });
   const stackHtml = stackbar(zoneBars.map((z) => ({ label: z.label, value: z.value, color: z.color })));
-  const legendHtml = legend(zoneBars.map((z) => ({ c: z.color, l: `${z.label} ${fmtN(z.value)}` })));
 
   return (
     <div id="tracker">
@@ -559,7 +558,6 @@ export default function Tracker() {
               <div className="card">
                 <div className="card-h"><h2>Open by zone</h2><small>{fmtN(k?.open)}</small></div>
                 <div dangerouslySetInnerHTML={{ __html: stackHtml }} />
-                <div style={{ marginTop: 12 }} dangerouslySetInnerHTML={{ __html: legendHtml }} />
               </div>
             )}
             {stats && (

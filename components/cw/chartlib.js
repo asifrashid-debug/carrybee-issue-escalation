@@ -117,7 +117,9 @@ function donut(o){
 /* Pie: solid slices */
 function pie(o){
   const S = o.size || 170, cx = S/2, cy = S/2, R = S/2 - 3;
-  const total = o.segments.reduce((a, b) => a + b.value, 0) || 1;
+  const sum = o.segments.reduce((a, b) => a + b.value, 0);
+  if (!(sum > 0)) return '<svg class="pie" width="' + S + '" height="' + S + '" viewBox="0 0 ' + S + ' ' + S + '" role="img" aria-label="Pie chart, no data"><circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="' + (o.track || 'var(--track)') + '"/></svg>';
+  const total = sum;
   let a = -Math.PI/2, s = '';
   o.segments.forEach(seg => {
     const ang = 2 * Math.PI * seg.value / total;

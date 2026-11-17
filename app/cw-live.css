@@ -307,3 +307,6 @@
 .gauge{display:block;margin:0 auto;max-width:100%;height:auto}
 .hbar{grid-template-columns:clamp(112px,12vw,220px) minmax(0,1fr) 44px}
 @media (max-width:600px){.hbar{grid-template-columns:96px minmax(0,1fr) 36px}}
+
+/* Tracker cards: empty stacked bar shows a track, not nothing */
+.stackbar{background:var(--track);min-height:14px}
