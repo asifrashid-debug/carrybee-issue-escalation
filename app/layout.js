@@ -7,7 +7,14 @@ import { sprite } from '../components/cw/chartlib';
 export const metadata = {
   title: 'CarryBee Issue Escalation Tracker',
   description: 'KAM/MX escalation tracker with zone hub sheets, dashboards and performance analytics',
-  icons: { icon: '/carrybee-logo.png', apple: '/icons/icon-192.png' },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48 64x64' },
+      { url: '/icons/tab-icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/tab-icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/icons/tab-icon-180.png',
+  },
   appleWebApp: { capable: true, title: 'CB Tracker', statusBarStyle: 'black-translucent' },
 };
 
