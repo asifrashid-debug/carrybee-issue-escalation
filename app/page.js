@@ -495,6 +495,7 @@ export default function Tracker() {
                         <span className={`pill ${PRI_PILL[e.priority_scale] || 'p-res'}`}>{e.priority_scale || '—'}</span>
                         <span className={`pill ${stCls}`}>{s.state === 'br' ? 'SLA breach' : s.state === 'risk' ? 'Due soon' : s.text === 'Resolved' ? 'Resolved' : 'On track'}</span>
                         {e.kam_feedback_status === 'Resolved' && <span className="pill p-res">Closed</span>}
+                        {e.ops_status === 'Completed' && <span className="pill p-res" style={{ fontWeight: 800, color: 'var(--ink)' }}>Completed By Opps</span>}
                         {e.channel && <span className="muted small">{e.channel}</span>}
                       </div>
                       <div style={{ marginTop: 8, display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
