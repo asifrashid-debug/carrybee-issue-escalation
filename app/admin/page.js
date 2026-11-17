@@ -8,7 +8,10 @@ const TABS = [
   { key: 'cats', label: 'Category Master' },
   { key: 'users', label: 'Users & RBAC' },
   { key: 'sla', label: 'SLA & Policy' },
+  { key: 'kam', label: 'KAM Funnel' },
 ];
+const SHEET_LINK_DEFAULT = 'https://docs.google.com/spreadsheets/d/1YBOhdN5r6dPFfYg19ebSEsu0I0_cusZ-HrWVAgbm6UE/edit';
+const CHANGE_FIELD_LABEL = { added: 'Added', kam_name: 'KAM', business_name: 'Name', is_active: 'Active' };
 const PRI_BY_TYPE = { Critical: ['P1', 'pill p-crit'], Urgent: ['P2', 'pill p-urg'], Regular: ['P3', 'pill p-reg'] };
 const EMPTY_HUB = { hub_name: '', zone: '', division: '', regional_lead: '', cluster_lead: '' };
 const ZONE_COLOR = { ISD: '#FFCC00', OSD: '#37A9FF', CTG: '#A78BFA' };
@@ -32,6 +35,140 @@ function Field({ id, label, required, children }) {
 // Admin & masters, demo layout (carrybee-complete-web.html pAdmin). Masters are read from the database and shown as they are.
 // Add-hub form: five fields, no hub code, super admin only. Sync to the hub response sheet stays OFF until the sheet ID,
 // tab name and header row are confirmed. Nothing is written from this form.
+// KAM funnel upload (super admin). Preview first; nothing is written until Apply.
+// A Google Sheet link (tab "Unique Merchants") or a CSV. Merchants missing from the upload become CM and inactive.
+function KamFunnelPanel() {
+  const [source, setSource] = useState('sheet');
+  const [link, setLink] = useState(SHEET_LINK_DEFAULT);
+  const [tabName, setTabName] = useState('Unique Merchants');
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [confirmLarge, setConfirmLarge] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  async function loadHistory() {
+    try {
+      const r = await fetch('/api/business/upload', { cache: 'no-store' });
+      const j = await r.json();
+      if (r.ok) setHistory(j.uploads || []);
+    } catch { /* history is optional */ }
+  }
+  useEffect(() => { loadHistory(); }, []);
+
+  function changeSource(s) { setSource(s); setPreview(null); setConfirmLarge(false); setMsg(null); }
+
+  function buildForm(mode) {
+    const f = new FormData();
+    f.set('mode', mode);
+    f.set('source', source);
+    if (source === 'csv') f.set('file', file);
+    else { f.set('sheet', link); f.set('tab', tabName); }
+    if (mode === 'apply' && confirmLarge) f.set('confirm_large', 'true');
+    return f;
+  }
+
+  async function run(mode) {
+    setBusy(true); setMsg(null);
+    try {
+      const r = await fetch('/api/business/upload', { method: 'POST', body: buildForm(mode) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+      if (mode === 'preview') { setPreview(j); setConfirmLarge(false); return; }
+      if (j.mode !== 'apply') { setPreview(j); throw new Error(j.blocked || 'The upload was not applied.'); }
+      setPreview(null);
+      setMsg({ kind: 'ok', text: `Applied. ${fmtN(j.summary.usable)} merchants in the list, ${fmtN(j.summary.added)} added, ${fmtN(j.summary.kamChanged)} KAM changes, ${fmtN(j.summary.deactivated)} set to CM and inactive.` });
+      loadHistory();
+    } catch (e) {
+      setMsg({ kind: 'bad', text: String(e.message || e) });
+    } finally { setBusy(false); }
+  }
+
+  const s = preview?.summary;
+  const canPreview = source === 'csv' ? !!file : !!link.trim();
+  const applyBlocked = !preview || (preview.blocked && !(preview.can_override && confirmLarge));
+
+  return (
+    <div className="stack" style={{ gap: 14, padding: 16 }}>
+      <div className="card-h" style={{ marginBottom: 0 }}><div><h2>KAM funnel</h2><small>Super admin only · sets each merchant&apos;s KAM for the MX form</small></div></div>
+      <p className="note" style={{ margin: 0 }}>Merchants in the upload get their KAM. Merchants missing from the upload are set to CM and made inactive. Preview first; nothing is written until you apply.</p>
+
+      <div role="tablist" aria-label="Upload source" className="seg" style={{ alignSelf: 'flex-start' }}>
+        <span role="tab" tabIndex={0} aria-selected={source === 'sheet'} className={source === 'sheet' ? 'on' : ''} onClick={() => changeSource('sheet')}>Google Sheet link</span>
+        <span role="tab" tabIndex={0} aria-selected={source === 'csv'} className={source === 'csv' ? 'on' : ''} onClick={() => changeSource('csv')}>CSV file</span>
+      </div>
+
+      {source === 'sheet' ? (
+        <div className="grid g2" style={{ gap: 12 }}>
+          <div className="field"><label htmlFor="kam-link">Sheet link or ID *</label><div className="fctl"><input id="kam-link" value={link} onChange={(e) => { setLink(e.target.value); setPreview(null); }} /></div></div>
+          <div className="field"><label htmlFor="kam-tab">Tab name</label><div className="fctl"><input id="kam-tab" value={tabName} onChange={(e) => { setTabName(e.target.value); setPreview(null); }} /></div></div>
+        </div>
+      ) : (
+        <div className="field"><label htmlFor="kam-file">CSV file *</label><div className="fctl"><input id="kam-file" type="file" accept=".csv,text/csv" onChange={(e) => { setFile(e.target.files?.[0] || null); setPreview(null); }} /></div></div>
+      )}
+      <p className="note" style={{ margin: 0 }}>Columns: <b>business id</b>, <b>business name</b>, <b>KAM name</b> (or <b>ID</b>, <b>Merchant Name</b>, <b>KAM</b>). Blank KAM becomes CM.</p>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button type="button" className="btn" disabled={busy || !canPreview} onClick={() => run('preview')}>{busy ? 'Working…' : 'Preview'}</button>
+        <button type="button" className="btn bee" disabled={busy || applyBlocked} onClick={() => run('apply')}>Apply to database</button>
+      </div>
+
+      {msg && <div className={`box ${msg.kind === 'ok' ? 'box-ok' : 'box-bad'}`} role={msg.kind === 'ok' ? 'status' : 'alert'}>{msg.text}</div>}
+
+      {preview && s && (
+        <div className="stack" style={{ gap: 10 }}>
+          {preview.blocked && <div className="box box-warn" role="alert">{preview.blocked}</div>}
+          {preview.can_override && (
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="checkbox" checked={confirmLarge} onChange={(e) => setConfirmLarge(e.target.checked)} />
+              <span>Yes, set {fmtN(s.deactivated)} merchants to CM and inactive.</span>
+            </label>
+          )}
+          <div className="grid g3" style={{ gap: 10 }}>
+            <div className="kpi"><div className="lab">Rows in file</div><div className="num">{fmtN(s.rowsInFile)}</div></div>
+            <div className="kpi"><div className="lab">Usable merchants</div><div className="num">{fmtN(s.usable)}</div><div className="delta muted">{fmtN(s.duplicateIds)} duplicate IDs skipped</div></div>
+            <div className="kpi"><div className="lab">No KAM (→ CM)</div><div className="num">{fmtN(s.noKam)}</div></div>
+            <div className="kpi"><div className="lab">Added</div><div className="num">{fmtN(s.added)}</div></div>
+            <div className="kpi"><div className="lab">KAM changed</div><div className="num">{fmtN(s.kamChanged)}</div></div>
+            <div className="kpi"><div className="lab">Set to CM and inactive</div><div className="num">{fmtN(s.deactivated)}</div></div>
+          </div>
+          {preview.total_changes > 0 && (
+            <div>
+              <p className="note" style={{ margin: '0 0 6px' }}>First {fmtN(preview.sample.length)} of {fmtN(preview.total_changes)} changes:</p>
+              <div className="tbl-wrap" style={{ overflowX: 'auto' }}>
+                <table className="tbl">
+                  <thead><tr><th>Business ID</th><th>Change</th><th>Was</th><th>Now</th></tr></thead>
+                  <tbody>{preview.sample.map((c, i) => (
+                    <tr key={`${c.business_id}-${c.field_name}-${i}`}><td>{c.business_id}</td><td>{CHANGE_FIELD_LABEL[c.field_name] || c.field_name}</td><td>{c.old_value ?? '—'}</td><td>{c.new_value ?? '—'}</td></tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div>
+        <p className="note" style={{ margin: '0 0 6px' }}>Recent uploads</p>
+        {history.length === 0 ? <div className="empty">No uploads yet.</div> : (
+          <div className="tbl-wrap" style={{ overflowX: 'auto' }}>
+            <table className="tbl">
+              <thead><tr><th>When (Dhaka)</th><th>By</th><th>Source</th><th>Status</th><th>Merchants</th><th>Added</th><th>To CM</th></tr></thead>
+              <tbody>{history.map((h) => (
+                <tr key={h.id}>
+                  <td>{formatDhaka(h.created_at)}</td><td>{h.uploaded_by}</td><td>{h.source === 'sheet' ? 'Sheet' : 'CSV'}</td>
+                  <td>{h.status}{h.error ? ` · ${h.error}` : ''}</td><td>{fmtN(h.usable)}</td><td>{fmtN(h.added)}</td><td>{fmtN(h.deactivated)}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Admin() {
   const [masters, setMasters] = useState(null);
   const [error, setError] = useState(null);
@@ -95,7 +232,7 @@ export default function Admin() {
               <span key={t.key} role="tab" tabIndex={0} aria-selected={tab === t.key} className={tab === t.key ? 'on' : ''}
                 onClick={() => { setTab(t.key); setQ(''); setAddFor(null); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTab(t.key); setQ(''); setAddFor(null); } }}>
-                {t.label} · {fmtN(countOf[t.key])}
+                {t.label}{countOf[t.key] !== undefined ? ` · ${fmtN(countOf[t.key])}` : ''}
               </span>
             ))}
           </div>
@@ -308,6 +445,8 @@ export default function Admin() {
             <p className="note">Zone change is an admin action from the issue drawer, and it is audited. The old sheet row is marked MOVED and a new row is appended with the same Issue ID.</p>
           </>
         )}
+
+        {tab === 'kam' && <KamFunnelPanel />}
       </div>
       <p className="note2">Last loaded {loadedAt ? formatDhaka(loadedAt) : '—'} (Dhaka). Refresh to see the latest masters.</p>
     </div>
