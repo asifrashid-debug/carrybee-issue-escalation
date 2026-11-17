@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import { notifyHubResponse } from '../../../../lib/notify';
+import { pushFields } from '../../../../lib/sheets';
+// Sheet edits that change the derived AF-AH cells: Ops Status (Overall Validation, Issue Resolution),
+// Issue Pick Time and ISSUE STATUS (Issue Pick). Only the derived cells and the row version are written back.
+const DERIVED_TRIGGERS = ['ops_status', 'issue_pick_time', 'ops_issue_status'];
 export const dynamic = 'force-dynamic';
 const LAYER_FIELDS = ['layer1_response','layer2_response','layer3_response'];
 // Apps Script on-edit trigger posts { issue_id, field, new_value, editor_email, edit_time, secret }
@@ -39,6 +43,16 @@ export async function POST(req) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   await sb.from('audit_log').insert({ issue_id, field_name: field, old_value: cur[field]?String(cur[field]):null, new_value: String(new_value??''), actor_email: editor_email||'sheet', source: 'sheet' });
   await sb.from('sync_log').insert({ direction:'sheet_to_db', issue_id, status:'success', payload: body });
+  // Refresh AF-AH on the sheet row. pushFields with no fields writes only row_version, last_synced_at and AF-AH.
+  // A failure is logged and does not undo the DB update.
+  if (DERIVED_TRIGGERS.includes(field)) {
+    try {
+      const r = await pushFields(data, []);
+      await sb.from('sync_log').insert({ direction:'db_to_sheet', issue_id, status:'success', payload: { derived: true, trigger: field, action: r.action, row: r.row } });
+    } catch (err) {
+      await sb.from('sync_log').insert({ direction:'db_to_sheet', issue_id, status:'failed', error_message: `AF-AH refresh after ${field} failed: ${String(err.message || err).slice(0, 300)}` });
+    }
+  }
   // Bell notification for the raiser and the raiser's team leads (never blocks the sync)
   await notifyHubResponse(sb, data, field, new_value);
   return NextResponse.json({ ok: true, data });
