@@ -21,9 +21,9 @@ function kamStatus(kam) {
 }
 
 // One item on the case timeline. The state sets the dot colour and the label.
-function TL({ state, title, meta, action, children }) {
+function TL({ id, state, title, meta, action, children }) {
   return (
-    <li className={`tl ${state}`}>
+    <li id={id} className={`tl ${state}`}>
       <span className="tl-dot" aria-hidden="true" />
       <div className="tl-main">
         <div className="tl-top"><b>{title}</b><span className="tl-state">{STATE_LABEL[state] || ''}</span></div>
@@ -71,12 +71,29 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
     load();
   }, [issueId, load]);
 
+  // Keep the page behind the drawer from scrolling while it is open.
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return undefined;
     const h = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [open, onClose]);
+
+  // Jump to a section inside the drawer body (mobile jump bar).
+  function jump(id) {
+    const el = document.getElementById(id);
+    const box = el?.closest('.dbody');
+    if (!el || !box) return;
+    const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 58;
+    box.scrollTo({ top, behavior: 'smooth' });
+  }
 
   async function run(name, request, okText) {
     setBusy(name); setMsg(null);
@@ -133,11 +150,13 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
           <>
             <div className="dh">
               <div className="dtop">
-                <span className="idc" id="drawer-title">{issueId}</span>
-                {e && <Zc z={`${e.zone} · ${e.concern_hub || '—'}`} />}
-                {e && <PriPill p={e.priority_scale} />}
-                {e && <StatusPill s={e.issue_status} />}
-                {e && <SlaPill state={slaState} />}
+                <div className="dpills">
+                  <span className="idc" id="drawer-title">{issueId}</span>
+                  {e && <Zc z={`${e.zone} · ${e.concern_hub || '—'}`} />}
+                  {e && <PriPill p={e.priority_scale} />}
+                  {e && <StatusPill s={e.issue_status} />}
+                  {e && <SlaPill state={slaState} />}
+                </div>
                 <button type="button" className="xb" onClick={onClose} aria-label="Close">×</button>
               </div>
               {e && <h2 className="dtitle">{e.issue_category || 'Issue'}{e.issue_sub_category ? ` · ${e.issue_sub_category}` : ''}</h2>}
@@ -165,6 +184,13 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
 
               {e && tab === 'case' && (
                 <>
+                  <nav className="jumpnav" aria-label="Jump to section">
+                    <button type="button" onClick={() => jump('sec-details')}>Details</button>
+                    <button type="button" onClick={() => jump('sec-timeline')}>Timeline</button>
+                    {fb && <button type="button" onClick={() => jump('sec-feedback')}>KAM feedback</button>}
+                    {plan && <button type="button" onClick={() => jump('sec-followups')}>Follow-ups</button>}
+                  </nav>
+
                   <div className="kvs">
                     <div><b>Consignment ID</b><span>{e.consignment_id || '—'}</span></div>
                     <div><b>Merchant</b><span>{e.merchant_name || '—'}</span></div>
@@ -180,12 +206,12 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                     </div>
                   )}
 
-                  <div className="sec2">
+                  <div className="sec2" id="sec-details">
                     <h4>Issue details</h4>
                     <div style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{e.issue_details || '—'}</div>
                   </div>
 
-                  <h3 className="tl-h">Timeline</h3>
+                  <h3 className="tl-h" id="sec-timeline">Timeline</h3>
                   <ol className="tl-list">
                     <TL state="done" title="Escalation created" meta={`${formatDhaka(e.submitted_at)} · ${e.channel || '—'} · ${e.kam_name || '—'}`} />
 
@@ -248,6 +274,7 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                     {/* KAM feedback: 24h window, justification reopens it */}
                     {fb && (
                       <TL
+                        id="sec-feedback"
                         state={fb.status && fb.status !== 'Pending' ? 'done' : fb.phase === 'justification_due' || fb.phase === 'escalated' ? 'late' : fb.can_respond ? 'due' : 'wait'}
                         title="KAM feedback"
                         meta={`${fb.status || 'Pending'} · ${fb.phase_label || ''}${fb.phase === 'pending' && fb.due_at ? ` · due ${formatDhaka(fb.due_at)}` : ''}`}
@@ -291,6 +318,7 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                     {plan && (
                       <>
                         <TL
+                          id="sec-followups"
                           state={FU_STATE[kamStatus(plan.kam)]}
                           title="KAM follow-up"
                           meta={`${FU_LABEL[kamStatus(plan.kam)]}${plan.kam.dueAt ? ` · due ${formatDhaka(plan.kam.dueAt)}` : ''}${plan.kam.hiddenReason && kamStatus(plan.kam) === 'hidden' ? ` · ${plan.kam.hiddenReason}` : ''}`}

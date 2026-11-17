@@ -24,7 +24,9 @@
 .drawer{position:fixed;top:0;right:0;bottom:0;z-index:61;width:540px;max-width:100%;background:var(--card);border-left:1px solid var(--line);box-shadow:-24px 0 48px -32px rgba(23,23,28,.35);display:none;flex-direction:column;color:var(--text)}
 .drawer.on{display:flex}
 .dh{padding:18px 22px 0;border-bottom:1px solid var(--line)}
-.dtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dtop{display:flex;align-items:center;gap:8px}
+.dpills{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
+.jumpnav{display:none}
 .idc{font:600 12px var(--mono);background:var(--paper);border:1px solid var(--line);padding:4px 8px;border-radius:7px}
 .xb{margin-left:auto;width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--ink2);font-size:22px;line-height:1;cursor:pointer}
 .xb:hover{background:var(--paper)}
@@ -87,9 +89,41 @@
 .p-open{background:#EAF3FE;color:#1F6FD1}
 .p-B{background:#FFF3C2;color:#7A5B00}
 .zc{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;background:var(--paper);border:1px solid var(--line);font:600 11.5px var(--font)}
+/* Phones: the drawer is a full-screen view. Only the body scrolls. The header, tabs and jump bar stay pinned. */
 @media (max-width:640px){
-  .drawer{top:auto;height:92vh;width:100%;border-left:0;border-radius:20px 20px 0 0}
-  .kvs{grid-template-columns:1fr}
+  .scrim{display:none!important}
+  .drawer{top:0;left:0;right:0;bottom:auto;width:100%;height:100vh;height:100dvh;border-left:0;border-radius:0;box-shadow:none;padding-top:env(safe-area-inset-top)}
+  .dh{padding:10px 14px 0}
+  .dtop{gap:6px}
+  .dpills{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;padding:2px 0 6px}
+  .dpills::-webkit-scrollbar{display:none}
+  .dpills>*{flex-shrink:0}
+  .xb{width:44px;height:44px;font-size:26px;flex-shrink:0}
+  .dsub{display:none}
+  .dtitle{font-size:18px;margin:6px 0 8px}
+  .stats3{margin-bottom:10px}
+  .stats3>div{padding:8px 10px}
+  .stats3 small{font-size:11px}
+  .stats3 b{font-size:15px;margin-top:1px}
+  .nextstep{padding:9px 12px 9px 16px;margin-bottom:10px}
+  .nextstep p{font-size:13px}
+  .dtabs{margin:0 -14px;padding:0 14px}
+  .dtabs button{flex:1;height:46px;font-size:14px;padding:0 8px}
+  .dtabs button.on::after{left:12px;right:12px}
+  .dbody{min-height:0;padding:12px 14px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .jumpnav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:2;background:var(--card);margin:-12px -14px 10px;padding:10px 14px 8px;border-bottom:1px solid var(--line)}
+  .jumpnav::-webkit-scrollbar{display:none}
+  .jumpnav button{flex-shrink:0;height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);font:600 12.5px var(--font);color:var(--ink2);cursor:pointer}
+  .jumpnav button:active{background:var(--line)}
+  .kvs{grid-template-columns:1fr 1fr;gap:0 12px}
+  .kvs>div{padding:8px 0}
+  .kvs span{font-size:13px;overflow-wrap:anywhere}
+  .audit li{overflow-wrap:anywhere}
+  .drawer .btn.sm{height:40px;padding:0 14px;font-size:13.5px}
+  .drawer .inp{font-size:16px;padding:11px 12px}
+  .drawer .row{flex-direction:column;align-items:stretch}
+  .drawer .row>label,.drawer .row>.btn{width:100%}
+  .drawer .full>.btn{width:100%}
 }
 
 /* ===== Live-only components (EscalationForm, Admin, Login, drawer, bell, combo, copy, install) ===== */
