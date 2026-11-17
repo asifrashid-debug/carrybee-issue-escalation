@@ -431,3 +431,18 @@ html[data-theme=dark] .drawer{background:#16171C;border-left-color:#2A2E36;box-s
   .lg-eye{width:44px;height:44px}
   .install-box .btn{min-height:44px}
 }
+
+/* Drawer: compact summary strip (Open for / Resolve by / Hub layer 1) and Next step box */
+.stats3{margin-bottom:8px}
+.stats3>div{padding:6px 10px}
+.stats3 small{font-size:10.5px;line-height:1.2}
+.stats3 b{font-size:13px;line-height:1.25;margin-top:1px}
+.nextstep{display:flex;align-items:baseline;gap:8px;padding:6px 10px 6px 14px;margin-bottom:8px}
+.nextstep small{font-size:10.5px;white-space:nowrap;flex-shrink:0}
+.nextstep p{margin:0;font-size:12px;line-height:1.35}
+@media (max-width:640px){
+  .stats3>div{padding:5px 8px}
+  .stats3 b{font-size:12.5px}
+  .nextstep{padding:5px 10px 5px 14px;margin-bottom:6px}
+  .nextstep p{font-size:11.5px}
+}
