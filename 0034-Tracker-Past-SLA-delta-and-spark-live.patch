@@ -1,0 +1,159 @@
+From d41bd00616d4ea56ad3ace05ee2a147f1cf65792 Mon Sep 17 00:00:00 2001
+From: ahmed asif rashid <asif.rashid@carrybee.com>
+Date: Mon, 16 Nov 2026 16:13:03 +0000
+Subject: [PATCH] Tracker: Past SLA delta and 14-day spark from live data
+
+breachTrend (lib/analytics.js) recomputes breaches as of a week ago and for each of the last 14 days, using the same rules as the live count. Issues closed since a past time are counted as open then (from updated_at). Tracker KPI shows change vs last week and the spark. Tests 111/111.
+---
+ app/api/analytics/route.js |  2 +-
+ app/page.js                |  5 ++++-
+ lib/analytics.js           | 35 ++++++++++++++++++++++++++++++-
+ tests/breachTrend.test.mjs | 43 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 82 insertions(+), 3 deletions(-)
+ create mode 100644 tests/breachTrend.test.mjs
+
+diff --git a/app/api/analytics/route.js b/app/api/analytics/route.js
+index a607e46..e31c92e 100644
+--- a/app/api/analytics/route.js
++++ b/app/api/analytics/route.js
+@@ -6,7 +6,7 @@ import { loadScope, isVisible } from '../../../lib/visibility';
+ 
+ export const dynamic = 'force-dynamic';
+ 
+-const COLS = 'issue_id,cm_assigned,submitted_at,email,channel,zone,concern_hub,division,regional_lead,issue_status,issue_category,priority_scale,issue_pick_time,issue_response_datetime,ops_issue_status,is_archived';
++const COLS = 'issue_id,cm_assigned,submitted_at,email,channel,zone,concern_hub,division,regional_lead,issue_status,issue_category,issue_sub_category,priority_scale,issue_pick_time,issue_response_datetime,ops_issue_status,is_archived,updated_at';
+ 
+ export async function GET(req) {
+   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
+diff --git a/app/page.js b/app/page.js
+index 720a924..7103805 100644
+--- a/app/page.js
++++ b/app/page.js
+@@ -326,11 +326,14 @@ export default function Tracker() {
+   const moreOn = moreOpts.some((o) => o.key === activeKey) ? activeKey : '';
+   const pages = Math.max(1, Math.ceil(list.count / PAGE));
+ 
++  // Past SLA: change vs a week ago and a 14-day spark, from live data (same rules as the breach count).
++  const bt = stats?.breachTrend;
++  const btDelta = bt ? (bt.delta > 0 ? `+${fmtN(bt.delta)} vs last week` : bt.delta < 0 ? `−${fmtN(-bt.delta)} vs last week` : 'No change vs last week') : null;
+   const kpiItems = [
+     { label: 'Open escalations', value: fmtN(k?.open), sub: stats ? zoneOpen : '…', icon: 'escalation' },
+     { label: 'Unpicked queue', value: fmtN(k?.unpicked), sub: 'waiting for hub pick', icon: 'pick' },
+     { label: 'Awaiting first response', value: fmtN(k?.awaitingResponse), sub: 'open, no comment yet', icon: 'sla' },
+-    { label: 'Past SLA', value: fmtN(k?.breaches), sub: 'breaches in scope', icon: 'breach', good: false },
++    { label: 'Past SLA', value: fmtN(k?.breaches), sub: 'breaches in scope', icon: 'breach', delta: btDelta, spark: bt?.daily, good: bt ? bt.delta <= 0 : false },
+   ];
+   const kpiHtml = kpiStrip(kpiItems);
+   const pieHtml = pie({ segments: priRows.map((p) => ({ value: p.open, color: p.color })), size: 120 });
+diff --git a/lib/analytics.js b/lib/analytics.js
+index 71b8a46..ee3e08f 100644
+--- a/lib/analytics.js
++++ b/lib/analytics.js
+@@ -1,7 +1,7 @@
+ // Pure analytics for Dashboard / Analytics / HUB Performance / Team Performance.
+ // Input: escalation rows, users_roles rows, hub_master rows. No I/O here.
+ 
+-import { indexCategories, resolutionCheck, DEFAULT_RESOLUTION_HOURS } from './categorySla.js';
++import { indexCategories, resolutionCheck, resolutionSla, DEFAULT_RESOLUTION_HOURS } from './categorySla.js';
+ import { FEEDBACK_OUTCOMES } from './feedback.js';
+ 
+ // Spec: first comment within 2h of being raised (breach past 2h). Pick 4h kept as an informational metric.
+@@ -44,6 +44,38 @@ function countBy(rows, keyFn) {
+   return [...m.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
+ }
+ 
++// Breach count as it stood at time `at`, using the same rules as the live breach count.
++// Open at that time: not closed by then. An issue closed since is treated as closed at its last update (updated_at),
++// so it still counts as open before that update. Commented by then: first comment on or before that time.
++export function breachesAt(rows, catIndex, at) {
++  const t = new Date(at).getTime();
++  let n = 0;
++  for (const e of rows) {
++    const raised = new Date(e.submitted_at).getTime();
++    if (!(raised <= t)) continue;
++    const updated = e.updated_at ? new Date(e.updated_at).getTime() : raised;
++    const issueOpen = e.issue_status !== 'Closed' || updated > t;
++    const resolvedByT = e.ops_issue_status === 'Resolved' && updated <= t;
++    const commented = !!e.issue_response_datetime && new Date(e.issue_response_datetime).getTime() <= t;
++    const commentBreach = issueOpen && !commented && (t - raised) / 3600000 > SLA.responseHours;
++    const dueMs = raised + resolutionSla(catIndex, e).hours * 3600000;
++    const resBreach = issueOpen && !resolvedByT && t > dueMs;
++    if (commentBreach || resBreach) n++;
++  }
++  return n;
++}
++
++// Past SLA trend: breaches now, a week ago (delta), and one point per day for the last `days` days (the last point is now).
++export function breachTrend(rows, catIndex, now, days = 14) {
++  const nowMs = new Date(now).getTime();
++  const DAY = 24 * 3600000;
++  const nowCount = breachesAt(rows, catIndex, nowMs);
++  const lastWeek = breachesAt(rows, catIndex, nowMs - 7 * DAY);
++  const daily = [];
++  for (let k = days - 1; k >= 0; k--) daily.push(breachesAt(rows, catIndex, nowMs - k * DAY));
++  return { now: nowCount, lastWeek, delta: nowCount - lastWeek, daily };
++}
++
+ export function computeAnalytics({ escalations = [], users = [], hubs = [], categories = [], now = new Date(), days = 14, sla = SLA }) {
+   const rows = escalations.filter((e) => !e.is_archived);
+   const nowMs = new Date(now).getTime();
+@@ -246,6 +278,7 @@ export function computeAnalytics({ escalations = [], users = [], hubs = [], cate
+     generatedAt: new Date(nowMs).toISOString(),
+     sla,
+     kpi,
++    breachTrend: breachTrend(rows, catIndex, nowMs, days),
+     zones,
+     channels: countBy(rows, (e) => e.channel),
+     statuses: countBy(rows, (e) => e.ops_issue_status || 'New'),
+diff --git a/tests/breachTrend.test.mjs b/tests/breachTrend.test.mjs
+new file mode 100644
+index 0000000..e088710
+--- /dev/null
++++ b/tests/breachTrend.test.mjs
+@@ -0,0 +1,43 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { breachTrend, breachesAt } from '../lib/analytics.js';
++import { indexCategories } from '../lib/categorySla.js';
++
++const DAY = 24 * 3600000;
++const H = 3600000;
++const NOW = new Date('2026-11-14T10:00:00Z');
++const ago = (ms) => new Date(NOW.getTime() - ms).toISOString();
++const idx = indexCategories([]);
++
++test('past SLA: now, last week, delta and 14-day spark use the same rules', () => {
++  const rows = [
++    // A: raised 3h ago, no first comment yet -> breach now, not yet raised a week ago
++    { issue_id: 'A', submitted_at: ago(3 * H), issue_status: 'Open', ops_issue_status: null, issue_response_datetime: null, updated_at: ago(3 * H) },
++    // B: raised 9 days ago, commented, 72h resolution window ended 6 days ago -> breach now only
++    { issue_id: 'B', submitted_at: ago(9 * DAY), issue_status: 'Open', ops_issue_status: null, issue_response_datetime: ago(9 * DAY - H), updated_at: ago(1 * DAY) },
++    // D: raised 9 days ago, closed 2 days ago, no comment -> open (and breached) a week ago, closed now
++    { issue_id: 'D', submitted_at: ago(9 * DAY), issue_status: 'Closed', ops_issue_status: null, issue_response_datetime: null, updated_at: ago(2 * DAY) },
++  ];
++  const t = breachTrend(rows, idx, NOW, 14);
++  assert.equal(t.now, 2);
++  assert.equal(t.lastWeek, 1);
++  assert.equal(t.delta, 1);
++  assert.equal(t.daily.length, 14);
++  assert.equal(t.daily[13], t.now, 'last spark point equals the live count');
++});
++
++test('an issue resolved before the reference time is not a breach then', () => {
++  const rows = [
++    { issue_id: 'R', submitted_at: ago(9 * DAY), issue_status: 'Open', ops_issue_status: 'Resolved', issue_response_datetime: ago(9 * DAY - H), updated_at: ago(8 * DAY) },
++  ];
++  assert.equal(breachesAt(rows, idx, NOW), 0);
++  assert.equal(breachesAt(rows, idx, ago(7 * DAY)), 0);
++});
++
++test('an issue raised after the reference time is not counted then', () => {
++  const rows = [
++    { issue_id: 'N', submitted_at: ago(3 * H), issue_status: 'Open', ops_issue_status: null, issue_response_datetime: null, updated_at: ago(3 * H) },
++  ];
++  assert.equal(breachesAt(rows, idx, ago(7 * DAY)), 0);
++  assert.equal(breachesAt(rows, idx, NOW), 1);
++});
+-- 
+2.47.3
+

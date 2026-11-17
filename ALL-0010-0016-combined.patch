@@ -1,0 +1,665 @@
+diff --git a/app/admin/page.js b/app/admin/page.js
+index 4fa8381..f997580 100644
+--- a/app/admin/page.js
++++ b/app/admin/page.js
+@@ -1,6 +1,6 @@
+ 'use client';
+-import { useEffect, useState } from 'react';
+-import { PageHead, LiveChip, Zc, fmtN } from '../../components/demo';
++import { useEffect, useMemo, useState } from 'react';
++import { PageHead, LiveChip, Kpi, Zc, fmtN } from '../../components/demo';
+ import { formatDhaka } from '../../lib/time';
+ 
+ const TABS = [
+@@ -10,13 +10,17 @@ const TABS = [
+   { key: 'sla', label: 'SLA & Policy' },
+ ];
+ const PRI_BY_TYPE = { Critical: ['P1', 'p-crit'], Urgent: ['P2', 'p-urg'], Regular: ['P3', 'p-reg'] };
++const EMPTY_HUB = { hub_name: '', zone: '', division: '', regional_lead: '', cluster_lead: '' };
+ 
+ // Central Ops / Admin (demo layout). Masters are read from the database and shown as they are.
++// Add-hub form: five fields, no hub code. Sync to the hub response sheet is OFF until the sheet ID,
++// tab name and header row are confirmed. Nothing is written from this form.
+ export default function Admin() {
+   const [masters, setMasters] = useState(null);
+   const [error, setError] = useState(null);
+   const [tab, setTab] = useState('hubs');
+   const [q, setQ] = useState('');
++  const [newHub, setNewHub] = useState(EMPTY_HUB);
+ 
+   async function load() {
+     try {
+@@ -32,22 +36,32 @@ export default function Admin() {
+   const cats = masters?.categories || [];
+   const users = masters?.users || [];
+   const config = masters?.config || [];
++  const zones = useMemo(() => [...new Set(hubs.map((h) => h.zone).filter(Boolean))].sort(), [hubs]);
+   const term = q.trim().toLowerCase();
+   const hubRows = hubs.filter((h) => !term || `${h.hub_name} ${h.zone || ''} ${h.regional_lead || ''}`.toLowerCase().includes(term));
+   const tabLabel = (t) => {
+     const n = { hubs: hubs.length, cats: cats.length, users: users.length, sla: config.length }[t.key];
+     return n == null ? t.label : `${t.label} (${fmtN(n)})`;
+   };
++  const setHubField = (k, v) => setNewHub((h) => ({ ...h, [k]: v }));
++  const hubReady = newHub.hub_name.trim() && newHub.zone.trim();
+ 
+   return (
+     <div className="dm">
+-      <PageHead kicker="Configuration" title="Admin & Masters" sub="All hubs, category trees, RBAC scopes and SLA settings live in PostgreSQL config tables. Every change is written to the audit log.">
++      <PageHead kicker="Admin & masters" title="Masters and access" sub="Hubs, categories, users and SLA settings live in the database. Every change is written to the audit log.">
+         <LiveChip label="Live · database" />
+         <button type="button" className="btn" onClick={load} aria-label="Refresh">⟳ Refresh</button>
+       </PageHead>
+ 
+       {error && <div className="box box-bad" role="alert"><b>Could not load masters.</b> {error}</div>}
+ 
++      <div className="grid kpi-strip">
++        <Kpi label="Hubs" value={fmtN(hubs.length)} sub={`${zones.length} zones`} icon="form" />
++        <Kpi label="Categories" value={fmtN(cats.length)} sub="from the category master" icon="list" />
++        <Kpi label="Active users" value={fmtN(users.length)} sub="CM · KAM · MX · admin" icon="users" />
++        <Kpi label="Zones" value={fmtN(zones.length)} sub={zones.join(' · ') || '—'} icon="shield" />
++      </div>
++
+       <div className="card">
+         <div className="admtabs" role="tablist" aria-label="Admin sections">
+           {TABS.map((t) => (
+@@ -58,29 +72,65 @@ export default function Admin() {
+         {!masters && !error && <div className="empty">Loading masters…</div>}
+ 
+         {masters && tab === 'hubs' && (
+-          <>
+-            <div className="search" style={{ maxWidth: 420, marginBottom: 12 }}>
+-              <input placeholder="Filter hubs by name, zone or regional lead…" aria-label="Filter hubs" value={q} onChange={(e) => setQ(e.target.value)} />
++          <div className="admin-split">
++            <div>
++              <div className="search" style={{ maxWidth: 420, marginBottom: 12 }}>
++                <input placeholder="Filter hubs by name, zone or regional lead…" aria-label="Filter hubs" value={q} onChange={(e) => setQ(e.target.value)} />
++              </div>
++              <div className="tbl-wrap">
++                <table className="tbl">
++                  <thead><tr><th>Hub Name</th><th>Zone</th><th>Division</th><th>Regional Lead</th><th>Status</th></tr></thead>
++                  <tbody>
++                    {hubRows.length === 0 && <tr><td colSpan={5}><div className="empty">No hubs match this filter.</div></td></tr>}
++                    {hubRows.slice(0, 200).map((h) => (
++                      <tr key={h.hub_name}>
++                        <td data-label="Hub"><b>{h.hub_name}</b></td>
++                        <td data-label="Zone"><Zc z={h.zone} /></td>
++                        <td data-label="Division">{h.division || '—'}</td>
++                        <td data-label="Regional lead">{h.regional_lead || '—'}</td>
++                        <td data-label="Status"><span className="pillc p-ok">Active</span></td>
++                      </tr>
++                    ))}
++                  </tbody>
++                </table>
++              </div>
++              <div className="note">Showing {fmtN(Math.min(200, hubRows.length))} of {fmtN(hubRows.length)} matching hubs. Hub changes are made in the database and shared with the zone sheets.</div>
+             </div>
+-            <div className="tbl-wrap">
+-              <table className="tbl">
+-                <thead><tr><th>Hub Name</th><th>Zone</th><th>Division</th><th>Regional Lead</th><th>Status</th></tr></thead>
+-                <tbody>
+-                  {hubRows.length === 0 && <tr><td colSpan={5}><div className="empty">No hubs match this filter.</div></td></tr>}
+-                  {hubRows.slice(0, 200).map((h) => (
+-                    <tr key={h.hub_name}>
+-                      <td><b>{h.hub_name}</b></td>
+-                      <td><Zc z={h.zone} /></td>
+-                      <td>{h.division || '—'}</td>
+-                      <td>{h.regional_lead || '—'}</td>
+-                      <td><span className="pillc p-ok">Active</span></td>
+-                    </tr>
+-                  ))}
+-                </tbody>
+-              </table>
+-            </div>
+-            <div className="note">Showing {fmtN(Math.min(200, hubRows.length))} of {fmtN(hubRows.length)} matching hubs. Hub changes are made in the database and shared with the zone sheets.</div>
+-          </>
++
++            <aside className="card admin-add" aria-label="Add hub">
++              <div className="kl"><span>Add hub</span></div>
++              <p className="ks" style={{ marginTop: 6 }}>Super admin only. Saved to the database and synced to the hub response sheet.</p>
++              <div className="stack" style={{ gap: 12, marginTop: 14 }}>
++                <div className="field">
++                  <label htmlFor="new-hub-name">Hub name *</label>
++                  <div className="fctl"><input id="new-hub-name" value={newHub.hub_name} onChange={(e) => setHubField('hub_name', e.target.value)} placeholder="e.g. Chattogram Central" /></div>
++                </div>
++                <div className="field">
++                  <label htmlFor="new-hub-zone">Zone *</label>
++                  <div className="fctl">
++                    <select id="new-hub-zone" value={newHub.zone} onChange={(e) => setHubField('zone', e.target.value)}>
++                      <option value="">Select zone…</option>
++                      {zones.map((z) => <option key={z} value={z}>{z}</option>)}
++                    </select>
++                  </div>
++                </div>
++                <div className="field">
++                  <label htmlFor="new-hub-division">Division</label>
++                  <div className="fctl"><input id="new-hub-division" value={newHub.division} onChange={(e) => setHubField('division', e.target.value)} /></div>
++                </div>
++                <div className="field">
++                  <label htmlFor="new-hub-regional">Regional lead</label>
++                  <div className="fctl"><input id="new-hub-regional" value={newHub.regional_lead} onChange={(e) => setHubField('regional_lead', e.target.value)} /></div>
++                </div>
++                <div className="field">
++                  <label htmlFor="new-hub-cluster">Cluster lead</label>
++                  <div className="fctl"><input id="new-hub-cluster" value={newHub.cluster_lead} onChange={(e) => setHubField('cluster_lead', e.target.value)} /></div>
++                </div>
++                <div className="box box-warn" role="status">Sync is off. Nothing is written to the database or the hub response sheet until the sheet ID, tab name and header row are confirmed.</div>
++                <button type="button" className="btn y" disabled aria-disabled="true" style={{ justifyContent: 'center' }} title={hubReady ? 'Sync is off' : 'Fill in name and zone'}>Save hub (sync off)</button>
++              </div>
++            </aside>
++          </div>
+         )}
+ 
+         {masters && tab === 'cats' && (
+@@ -93,11 +143,11 @@ export default function Admin() {
+                   const [p, cls] = PRI_BY_TYPE[c.issue_type] || ['—', 'p-reg'];
+                   return (
+                     <tr key={`${c.category}|${c.sub_category}`}>
+-                      <td>{c.category}</td>
+-                      <td>{c.sub_category}</td>
+-                      <td><span className={`pillc ${cls}`}>{c.issue_type ? `${p} · ${c.issue_type}` : '—'}</span></td>
+-                      <td className="mono">{c.side || '—'}</td>
+-                      <td><span className="pillc p-ok">Active</span></td>
++                      <td data-label="Category">{c.category}</td>
++                      <td data-label="Sub-category">{c.sub_category}</td>
++                      <td data-label="Issue type"><span className={`pillc ${cls}`}>{c.issue_type ? `${p} · ${c.issue_type}` : '—'}</span></td>
++                      <td data-label="Side" className="mono">{c.side || '—'}</td>
++                      <td data-label="Status"><span className="pillc p-ok">Active</span></td>
+                     </tr>
+                   );
+                 })}
+@@ -114,12 +164,12 @@ export default function Admin() {
+                 {users.length === 0 && <tr><td colSpan={6}><div className="empty">No active users.</div></td></tr>}
+                 {users.map((u) => (
+                   <tr key={u.email}>
+-                    <td><b>{u.display_name || u.email}</b></td>
+-                    <td className="mono">{u.email}</td>
+-                    <td className="mono">{u.role}</td>
+-                    <td>{(u.teams || []).join(', ') || '—'}</td>
+-                    <td>{u.zone || '—'}</td>
+-                    <td><span className={`pillc ${['hub_ops', 'regional_lead'].includes(u.role) ? 'p-B' : 'p-ok'}`}>{['hub_ops', 'regional_lead'].includes(u.role) ? 'Read-only' : 'Active'}</span></td>
++                    <td data-label="Name"><b>{u.display_name || u.email}</b></td>
++                    <td data-label="Email" className="mono">{u.email}</td>
++                    <td data-label="Role" className="mono">{u.role}</td>
++                    <td data-label="Teams">{(u.teams || []).join(', ') || '—'}</td>
++                    <td data-label="Zone">{u.zone || '—'}</td>
++                    <td data-label="Status"><span className={`pillc ${['hub_ops', 'regional_lead'].includes(u.role) ? 'p-B' : 'p-ok'}`}>{['hub_ops', 'regional_lead'].includes(u.role) ? 'Read-only' : 'Active'}</span></td>
+                   </tr>
+                 ))}
+               </tbody>
+diff --git a/app/dashboard/page.js b/app/dashboard/page.js
+index aa2544b..3d50a8f 100644
+--- a/app/dashboard/page.js
++++ b/app/dashboard/page.js
+@@ -29,6 +29,10 @@ export default function Dashboard() {
+   const standing = guide.standing;
+   const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
+   const maxFlow = Math.max(4, ...data.trend.flatMap((d) => [d.submitted, d.picked, d.responded]));
++  // Week on week change in submitted escalations, from the live 14-day trend (needs both halves)
++  const wkNow = data.trend.length >= 14 ? data.trend.slice(-7).reduce((a, d) => a + d.submitted, 0) : null;
++  const wkPrev = data.trend.length >= 14 ? data.trend.slice(0, 7).reduce((a, d) => a + d.submitted, 0) : null;
++  const wkPct = wkPrev ? Math.round(((wkNow - wkPrev) / wkPrev) * 100) : null;
+   const maxCat = Math.max(1, ...data.categories.map((c) => c.count));
+ 
+   return (
+@@ -43,7 +47,7 @@ export default function Dashboard() {
+       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
+ 
+       <div className="grid g5 kpi-strip">
+-        <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed`} icon="shield" />
++        <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed${wkPct != null ? ` · submitted ${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : ''}`} icon="shield" />
+         <Kpi label="Open backlog" value={fmtN(k.open)} sub={`${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`} icon="clock" tone="b" />
+         <Kpi label="SLA breaches" value={fmtN(k.breaches)} sub={<><span className="bad">No comment past 2h or resolution past category SLA</span> · comment compliance {fmtPct(k.responseSlaPct)}</>} icon="alert" tone="r" hot={k.breaches > 0} />
+         <Kpi label="Median first response" value={<>{fmtH(k.medianResponseHours)}</>} sub={`Median pick ${fmtH(k.medianPickHours)}`} icon="clock" tone="g" />
+diff --git a/app/design-v3.css b/app/design-v3.css
+index f721166..ecff6c6 100644
+--- a/app/design-v3.css
++++ b/app/design-v3.css
+@@ -555,3 +555,22 @@ html, body { -webkit-tap-highlight-color: transparent; }
+ @media (max-width: 720px) {
+   .dm .trk-side { grid-template-columns: minmax(0, 1fr); }
+ }
++
++/* Admin: hub table beside the add-hub card (demo layout). Stacks below 1100px. */
++.dm .admin-split { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
++.dm .admin-split > div { min-width: 0; }
++.dm .admin-add { position: sticky; top: calc(var(--hdr) + 16px); padding: 18px 20px; }
++@media (max-width: 1100px) {
++  .dm .admin-split { grid-template-columns: minmax(0, 1fr); }
++  .dm .admin-add { position: static; }
++}
++
++/* Tracker pipeline: five stages in a row; two per row on phones */
++.dm .pipe-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
++.dm .pipe-grid > div { padding: 12px 18px; min-width: 0; }
++.dm .pipe-grid > div + div { border-left: 1px solid var(--line); }
++@media (max-width: 700px) {
++  .dm .pipe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++  .dm .pipe-grid > div:nth-child(odd) { border-left: 0; }
++  .dm .pipe-grid > div:nth-child(n+3) { border-top: 1px solid var(--line); }
++}
+diff --git a/app/no-access/page.js b/app/no-access/page.js
+index 387375f..79192f2 100644
+--- a/app/no-access/page.js
++++ b/app/no-access/page.js
+@@ -1,9 +1,12 @@
++import { PageHead } from '../../components/demo';
++
++// Shown to roles that do not use the tracker. Access rules are unchanged.
+ export default function NoAccess() {
+   return (
+-    <div>
+-      <div className="empty" style={{ maxWidth: 560, margin: '48px auto' }}>
+-        <b>No tracker access</b>
+-        Your role does not use the Issue Escalation Tracker. Hub responses come from the hub response sheet. If you think this is wrong, contact the admin.
++    <div className="dm">
++      <PageHead kicker="Access" title="No tracker access" sub="Your role does not use the Issue Escalation Tracker." />
++      <div className="card" style={{ maxWidth: 560 }}>
++        <p style={{ margin: 0, color: 'var(--ink2)', lineHeight: 1.6 }}>Hub responses come from the hub response sheet. If you think this is wrong, contact the admin.</p>
+       </div>
+     </div>
+   );
+diff --git a/app/page.js b/app/page.js
+index ee12a00..afe8ab3 100644
+--- a/app/page.js
++++ b/app/page.js
+@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
+ import IssueDrawer from '../components/IssueDrawer';
+ import CopyButton from '../components/CopyButton';
+ import { useAnalytics } from '../components/useAnalytics';
+-import { PageHead, Kpi, LiveChip, PriPill, SlaPill, StatusPill, Zc, Bar, fmtN } from '../components/demo';
++import { PageHead, Kpi, LiveChip, PriPill, SlaPill, StatusPill, Zc, Bar, Donut, fmtN } from '../components/demo';
++const PRI_COLOR = { P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' };
+ import { formatDhaka, hoursSince } from '../lib/time';
+ 
+ const PAGE = 20;
+@@ -266,6 +267,15 @@ export default function Tracker() {
+ 
+   const pages = Math.max(1, Math.ceil(list.count / PAGE));
+   const k = stats?.kpi;
++  const priOpen = stats ? stats.priorities.reduce((a, x) => a + x.open, 0) : 0;
++  // Pipeline: live stage counts for the whole scope (no separate open-stage series exists yet)
++  const pipe = k ? [
++    { label: 'Submitted', value: k.total },
++    { label: 'Picked', value: k.picked },
++    { label: 'First response', value: k.responded },
++    { label: 'Resolved', value: k.resolved },
++    { label: 'Closed', value: k.closed },
++  ] : [];
+   const zoneOpen = stats ? stats.zones.map((z) => `${z.zone}: ${fmtN(z.open)}`).join(' · ') : '';
+   const weekLabel = stats?.weeks?.[1] || '';
+   const lastSynced = updated ? formatDhaka(updated.toISOString()) : '—';
+@@ -463,6 +473,13 @@ export default function Tracker() {
+ 
+         {stats && (
+           <aside className="trk-side only-desk" aria-label="Queue context">
++            <div className="card">
++              <div className="ph"><div><h3>At a glance</h3><small>Live counts from the queue</small></div></div>
++              <div className="grid g2" style={{ gap: 12, marginBottom: 0 }}>
++                <div><div className="kl">Open</div><div className="kv" style={{ fontSize: 28 }}>{fmtN(stats.kpi.open)}</div></div>
++                <div><div className="kl">SLA breaches</div><div className="kv" style={{ fontSize: 28, color: 'var(--bad)' }}>{fmtN(stats.kpi.breaches)}</div></div>
++              </div>
++            </div>
+             <div className="card">
+               <div className="ph"><div><h3>Open by Zone</h3><small>Share of open queue</small></div></div>
+               <div className="lst">
+@@ -476,16 +493,15 @@ export default function Tracker() {
+             </div>
+             <div className="card">
+               <div className="ph"><div><h3>Priority Mix</h3><small>Open issues by priority</small></div></div>
+-              <div className="lst">
+-                {stats.priorities.map((p) => {
+-                  const openAll = stats.priorities.reduce((a, x) => a + x.open, 0);
+-                  return (
+-                    <div key={p.label}>
+-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{p.label}</span><b>{fmtN(p.open)}</b></div>
+-                      <Bar pct={openAll ? (p.open / openAll) * 100 : 0} color={{ P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' }[p.label]} />
++              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
++                <Donut segments={stats.priorities.map((p) => ({ label: p.label, value: p.open, color: PRI_COLOR[p.label] }))} center={fmtN(priOpen)} sub="open" size={120} stroke={14} />
++                <div className="lst" style={{ flex: 1, minWidth: 120 }}>
++                  {stats.priorities.map((p) => (
++                    <div key={p.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
++                      <span><b style={{ color: PRI_COLOR[p.label] }}>●</b> {p.label}</span><b>{fmtN(p.open)}</b>
+                     </div>
+-                  );
+-                })}
++                  ))}
++                </div>
+               </div>
+             </div>
+             <div className="card">
+@@ -505,6 +521,21 @@ export default function Tracker() {
+         )}
+       </div>
+ 
++      {k && (
++        <div className="card" style={{ marginTop: 12, padding: 0, overflow: 'hidden' }}>
++          <div className="ph" style={{ padding: '16px 20px 0' }}><div><h3>Pipeline</h3><small>Cases that reached each stage · live</small></div></div>
++          <div className="pipe pipe-grid" style={{ marginTop: 12 }}>
++            {pipe.map((s, i) => (
++              <div key={s.label} style={{ padding: '12px 18px', borderLeft: i ? '1px solid var(--line)' : 'none', minWidth: 0 }}>
++                <div className="muted small">{s.label}</div>
++                <div className="mono" style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{fmtN(s.value)}</div>
++                <div className="muted small">{k.total ? Math.round((s.value / k.total) * 100) : 0}% of submitted</div>
++              </div>
++            ))}
++          </div>
++        </div>
++      )}
++
+       <p className="note2">Paged on the server, 20 per page, newest first. Click a row for the issue detail. Times are Asia/Dhaka. Exports include every row in the current view.</p>
+ 
+       <IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={() => { load(); analytics.reload(); }} onOpen={setOpenId} />
+diff --git a/app/sync/page.js b/app/sync/page.js
+index dcbd1d1..0f71915 100644
+--- a/app/sync/page.js
++++ b/app/sync/page.js
+@@ -90,6 +90,37 @@ export default function SyncHealth() {
+         </div>
+       )}
+ 
++      {data && (
++        <div className="card" style={{ padding: 0, marginBottom: 14 }}>
++          <div className="ph" style={{ padding: '14px 16px', margin: 0 }}>
++            <div><h3 style={{ fontSize: 14 }}>Sources</h3><small>Status per zone sheet · from the last 100 sync events</small></div>
++          </div>
++          <div className="tbl-wrap">
++            <table className="tbl">
++              <thead><tr><th>Zone sheet</th><th>Last event (Dhaka)</th><th>Last success</th><th>Failures (100)</th><th>Status</th></tr></thead>
++              <tbody>
++                {ZONES.map((z) => {
++                  const rows = recent.filter((r) => r.zone === z);
++                  const last = rows[0];
++                  const okRow = rows.find((r) => r.status === 'success');
++                  const fails = rows.filter((r) => r.status === 'failed' || r.status === 'dead_letter').length;
++                  const st = !last ? ['No events', 'p-reg'] : last.status === 'success' ? ['In sync', 'p-ok'] : fails ? ['Failed · retrying', 'p-br'] : ['In flight', 'p-open'];
++                  return (
++                    <tr key={z}>
++                      <td data-label="Zone sheet"><Zc z={z} /> <b>{z} hub sheet</b></td>
++                      <td data-label="Last event" className="mono">{last ? formatDhaka(last.created_at) : '—'}</td>
++                      <td data-label="Last success" className="mono">{okRow ? formatDhaka(okRow.created_at) : '—'}</td>
++                      <td data-label="Failures" className="mono">{fmtN(fails)}</td>
++                      <td data-label="Status"><span className={`pillc ${st[1]}`}>{st[0]}</span></td>
++                    </tr>
++                  );
++                })}
++              </tbody>
++            </table>
++          </div>
++        </div>
++      )}
++
+       <div className="card" style={{ padding: 0 }}>
+         <div className="ph" style={{ padding: '14px 16px', margin: 0 }}>
+           <div><h3 style={{ fontSize: 14 }}>Recent sync events</h3><small>Last 100 · newest first</small></div>
+diff --git a/components/EscalationForm.js b/components/EscalationForm.js
+index 3ae1567..c544dc1 100644
+--- a/components/EscalationForm.js
++++ b/components/EscalationForm.js
+@@ -4,6 +4,7 @@ import SearchSelect from './SearchSelect';
+ import { isValidParcelId, matchActiveHub, requestHubLookup, COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE, MISSING_EXTENSION_MESSAGE } from '../lib/hubLookup.mjs';
+ import { priorityForIssueType } from '../lib/priority';
+ import { formatDhaka } from '../lib/time';
++import { PageHead } from './demo';
+ 
+ const CM = 'CM';
+ 
+@@ -163,13 +164,17 @@ export default function EscalationForm({ channel }) {
+   );
+ 
+   return (
++    <>
++    <PageHead
++      kicker={`Form · ${channel}`}
++      title={isKam ? 'New KAM escalation' : 'New MX escalation'}
++      sub={`Saved to the database first. The sheet push is queued, and the issue appears in the tracker within 5 seconds. Channel is fixed to ${channel}.`}
++    />
+     <div className="kform-layout">
+     <div className="fwrap">
+-      <div className="fhead">
++      <div className="ph" style={{ padding: "18px 24px 0" }}>
++        <div><h2>Issue details</h2><small>* required</small></div>
+         <span className="chanpill" style={isKam ? undefined : { background: '#3B9CFF', color: '#fff' }}>CHANNEL: {channel}</span>
+-        <h2>{isKam ? 'Key Account Management (KAM) Escalation Intake' : 'Merchant Experience (MX) Escalation Intake'}</h2>
+-        <p>Saved to the database first. The sheet push is queued, and the issue appears in the tracker within 5 seconds. Channel is fixed to {channel}.</p>
+-        {idBlock}
+       </div>
+ 
+       {msg && (
+@@ -180,7 +185,7 @@ export default function EscalationForm({ channel }) {
+         </div>
+       )}
+ 
+-      <form onSubmit={submit} noValidate>
++      <form id="escalation-form" onSubmit={submit} noValidate>
+         <div className="fbody">
+           <div className="fgrid">
+             <div className="full idbox">
+@@ -258,14 +263,13 @@ export default function EscalationForm({ channel }) {
+ 
+         {err && <div className="err on" role="alert" style={{ margin: '0 24px 14px' }}>{err}</div>}
+ 
+-        <div className="ffoot">
+-          <span className="note">Defaults on submit: Issue Status = Open · KAM Feedback = Pending · Ops Status = Pending</span>
+-          <button type="submit" className="submit" disabled={busy}>{busy ? 'Submitting…' : `Submit ${isKam ? 'KAM' : 'MX'} Escalation`}</button>
+-        </div>
+       </form>
+-      <p className="note2" style={{ textAlign: 'center' }}>Writes to the database. Nothing is sent until you submit.</p>
+     </div>
+     <aside className="kform-side" aria-label="What happens after you submit">
++      <div className="kside-card">
++        <h3>Account</h3>
++        {idBlock}
++      </div>
+       <div className="kside-card">
+         <h3>What happens next</h3>
+         <ol className="kside-steps">
+@@ -283,7 +287,13 @@ export default function EscalationForm({ channel }) {
+         </dl>
+       </div>
+       <div className="kside-card kside-note">Channel is fixed to {channel}. Times are recorded in Asia/Dhaka.</div>
++      <div className="kside-card">
++        <h3>Submit</h3>
++        <p className="small muted" style={{ margin: '0 0 12px' }}>Writes to the database. Nothing is sent until you submit.</p>
++        <button type="submit" form="escalation-form" className="submit" disabled={busy} style={{ width: '100%' }}>{busy ? 'Submitting…' : `Submit ${isKam ? 'KAM' : 'MX'} Escalation`}</button>
++      </div>
+     </aside>
+     </div>
++    </>
+   );
+ }
+diff --git a/package-lock.json b/package-lock.json
+index 80aa8e9..0a57148 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -11,22 +11,21 @@
+         "@supabase/ssr": "^0.5.2",
+         "@supabase/supabase-js": "^2.45.0",
+         "googleapis": "^140.0.0",
+-        "next": "14.2.5",
++        "next": "14.2.35",
+         "react": "^18.3.1",
+         "react-dom": "^18.3.1"
+-      },
+-      "devDependencies": {}
++      }
+     },
+     "node_modules/@next/env": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/env/-/env-14.2.5.tgz",
+-      "integrity": "sha512-/zZGkrTOsraVfYjGP8uM0p6r0BDT6xWpkjdVbcz66PJVSpwXX3yNiRycxAuDfBKGWBrZBXRuK/YVlkNgxHGwmA==",
++      "version": "14.2.35",
++      "resolved": "https://registry.npmjs.org/@next/env/-/env-14.2.35.tgz",
++      "integrity": "sha512-DuhvCtj4t9Gwrx80dmz2F4t/zKQ4ktN8WrMwOuVzkJfBilwAwGr6v16M5eI8yCuZ63H9TTuEU09Iu2HqkzFPVQ==",
+       "license": "MIT"
+     },
+     "node_modules/@next/swc-darwin-arm64": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-14.2.5.tgz",
+-      "integrity": "sha512-/9zVxJ+K9lrzSGli1///ujyRfon/ZneeZ+v4ptpiPoOU+GKZnm8Wj8ELWU1Pm7GHltYRBklmXMTUqM/DqQ99FQ==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-darwin-arm64/-/swc-darwin-arm64-14.2.33.tgz",
++      "integrity": "sha512-HqYnb6pxlsshoSTubdXKu15g3iivcbsMXg4bYpjL2iS/V6aQot+iyF4BUc2qA/J/n55YtvE4PHMKWBKGCF/+wA==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -40,9 +39,9 @@
+       }
+     },
+     "node_modules/@next/swc-darwin-x64": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-14.2.5.tgz",
+-      "integrity": "sha512-vXHOPCwfDe9qLDuq7U1OYM2wUY+KQ4Ex6ozwsKxp26BlJ6XXbHleOUldenM67JRyBfVjv371oneEvYd3H2gNSA==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-darwin-x64/-/swc-darwin-x64-14.2.33.tgz",
++      "integrity": "sha512-8HGBeAE5rX3jzKvF593XTTFg3gxeU4f+UWnswa6JPhzaR6+zblO5+fjltJWIZc4aUalqTclvN2QtTC37LxvZAA==",
+       "cpu": [
+         "x64"
+       ],
+@@ -56,9 +55,9 @@
+       }
+     },
+     "node_modules/@next/swc-linux-arm64-gnu": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-14.2.5.tgz",
+-      "integrity": "sha512-vlhB8wI+lj8q1ExFW8lbWutA4M2ZazQNvMWuEDqZcuJJc78iUnLdPPunBPX8rC4IgT6lIx/adB+Cwrl99MzNaA==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-14.2.33.tgz",
++      "integrity": "sha512-JXMBka6lNNmqbkvcTtaX8Gu5by9547bukHQvPoLe9VRBx1gHwzf5tdt4AaezW85HAB3pikcvyqBToRTDA4DeLw==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -72,9 +71,9 @@
+       }
+     },
+     "node_modules/@next/swc-linux-arm64-musl": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-14.2.5.tgz",
+-      "integrity": "sha512-NpDB9NUR2t0hXzJJwQSGu1IAOYybsfeB+LxpGsXrRIb7QOrYmidJz3shzY8cM6+rO4Aojuef0N/PEaX18pi9OA==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-linux-arm64-musl/-/swc-linux-arm64-musl-14.2.33.tgz",
++      "integrity": "sha512-Bm+QulsAItD/x6Ih8wGIMfRJy4G73tu1HJsrccPW6AfqdZd0Sfm5Imhgkgq2+kly065rYMnCOxTBvmvFY1BKfg==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -88,9 +87,9 @@
+       }
+     },
+     "node_modules/@next/swc-linux-x64-gnu": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-14.2.5.tgz",
+-      "integrity": "sha512-8XFikMSxWleYNryWIjiCX+gU201YS+erTUidKdyOVYi5qUQo/gRxv/3N1oZFCgqpesN6FPeqGM72Zve+nReVXQ==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-14.2.33.tgz",
++      "integrity": "sha512-FnFn+ZBgsVMbGDsTqo8zsnRzydvsGV8vfiWwUo1LD8FTmPTdV+otGSWKc4LJec0oSexFnCYVO4hX8P8qQKaSlg==",
+       "cpu": [
+         "x64"
+       ],
+@@ -104,9 +103,9 @@
+       }
+     },
+     "node_modules/@next/swc-linux-x64-musl": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-14.2.5.tgz",
+-      "integrity": "sha512-6QLwi7RaYiQDcRDSU/os40r5o06b5ue7Jsk5JgdRBGGp8l37RZEh9JsLSM8QF0YDsgcosSeHjglgqi25+m04IQ==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-linux-x64-musl/-/swc-linux-x64-musl-14.2.33.tgz",
++      "integrity": "sha512-345tsIWMzoXaQndUTDv1qypDRiebFxGYx9pYkhwY4hBRaOLt8UGfiWKr9FSSHs25dFIf8ZqIFaPdy5MljdoawA==",
+       "cpu": [
+         "x64"
+       ],
+@@ -120,9 +119,9 @@
+       }
+     },
+     "node_modules/@next/swc-win32-arm64-msvc": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-14.2.5.tgz",
+-      "integrity": "sha512-1GpG2VhbspO+aYoMOQPQiqc/tG3LzmsdBH0LhnDS3JrtDx2QmzXe0B6mSZZiN3Bq7IOMXxv1nlsjzoS1+9mzZw==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-win32-arm64-msvc/-/swc-win32-arm64-msvc-14.2.33.tgz",
++      "integrity": "sha512-nscpt0G6UCTkrT2ppnJnFsYbPDQwmum4GNXYTeoTIdsmMydSKFz9Iny2jpaRupTb+Wl298+Rh82WKzt9LCcqSQ==",
+       "cpu": [
+         "arm64"
+       ],
+@@ -136,9 +135,9 @@
+       }
+     },
+     "node_modules/@next/swc-win32-ia32-msvc": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-win32-ia32-msvc/-/swc-win32-ia32-msvc-14.2.5.tgz",
+-      "integrity": "sha512-Igh9ZlxwvCDsu6438FXlQTHlRno4gFpJzqPjSIBZooD22tKeI4fE/YMRoHVJHmrQ2P5YL1DoZ0qaOKkbeFWeMg==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-win32-ia32-msvc/-/swc-win32-ia32-msvc-14.2.33.tgz",
++      "integrity": "sha512-pc9LpGNKhJ0dXQhZ5QMmYxtARwwmWLpeocFmVG5Z0DzWq5Uf0izcI8tLc+qOpqxO1PWqZ5A7J1blrUIKrIFc7Q==",
+       "cpu": [
+         "ia32"
+       ],
+@@ -152,9 +151,9 @@
+       }
+     },
+     "node_modules/@next/swc-win32-x64-msvc": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-14.2.5.tgz",
+-      "integrity": "sha512-tEQ7oinq1/CjSG9uSTerca3v4AZ+dFa+4Yu6ihaG8Ud8ddqLQgFGcnwYls13H5X5CPDPZJdYxyeMui6muOLd4g==",
++      "version": "14.2.33",
++      "resolved": "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-14.2.33.tgz",
++      "integrity": "sha512-nOjfZMy8B94MdisuzZo9/57xuFVLHJaDj5e/xrduJp9CV2/HrfxTRH2fbyLe+K9QT41WBLUd4iXX3R7jBp0EUg==",
+       "cpu": [
+         "x64"
+       ],
+@@ -784,13 +783,12 @@
+       }
+     },
+     "node_modules/next": {
+-      "version": "14.2.5",
+-      "resolved": "https://registry.npmjs.org/next/-/next-14.2.5.tgz",
+-      "integrity": "sha512-0f8aRfBVL+mpzfBjYfQuLWh2WyAwtJXCRfkPF4UJ5qd2YwrHczsrSzXU4tRMV0OAxR8ZJZWPFn6uhSC56UTsLA==",
+-      "deprecated": "This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/security-update-2025-12-11 for more details.",
++      "version": "14.2.35",
++      "resolved": "https://registry.npmjs.org/next/-/next-14.2.35.tgz",
++      "integrity": "sha512-KhYd2Hjt/O1/1aZVX3dCwGXM1QmOV4eNM2UTacK5gipDdPN/oHHK/4oVGy7X8GMfPMsUTUEmGlsy0EY1YGAkig==",
+       "license": "MIT",
+       "dependencies": {
+-        "@next/env": "14.2.5",
++        "@next/env": "14.2.35",
+         "@swc/helpers": "0.5.5",
+         "busboy": "1.6.0",
+         "caniuse-lite": "^1.0.30001579",
+@@ -805,15 +803,15 @@
+         "node": ">=18.17.0"
+       },
+       "optionalDependencies": {
+-        "@next/swc-darwin-arm64": "14.2.5",
+-        "@next/swc-darwin-x64": "14.2.5",
+-        "@next/swc-linux-arm64-gnu": "14.2.5",
+-        "@next/swc-linux-arm64-musl": "14.2.5",
+-        "@next/swc-linux-x64-gnu": "14.2.5",
+-        "@next/swc-linux-x64-musl": "14.2.5",
+-        "@next/swc-win32-arm64-msvc": "14.2.5",
+-        "@next/swc-win32-ia32-msvc": "14.2.5",
+-        "@next/swc-win32-x64-msvc": "14.2.5"
++        "@next/swc-darwin-arm64": "14.2.33",
++        "@next/swc-darwin-x64": "14.2.33",
++        "@next/swc-linux-arm64-gnu": "14.2.33",
++        "@next/swc-linux-arm64-musl": "14.2.33",
++        "@next/swc-linux-x64-gnu": "14.2.33",
++        "@next/swc-linux-x64-musl": "14.2.33",
++        "@next/swc-win32-arm64-msvc": "14.2.33",
++        "@next/swc-win32-ia32-msvc": "14.2.33",
++        "@next/swc-win32-x64-msvc": "14.2.33"
+       },
+       "peerDependencies": {
+         "@opentelemetry/api": "^1.1.0",
+diff --git a/package.json b/package.json
+index 9c9b6cb..5c54b1c 100644
+--- a/package.json
++++ b/package.json
+@@ -13,7 +13,7 @@
+     "@supabase/ssr": "^0.5.2",
+     "@supabase/supabase-js": "^2.45.0",
+     "googleapis": "^140.0.0",
+-    "next": "14.2.5",
++    "next": "14.2.35",
+     "react": "^18.3.1",
+     "react-dom": "^18.3.1"
+   }

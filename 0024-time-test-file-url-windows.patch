@@ -1,0 +1,34 @@
+From 85a5da4931f73d7e6809b9ffaf7e16fef3471bff Mon Sep 17 00:00:00 2001
+From: ahmed asif rashid <asif.rashid@carrybee.com>
+Date: Mon, 16 Nov 2026 07:33:46 +0000
+Subject: [PATCH] tests: formatDhaka probe uses a file URL (fixes Windows
+ failure)
+
+On Windows, import() of a raw path (E:\...) fails with ERR_UNSUPPORTED_ESM_URL_SCHEME,
+so all four formatDhaka timezone tests failed. pathToFileURL fixes it. Tests unchanged in intent.
+---
+ tests/time.test.mjs | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/tests/time.test.mjs b/tests/time.test.mjs
+index 3a5d207..f640ae4 100644
+--- a/tests/time.test.mjs
++++ b/tests/time.test.mjs
+@@ -1,11 +1,12 @@
+ import { test } from 'node:test';
+ import assert from 'node:assert/strict';
+ import { spawnSync } from 'node:child_process';
+-import { fileURLToPath } from 'node:url';
++import { pathToFileURL, fileURLToPath } from 'node:url';
+ 
+ // formatDhaka must give Dhaka wall time no matter the viewer's timezone.
+ // The check runs in child processes because TZ is fixed when Node starts.
+-const lib = fileURLToPath(new URL('../lib/time.js', import.meta.url));
++// Use a file URL: a raw Windows path (E:\\...) is read as a URL scheme by dynamic import().
++const lib = pathToFileURL(fileURLToPath(new URL('../lib/time.js', import.meta.url))).href;
+ const probe = `import(${JSON.stringify(lib)}).then(m => {
+   process.stdout.write(m.formatDhaka('2026-11-14T14:16:00Z') + '|' + m.isoWeek(new Date('2026-11-14T14:16:00Z')));
+ });`;
+-- 
+2.47.3
+

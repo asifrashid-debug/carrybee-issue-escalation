@@ -1,0 +1,69 @@
+From c4ec6a2f7af41288d3a4451b0a3fbba4957e484c Mon Sep 17 00:00:00 2001
+From: ahmed asif rashid <asif.rashid@carrybee.com>
+Date: Mon, 16 Nov 2026 10:56:21 +0000
+Subject: [PATCH] Header: plain bar (remove clock chip and border); logo left,
+ icon buttons, sign out with initials and role
+
+---
+ app/design-v3.css       | 4 ++--
+ components/AppHeader.js | 9 +--------
+ 2 files changed, 3 insertions(+), 10 deletions(-)
+
+diff --git a/app/design-v3.css b/app/design-v3.css
+index cd687cf..b138932 100644
+--- a/app/design-v3.css
++++ b/app/design-v3.css
+@@ -111,8 +111,8 @@ body { font-family: var(--font-sans); color: var(--ink); font-size: 14px; line-h
+   display: flex; align-items: center; gap: 20px;
+   height: var(--hdr); flex-wrap: nowrap;
+   margin: 0 -24px; padding: 0 24px;
+-  background: var(--glass);
+-  border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
++  background: transparent;
++  border: 0; border-radius: 0;
+   box-shadow: none;
+ }
+ .topbar .brand { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 0 1 auto; }
+diff --git a/components/AppHeader.js b/components/AppHeader.js
+index 4432c7e..02abe72 100644
+--- a/components/AppHeader.js
++++ b/components/AppHeader.js
+@@ -38,14 +38,13 @@ const BOTTOM = [
+   { tab: 'hubs', label: 'Hubs', href: '/hubs', icon: P.pin },
+ ];
+ 
+-// Top bar: logo left; clock, notifications, theme and sign-out on the right.
++// Top bar: logo left; notifications, theme and sign-out on the right. Plain bar.
+ // Folder tabs sit under the bar on wide screens. On phones they become a bottom bar with More.
+ export default function AppHeader() {
+   const path = usePathname() || '/';
+   const activeTab = tabForPath(path);
+   // Light is the default. A saved choice (localStorage 'cb-theme') overrides it.
+   const [theme, setTheme] = useState('light');
+-  const [clock, setClock] = useState('');
+   const [me, setMe] = useState(null);
+   const [moreOpen, setMoreOpen] = useState(false);
+ 
+@@ -62,11 +61,6 @@ export default function AppHeader() {
+ 
+   useEffect(() => {
+     setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+-    const fmtTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit' });
+-    const tick = () => setClock(fmtTime.format(new Date()));
+-    tick();
+-    const t = setInterval(tick, 30000);
+-    return () => clearInterval(t);
+   }, []);
+ 
+   function toggleTheme() {
+@@ -98,7 +92,6 @@ export default function AppHeader() {
+         </div>
+ 
+         <div className="tools">
+-          <span className="live"><span className="dot" aria-hidden="true" />Dhaka {clock || '—'}</span>
+           {links.length > 0 && <NotificationBell />}
+           <button type="button" className="ibtn" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'}>
+             <Icon path={theme === 'light' ? P.moon : P.sun} />
+-- 
+2.47.3
+

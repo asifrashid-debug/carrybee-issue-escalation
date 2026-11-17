@@ -1,0 +1,232 @@
+From 3afd65b189f84b6b960d8eb155ec38b92a055168 Mon Sep 17 00:00:00 2001
+From: ahmed asif rashid <asif.rashid@carrybee.com>
+Date: Mon, 16 Nov 2026 11:48:24 +0000
+Subject: [PATCH] KPI sparkline (demo); HUB and Team bars and zone score gauge
+ in demo style; live data only
+
+---
+ app/dashboard/page.js |  2 +-
+ app/hubs/page.js      | 25 ++++++-------------------
+ app/teams/page.js     | 21 ++++-----------------
+ components/charts.css |  3 +++
+ components/charts.js  | 29 +++++++++++++++++++++++++++--
+ components/demo.js    |  4 +++-
+ 6 files changed, 44 insertions(+), 40 deletions(-)
+
+diff --git a/app/dashboard/page.js b/app/dashboard/page.js
+index fcad941..4964bce 100644
+--- a/app/dashboard/page.js
++++ b/app/dashboard/page.js
+@@ -46,7 +46,7 @@ export default function Dashboard() {
+       {error && <div className="box box-bad" role="alert">Could not refresh: {error}</div>}
+ 
+       <div className="grid g5 kpi-strip">
+-        <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed${wkPct != null ? ` · submitted ${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : ''}`} icon="shield" />
++        <Kpi label="Total escalations" value={fmtN(k.total)} sub={`${fmtN(k.open)} open · ${fmtN(k.closed)} closed${wkPct != null ? ` · submitted ${wkPct >= 0 ? '+' : ''}${wkPct}% vs previous 7 days` : ''}`} icon="shield" spark={data.trend.map((d) => d.submitted)} />
+         <Kpi label="Open backlog" value={fmtN(k.open)} sub={`${fmtN(k.unpicked)} unpicked · ${fmtN(k.awaitingResponse)} awaiting reply`} icon="clock" tone="b" />
+         <Kpi label="SLA breaches" value={fmtN(k.breaches)} sub={<><span className="bad">No comment past 2h or resolution past category SLA</span> · comment compliance {fmtPct(k.responseSlaPct)}</>} icon="alert" tone="r" hot={k.breaches > 0} />
+         <Kpi label="Median first response" value={<>{fmtH(k.medianResponseHours)}</>} sub={`Median pick ${fmtH(k.medianPickHours)}`} icon="clock" tone="g" />
+diff --git a/app/hubs/page.js b/app/hubs/page.js
+index efdbe9f..4e3d770 100644
+--- a/app/hubs/page.js
++++ b/app/hubs/page.js
+@@ -1,7 +1,8 @@
+ 'use client';
+ import { useMemo, useState } from 'react';
+ import { useAnalytics } from '../../components/useAnalytics';
+-import { PageHead, Kpi, Seg, LiveChip, Ring, Bar, GradePill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { PageHead, Kpi, Seg, LiveChip, Bar, GradePill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { HBars, Gauge } from '../../components/charts';
+ import { formatDhaka } from '../../lib/time';
+ 
+ const ZONE_COLOR = { ISD: '#F8C800', OSD: '#3B9CFF', CTG: '#A78BFA' };
+@@ -30,7 +31,7 @@ export default function HubPerformance() {
+ 
+   if (!data) {
+     return (
+-      <div className="dm">
++      <div className="dm dchart">
+         <PageHead kicker="HUB performance · 14 days" title="Hub performance" sub="Hub-level scorecards ranked by first-comment SLA" />
+         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
+       </div>
+@@ -79,27 +80,13 @@ export default function HubPerformance() {
+         <div className="card">
+           <div className="ph"><div><h3>Median First Comment by Hub</h3><small>Top 6 hubs by volume · target 2h</small></div></div>
+           {hubsMed.length === 0 ? <div className="empty">No first comments yet</div> : (
+-            <div className="lst">
+-              {hubsMed.map((h) => (
+-                <div key={h.hub}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{h.hub}</span><b className={h.medianResponseHours <= 2 ? 'good' : 'bad'}>{fmtH(h.medianResponseHours)}</b></div>
+-                  <Bar pct={(h.medianResponseHours / maxMed) * 100} color={h.medianResponseHours <= 2 ? '#3DDC97' : '#FF5D73'} />
+-                </div>
+-              ))}
+-            </div>
++            <HBars format={(v) => fmtH(v)} rows={hubsMed.map((h) => ({ label: h.hub, value: h.medianResponseHours, color: h.medianResponseHours <= 2 ? '#0A7A56' : '#FF5470' }))} />
+           )}
+         </div>
+         <div className="card">
+           <div className="ph"><div><h3>Volume by Hub</h3><small>Escalations raised · top 8 hubs</small></div></div>
+           {hubsVol.length === 0 ? <div className="empty">No hub escalations yet</div> : (
+-            <div className="lst">
+-              {hubsVol.map((h) => (
+-                <div key={h.hub}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{h.hub}</span><b>{fmtN(h.total)}</b></div>
+-                  <Bar pct={(h.total / maxVol) * 100} color="#F8C800" />
+-                </div>
+-              ))}
+-            </div>
++            <HBars rows={hubsVol.map((h) => ({ label: h.hub, value: h.total, color: '#FFCC00' }))} />
+           )}
+         </div>
+       </div>
+@@ -174,7 +161,7 @@ export default function HubPerformance() {
+           zh.forEach((h) => { const g = h.responseSlaPct == null ? null : h.responseSlaPct >= 90 ? 'A' : h.responseSlaPct >= 75 ? 'B' : h.responseSlaPct >= 50 ? 'C' : 'D'; if (g) grades[g]++; });
+           return (
+             <div key={z} className="card" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+-              <Ring pct={score} color={ZONE_COLOR[z]} />
++              <div style={{ width: 130, flex: '0 0 130px' }}><Gauge value={score ?? 0} color={ZONE_COLOR[z]} center={score == null ? '—' : `${score}%`} sub="score" w={130} /></div>
+               <div>
+                 <b style={{ fontSize: 15, color: ZONE_COLOR[z] }}>● {z} Zone</b>
+                 <div className="ks">{zh.length} hubs · {fmtN(open)} open · {fmtN(br)} breached</div>
+diff --git a/app/teams/page.js b/app/teams/page.js
+index fcc7147..e77157b 100644
+--- a/app/teams/page.js
++++ b/app/teams/page.js
+@@ -1,6 +1,7 @@
+ 'use client';
+ import { useAnalytics } from '../../components/useAnalytics';
+ import { PageHead, Kpi, Seg, LiveChip, Bar, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { HBars } from '../../components/charts';
+ import { formatDhaka } from '../../lib/time';
+ 
+ const PALETTE = ['#F8C800', '#3B9CFF', '#A78BFA', '#3DDC97', '#FF9F1C', '#FF5D73', '#7DD3FC'];
+@@ -11,7 +12,7 @@ export default function TeamPerformance() {
+ 
+   if (!data) {
+     return (
+-      <div className="dm">
++      <div className="dm dchart">
+         <PageHead kicker="Team performance · 14 days" title="Team performance" sub="Team and member scorecards" />
+         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
+       </div>
+@@ -87,25 +88,11 @@ export default function TeamPerformance() {
+         <div className="grid g2">
+           <div className="card">
+             <div className="ph"><div><h3>Issues Raised by Team</h3><small>All escalations raised by each team's members</small></div></div>
+-            <div className="lst">
+-              {teamsByIssues.map((t) => (
+-                <div key={t.team}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{t.team}</span><b>{fmtN(t.issues)}</b></div>
+-                  <Bar pct={(t.issues / maxTeamIssues) * 100} color="#F8C800" />
+-                </div>
+-              ))}
+-            </div>
++            <HBars rows={teamsByIssues.map((t) => ({ label: t.team, value: t.issues, color: '#FFCC00' }))} />
+           </div>
+           <div className="card">
+             <div className="ph"><div><h3>Breaches by Team</h3><small>Lower is better</small></div></div>
+-            <div className="lst">
+-              {teamsByIssues.map((t) => (
+-                <div key={t.team}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{t.team}</span><b className={t.breaches ? 'bad' : 'good'}>{fmtN(t.breaches || 0)}</b></div>
+-                  <Bar pct={((t.breaches || 0) / maxTeamBreaches) * 100} color="#FF5D73" />
+-                </div>
+-              ))}
+-            </div>
++            <HBars rows={teamsByIssues.map((t) => ({ label: t.team, value: t.breaches || 0, color: '#FF5470' }))} />
+           </div>
+         </div>
+       )}
+diff --git a/components/charts.css b/components/charts.css
+index 498a29c..ac82642 100644
+--- a/components/charts.css
++++ b/components/charts.css
+@@ -35,3 +35,6 @@ html[data-theme="dark"] .dchart { --grid: #1C1F25; --track: #22252C; --chart-bg:
+ .dchart .card-h h2 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -.005em; }
+ .dchart .card-h small { color: var(--mut); font-size: 12px; }
+ .dchart.mt, .dchart .mt { margin-top: 16px; }
++
++/* KPI sparkline (demo) */
++.dchart .spark { width: 100%; height: 40px; display: block; margin-top: 8px; }
+diff --git a/components/charts.js b/components/charts.js
+index 0c92a2f..34ccca6 100644
+--- a/components/charts.js
++++ b/components/charts.js
+@@ -130,7 +130,7 @@ export function BarChart({ items = [], w = 320, h = 200, label = 'Bar chart' })
+ }
+ 
+ // Horizontal bars (HTML): label, track, value.
+-export function HBars({ rows = [], color = '#111216' }) {
++export function HBars({ rows = [], color = '#111216', format = fmt }) {
+   const max = Math.max(...rows.map((r) => r.value), 1);
+   if (!rows.length) return <div className="empty">No data in this range</div>;
+   return rows.map((r) => (
+@@ -139,7 +139,7 @@ export function HBars({ rows = [], color = '#111216' }) {
+       <div className="track">
+         <div className="fill" style={{ width: `${((r.value / max) * 100).toFixed(1)}%`, background: r.color || color }} />
+       </div>
+-      <b>{fmt(r.value)}</b>
++      <b>{format(r.value)}</b>
+     </div>
+   ));
+ }
+@@ -224,3 +224,28 @@ export function DLegend({ items = [] }) {
+     </div>
+   );
+ }
++
++// Mini wave for KPI cards: no axes (demo spark).
++export function Spark({ data = [], color = '#0A7A56' }) {
++  if (!data || data.length < 2) return null;
++  const W = 160;
++  const H = 40;
++  const max = Math.max(...data);
++  const min = Math.min(...data);
++  const span = max - min || 1;
++  const pts = data.map((v, i) => [(i * W) / (data.length - 1), 4 + (H - 8) * (1 - (v - min) / span)]);
++  const d = smooth(pts);
++  const uid = useId().replace(/:/g, '');
++  return (
++    <svg className="spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
++      <defs>
++        <linearGradient id={uid} x1="0" x2="0" y1="0" y2="1">
++          <stop offset="0" stopColor={color} stopOpacity=".25" />
++          <stop offset="1" stopColor={color} stopOpacity="0" />
++        </linearGradient>
++      </defs>
++      <path d={`${d} L${W},${H} L0,${H} Z`} fill={`url(#${uid})`} />
++      <path d={d} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
++    </svg>
++  );
++}
+diff --git a/components/demo.js b/components/demo.js
+index 8f9e035..4e2a465 100644
+--- a/components/demo.js
++++ b/components/demo.js
+@@ -1,5 +1,6 @@
+ 'use client';
+ import { useId } from 'react';
++import { Spark } from './charts';
+ 
+ // Shared building blocks for the v7 page layout (ported from the v5 demo).
+ // Every page wraps its markup in <div className="dm"> so the demo styles in app/demo.css apply only there.
+@@ -45,7 +46,7 @@ export function LiveChip({ label }) {
+ }
+ 
+ // KPI card. `value` may be a node (e.g. <>84.2<small>%</small></>).
+-export function Kpi({ label, value, sub, icon, tone = '', hot = false }) {
++export function Kpi({ label, value, sub, icon, tone = '', hot = false, spark = null }) {
+   return (
+     <div className={`card ${hot ? 'hot' : ''}`}>
+       <div className="kl">
+@@ -54,6 +55,7 @@ export function Kpi({ label, value, sub, icon, tone = '', hot = false }) {
+       </div>
+       <div className="kv">{value}</div>
+       {sub && <div className="ks">{sub}</div>}
++      {spark && spark.length > 1 && <Spark data={spark} color={tone === 'r' ? '#FF5470' : '#0A7A56'} />}
+     </div>
+   );
+ }
+-- 
+2.47.3
+

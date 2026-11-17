@@ -1,0 +1,89 @@
+From e93e7f9469c205cb821d94597e81b03ffeb134a5 Mon Sep 17 00:00:00 2001
+From: Patch prep <patch-prep@localhost>
+Date: Sun, 15 Nov 2026 21:33:50 +0000
+Subject: [PATCH] KAM and MX forms: demo header, split layout, submit in side
+ card
+
+---
+ components/EscalationForm.js | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/components/EscalationForm.js b/components/EscalationForm.js
+index 3ae1567..c544dc1 100644
+--- a/components/EscalationForm.js
++++ b/components/EscalationForm.js
+@@ -4,6 +4,7 @@ import SearchSelect from './SearchSelect';
+ import { isValidParcelId, matchActiveHub, requestHubLookup, COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE, MISSING_EXTENSION_MESSAGE } from '../lib/hubLookup.mjs';
+ import { priorityForIssueType } from '../lib/priority';
+ import { formatDhaka } from '../lib/time';
++import { PageHead } from './demo';
+ 
+ const CM = 'CM';
+ 
+@@ -163,13 +164,17 @@ export default function EscalationForm({ channel }) {
+   );
+ 
+   return (
++    <>
++    <PageHead
++      kicker={`Form · ${channel}`}
++      title={isKam ? 'New KAM escalation' : 'New MX escalation'}
++      sub={`Saved to the database first. The sheet push is queued, and the issue appears in the tracker within 5 seconds. Channel is fixed to ${channel}.`}
++    />
+     <div className="kform-layout">
+     <div className="fwrap">
+-      <div className="fhead">
++      <div className="ph" style={{ padding: "18px 24px 0" }}>
++        <div><h2>Issue details</h2><small>* required</small></div>
+         <span className="chanpill" style={isKam ? undefined : { background: '#3B9CFF', color: '#fff' }}>CHANNEL: {channel}</span>
+-        <h2>{isKam ? 'Key Account Management (KAM) Escalation Intake' : 'Merchant Experience (MX) Escalation Intake'}</h2>
+-        <p>Saved to the database first. The sheet push is queued, and the issue appears in the tracker within 5 seconds. Channel is fixed to {channel}.</p>
+-        {idBlock}
+       </div>
+ 
+       {msg && (
+@@ -180,7 +185,7 @@ export default function EscalationForm({ channel }) {
+         </div>
+       )}
+ 
+-      <form onSubmit={submit} noValidate>
++      <form id="escalation-form" onSubmit={submit} noValidate>
+         <div className="fbody">
+           <div className="fgrid">
+             <div className="full idbox">
+@@ -258,14 +263,13 @@ export default function EscalationForm({ channel }) {
+ 
+         {err && <div className="err on" role="alert" style={{ margin: '0 24px 14px' }}>{err}</div>}
+ 
+-        <div className="ffoot">
+-          <span className="note">Defaults on submit: Issue Status = Open · KAM Feedback = Pending · Ops Status = Pending</span>
+-          <button type="submit" className="submit" disabled={busy}>{busy ? 'Submitting…' : `Submit ${isKam ? 'KAM' : 'MX'} Escalation`}</button>
+-        </div>
+       </form>
+-      <p className="note2" style={{ textAlign: 'center' }}>Writes to the database. Nothing is sent until you submit.</p>
+     </div>
+     <aside className="kform-side" aria-label="What happens after you submit">
++      <div className="kside-card">
++        <h3>Account</h3>
++        {idBlock}
++      </div>
+       <div className="kside-card">
+         <h3>What happens next</h3>
+         <ol className="kside-steps">
+@@ -283,7 +287,13 @@ export default function EscalationForm({ channel }) {
+         </dl>
+       </div>
+       <div className="kside-card kside-note">Channel is fixed to {channel}. Times are recorded in Asia/Dhaka.</div>
++      <div className="kside-card">
++        <h3>Submit</h3>
++        <p className="small muted" style={{ margin: '0 0 12px' }}>Writes to the database. Nothing is sent until you submit.</p>
++        <button type="submit" form="escalation-form" className="submit" disabled={busy} style={{ width: '100%' }}>{busy ? 'Submitting…' : `Submit ${isKam ? 'KAM' : 'MX'} Escalation`}</button>
++      </div>
+     </aside>
+     </div>
++    </>
+   );
+ }
+-- 
+2.47.3
+

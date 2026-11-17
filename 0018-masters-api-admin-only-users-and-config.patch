@@ -1,0 +1,28 @@
+From 62ba8348c9b053d368a7a3b5184a0b5ce805a967 Mon Sep 17 00:00:00 2001
+From: ahmed asif rashid <asif.rashid@carrybee.com>
+Date: Mon, 16 Nov 2026 07:03:59 +0000
+Subject: [PATCH] Masters API: user list and app settings are admin-only
+
+Hubs and categories stay available to all signed-in roles because the KAM and MX
+forms need them. users_roles and app_config are returned only to role admin.
+---
+ app/api/masters/route.js | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/app/api/masters/route.js b/app/api/masters/route.js
+index a71bdaa..0a3c2cd 100644
+--- a/app/api/masters/route.js
++++ b/app/api/masters/route.js
+@@ -11,5 +11,8 @@ export async function GET() {
+     sb.from('users_roles').select('*').eq('is_active', true).order('email'),
+     sb.from('app_config').select('*')
+   ]);
+-  return NextResponse.json({ hubs: hubs||[], categories: cats||[], users: users||[], config: cfg||[] });
++  // Hubs and categories are needed by the KAM and MX forms, so every signed-in role gets them.
++  // The user list and app settings are admin-only.
++  const isAdmin = session.role === 'admin';
++  return NextResponse.json({ hubs: hubs||[], categories: cats||[], users: isAdmin ? (users||[]) : [], config: isAdmin ? (cfg||[]) : [] });
+ }
+-- 
+2.47.3
+

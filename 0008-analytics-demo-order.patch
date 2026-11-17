@@ -1,0 +1,156 @@
+From 7cbd47adfc68409c7122c32273b2e44fd13550b9 Mon Sep 17 00:00:00 2001
+From: Ahmed Asif Rashid <asif.rashid@carrybee.com>
+Date: Sun, 15 Nov 2026 21:16:42 +0000
+Subject: [PATCH] Analytics: demo order (ageing and feedback donut, funnel
+ beside categories, zone SLA full width)
+
+app/analytics/page.js: feedback outcomes shown as a live donut; funnel and categories share a row; zone SLA is full width; ops status and channel share a row. All cards and data unchanged.
+---
+ app/analytics/page.js | 102 ++++++++++++++++++++++--------------------
+ 1 file changed, 54 insertions(+), 48 deletions(-)
+
+diff --git a/app/analytics/page.js b/app/analytics/page.js
+index 3ec7d56..6b40c3b 100644
+--- a/app/analytics/page.js
++++ b/app/analytics/page.js
+@@ -1,6 +1,6 @@
+ 'use client';
+ import { useAnalytics } from '../../components/useAnalytics';
+-import { PageHead, Kpi, Seg, LiveChip, Legend, Bar, LineChart, Ring, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { PageHead, Kpi, Seg, LiveChip, Legend, Bar, Donut, LineChart, Ring, fmtN, fmtPct, fmtH } from '../../components/demo';
+ import { formatDhaka } from '../../lib/time';
+ 
+ const ZONE_COLOR = { ISD: '#F8C800', OSD: '#3B9CFF', CTG: '#A78BFA' };
+@@ -66,7 +66,45 @@ export default function Analytics() {
+         />
+       </div>
+ 
+-      <div className="grid g2e">
++      <div className="grid g2">
++        <div className="card">
++          <div className="ph"><div><h3>Ageing of Open Cases</h3><small>Whole days since submission · open issues</small></div></div>
++          {k.open === 0 ? <div className="empty">No open cases</div> : (
++            <div className="lst">
++              {data.ageing.map((a, i) => (
++                <div key={a.label}>
++                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{a.label}</span><b>{fmtN(a.count)}</b></div>
++                  <Bar pct={pct(a.count, k.open)} color={['#3DDC97', '#F8C800', '#FF5D73'][i]} />
++                </div>
++              ))}
++            </div>
++          )}
++        </div>
++
++        <div className="card">
++          <div className="ph"><div><h3>Feedback Outcomes</h3><small>Share of closed cases · {fmtN(data.feedbackOutcomes.closed)} closed</small></div></div>
++          {data.feedbackOutcomes.closed === 0 ? <div className="empty">No closed cases yet</div> : (
++            <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
++              <Donut
++                segments={data.feedbackOutcomes.items.map((f, i) => ({ label: f.label, value: f.count, color: ['#3DDC97', '#FF5D73', '#FFB020', '#A3A1A8'][i] }))}
++                center={fmtPct(data.feedbackOutcomes.items[0]?.pct ?? 0)}
++                sub="resolved"
++              />
++              <div className="lst" style={{ flex: '1 1 180px', minWidth: 0 }}>
++                {data.feedbackOutcomes.items.map((f, i) => (
++                  <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
++                    <i style={{ width: 9, height: 9, borderRadius: '50%', background: ['#3DDC97', '#FF5D73', '#FFB020', '#A3A1A8'][i], flex: '0 0 auto' }} />
++                    <span>{f.label}</span>
++                    <b style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{fmtPct(f.pct)}</b>
++                  </div>
++                ))}
++              </div>
++            </div>
++          )}
++        </div>
++      </div>
++
++      <div className="grid g2">
+         <div className="card">
+           <div className="ph"><div><h3>Lifecycle Funnel</h3><small>Submission → pick → first response → resolution → closure</small></div></div>
+           <div className="lst">
+@@ -83,6 +121,20 @@ export default function Analytics() {
+             })}
+           </div>
+         </div>
++        <div className="card">
++          <div className="ph"><div><h3>Top Issue Categories</h3><small>Share of all issues</small></div></div>
++          {data.categories.length === 0 ? <div className="empty">No categories yet</div> : (
++            <div className="lst">
++              {data.categories.map((c) => (
++                <div key={c.label}>
++                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{c.label}</span><b>{fmtN(c.count)}</b></div>
++                  <Bar pct={pct(c.count, k.total)} color="#F8C800" />
++                </div>
++              ))}
++            </div>
++          )}
++        </div>
++      </div>
+ 
+         <div className="card">
+           <div className="ph"><div><h3>Zone SLA Performance</h3><small>Compliance, first comment and resolution</small></div></div>
+@@ -104,39 +156,8 @@ export default function Analytics() {
+             ))}
+           </div>
+         </div>
+-      </div>
+ 
+       <div className="grid g2">
+-        <div className="card">
+-          <div className="ph"><div><h3>Ageing of Open Cases</h3><small>Whole days since submission · open issues</small></div></div>
+-          {k.open === 0 ? <div className="empty">No open cases</div> : (
+-            <div className="lst">
+-              {data.ageing.map((a, i) => (
+-                <div key={a.label}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{a.label}</span><b>{fmtN(a.count)}</b></div>
+-                  <Bar pct={pct(a.count, k.open)} color={['#3DDC97', '#F8C800', '#FF5D73'][i]} />
+-                </div>
+-              ))}
+-            </div>
+-          )}
+-        </div>
+-
+-        <div className="card">
+-          <div className="ph"><div><h3>Feedback Outcomes</h3><small>Share of closed cases · {fmtN(data.feedbackOutcomes.closed)} closed</small></div></div>
+-          {data.feedbackOutcomes.closed === 0 ? <div className="empty">No closed cases yet</div> : (
+-            <div className="lst">
+-              {data.feedbackOutcomes.items.map((f, i) => (
+-                <div key={f.label}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{f.label}</span><b>{fmtN(f.count)} · {fmtPct(f.pct)}</b></div>
+-                  <Bar pct={f.pct ?? 0} color={['#3DDC97', '#FF5D73', '#FFB020', '#A3A1A8'][i]} />
+-                </div>
+-              ))}
+-            </div>
+-          )}
+-        </div>
+-      </div>
+-
+-      <div className="grid g3">
+         <div className="card">
+           <div className="ph"><div><h3>Ops Status Mix</h3><small>Share of all issues</small></div></div>
+           <div className="lst">
+@@ -148,21 +169,6 @@ export default function Analytics() {
+             ))}
+           </div>
+         </div>
+-
+-        <div className="card">
+-          <div className="ph"><div><h3>Top Issue Categories</h3><small>Share of all issues</small></div></div>
+-          {data.categories.length === 0 ? <div className="empty">No categories yet</div> : (
+-            <div className="lst">
+-              {data.categories.map((c) => (
+-                <div key={c.label}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{c.label}</span><b>{fmtN(c.count)}</b></div>
+-                  <Bar pct={pct(c.count, k.total)} color="#F8C800" />
+-                </div>
+-              ))}
+-            </div>
+-          )}
+-        </div>
+-
+         <div className="card">
+           <div className="ph"><div><h3>Channel Split</h3><small>KAM vs MX · MX issues go to the CM team</small></div></div>
+           <div className="lst">
+-- 
+2.47.3
+

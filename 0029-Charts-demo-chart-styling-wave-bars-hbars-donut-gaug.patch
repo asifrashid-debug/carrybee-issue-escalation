@@ -1,0 +1,641 @@
+From 57794176cd1a800caf78d208c9ca74f0f1afc63a Mon Sep 17 00:00:00 2001
+From: ahmed asif rashid <asif.rashid@carrybee.com>
+Date: Mon, 16 Nov 2026 11:20:32 +0000
+Subject: [PATCH] Charts: demo chart styling (wave, bars, hbars, donut, gauge)
+ on Dashboard and Analytics; live data only
+
+---
+ app/analytics/page.js | 118 +++++++++-------------
+ app/dashboard/page.js | 105 ++++++++++----------
+ components/charts.css |  37 +++++++
+ components/charts.js  | 226 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 360 insertions(+), 126 deletions(-)
+ create mode 100644 components/charts.css
+ create mode 100644 components/charts.js
+
+diff --git a/app/analytics/page.js b/app/analytics/page.js
+index 8471b77..1c3e32b 100644
+--- a/app/analytics/page.js
++++ b/app/analytics/page.js
+@@ -1,10 +1,11 @@
+ 'use client';
+ import { useAnalytics } from '../../components/useAnalytics';
+-import { PageHead, Kpi, Seg, LiveChip, Legend, Bar, Donut, LineChart, Ring, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { PageHead, Kpi, Seg, LiveChip, Bar, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { WaveChart, BarChart, HBars, Donut as DonutChart, Gauge, DLegend } from '../../components/charts';
+ import { formatDhaka } from '../../lib/time';
+ 
+-const ZONE_COLOR = { ISD: '#F8C800', OSD: '#3B9CFF', CTG: '#A78BFA' };
+-const STATUS_COLOR = { New: '#A3A1A8', Picked: '#F8C800', 'In Progress': '#FFB020', 'On Hold': '#9B9B9B', Resolved: '#3DDC97', Unresolved: '#FF5D73', Unspecified: '#CFCBBE' };
++const ZONE_COLOR = { ISD: '#FFCC00', OSD: '#37A9FF', CTG: '#A78BFA' };
++const STATUS_COLOR = { New: '#A3A1A8', Picked: '#FFCC00', 'In Progress': '#FFB020', 'On Hold': '#9B9B9B', Resolved: '#00E5A0', Unresolved: '#FF5470', Unspecified: '#CFCBBE' };
+ 
+ // Analytics & Insights (demo layout). Same numbers as before, scoped to the viewer's access.
+ export default function Analytics() {
+@@ -23,16 +24,15 @@ export default function Analytics() {
+   const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
+   const busiest = data.zones.reduce((best, z) => (z.total > best.total ? z : best), data.zones[0]);
+   const stages = [
+-    { label: 'Submitted', value: k.total, color: '#F8C800' },
+-    { label: 'Picked by ops', value: k.picked, color: '#3B9CFF' },
++    { label: 'Submitted', value: k.total, color: '#08090B' },
++    { label: 'Picked by ops', value: k.picked, color: '#37A9FF' },
+     { label: 'First response', value: k.responded, color: '#A78BFA' },
+-    { label: 'Resolved', value: k.resolved, color: '#3DDC97' },
+-    { label: 'Closed', value: k.closed, color: '#3DDC97' },
++    { label: 'Resolved', value: k.resolved, color: '#00E5A0' },
++    { label: 'Closed', value: k.closed, color: '#00E5A0' },
+   ];
+-  const maxTrend = Math.max(4, ...data.trend.flatMap((d) => [d.submitted, d.responded]));
+ 
+   return (
+-    <div className="dm">
++    <div className="dm dchart">
+       <PageHead kicker="Analytics · 14 days" title="Escalation analytics" sub={`Trend, distribution, SLA funnel and operational patterns · last 14 days · ${busiest ? `busiest zone ${busiest.zone}` : ''}`}>
+         <button type="button" className="btn" onClick={reload} disabled={loading} aria-label="Refresh">{loading ? 'Refreshing…' : '⟳ Refresh'}</button>
+         <LiveChip label={`Live · synced ${formatDhaka(data.generatedAt)}`} />
+@@ -48,50 +48,50 @@ export default function Analytics() {
+       </div>
+ 
+       <div className="card" style={{ marginBottom: 14 }}>
+-        <div className="ph">
+-          <div><h3>Intake vs First Response</h3><small>Daily submissions and first comments · last 14 days (Dhaka)</small></div>
+-          <Legend items={[['Submitted', '#F8C800'], ['Responded', '#3DDC97']]} />
++        <div className="card-h">
++          <div><h2>Daily volume</h2><small>Submitted and first responses, last 14 days (Dhaka)</small></div>
++          <DLegend items={[{ c: '#08090B', l: 'Submitted' }, { c: '#0A7A56', l: 'Responded' }]} />
+         </div>
+-        <LineChart
++        <WaveChart
++          label="Daily volume"
+           labels={data.trend.map((d) => d.date.slice(5).split('-').reverse().join(' '))}
++          every={1}
++          h={240}
+           series={[
+-            { data: data.trend.map((d) => d.submitted), color: '#F8C800', fill: 1 },
+-            { data: data.trend.map((d) => d.responded), color: '#3DDC97', fill: 1 },
++            { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0.1 },
++            { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.18 },
+           ]}
+-          max={maxTrend}
+-          step={Math.max(1, Math.ceil(maxTrend / 4))}
+-          h={240}
+         />
+       </div>
+ 
+       <div className="grid g2">
+         <div className="card">
+-          <div className="ph"><div><h3>Ageing of Open Cases</h3><small>Whole days since submission · open issues</small></div></div>
++          <div className="card-h"><div><h2>Ageing of open cases</h2><small>Whole days since submission · open issues</small></div></div>
+           {k.open === 0 ? <div className="empty">No open cases</div> : (
+-            <div className="lst">
+-              {data.ageing.map((a, i) => (
+-                <div key={a.label}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{a.label}</span><b>{fmtN(a.count)}</b></div>
+-                  <Bar pct={pct(a.count, k.open)} color={['#3DDC97', '#F8C800', '#FF5D73'][i]} />
+-                </div>
+-              ))}
+-            </div>
++            <BarChart
++              label="Ageing of open cases"
++              h={210}
++              w={420}
++              items={data.ageing.map((a, i) => ({ label: a.label, value: a.count, color: ['#00E5A0', '#FFCC00', '#FF5470'][i] || '#A3A1A8' }))}
++            />
+           )}
+         </div>
+ 
+         <div className="card">
+-          <div className="ph"><div><h3>Feedback Outcomes</h3><small>Share of closed cases · {fmtN(data.feedbackOutcomes.closed)} closed</small></div></div>
++          <div className="card-h"><div><h2>Feedback outcomes</h2><small>Share of closed cases · {fmtN(data.feedbackOutcomes.closed)} closed</small></div></div>
+           {data.feedbackOutcomes.closed === 0 ? <div className="empty">No closed cases yet</div> : (
+-            <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+-              <Donut
+-                segments={data.feedbackOutcomes.items.map((f, i) => ({ label: f.label, value: f.count, color: ['#3DDC97', '#FF5D73', '#FFB020', '#A3A1A8'][i] }))}
++            <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
++              <DonutChart
++                segments={data.feedbackOutcomes.items.map((f, i) => ({ label: f.label, value: f.count, color: ['#00E5A0', '#37A9FF', '#FF5470', '#A3A1A8'][i] }))}
+                 center={fmtPct(data.feedbackOutcomes.items[0]?.pct ?? 0)}
+                 sub="resolved"
++                size={160}
++                stroke={20}
+               />
+               <div className="lst" style={{ flex: '1 1 180px', minWidth: 0 }}>
+                 {data.feedbackOutcomes.items.map((f, i) => (
+                   <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+-                    <i style={{ width: 9, height: 9, borderRadius: '50%', background: ['#3DDC97', '#FF5D73', '#FFB020', '#A3A1A8'][i], flex: '0 0 auto' }} />
++                    <i style={{ width: 9, height: 9, borderRadius: '50%', background: ['#00E5A0', '#37A9FF', '#FF5470', '#A3A1A8'][i], flex: '0 0 auto' }} />
+                     <span>{f.label}</span>
+                     <b style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{fmtPct(f.pct)}</b>
+                   </div>
+@@ -104,32 +104,18 @@ export default function Analytics() {
+ 
+       <div className="grid g2">
+         <div className="card">
+-          <div className="ph"><div><h3>Lifecycle Funnel</h3><small>Submission → pick → first response → resolution → closure</small></div></div>
+-          <div className="lst">
+-            {stages.map((s, i) => {
+-              const prev = i === 0 ? null : stages[i - 1].value;
+-              return (
+-                <div key={s.label}>
+-                  <div style={{ margin: '0 auto', width: `${Math.max(pct(s.value, k.total), 35)}%`, border: `1px solid ${s.color}`, background: `${s.color}22`, borderRadius: 12, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+-                    <span>{s.label}</span><span style={{ color: s.color }}>{fmtN(s.value)}</span>
+-                  </div>
+-                  {prev != null && <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mut)', margin: '4px 0 6px' }}>{pct(s.value, prev)}% carry-through</div>}
+-                </div>
+-              );
+-            })}
++          <div className="card-h"><div><h2>Funnel</h2><small>Submission → pick → first response → resolution → closure</small></div></div>
++          <HBars rows={stages.map((st) => ({ label: st.label, value: st.value, color: st.color }))} />
++          <div style={{ display: 'grid', gap: 4, marginTop: 8, fontSize: 11.5, color: 'var(--mut)' }}>
++            {stages.slice(1).map((st, i) => (
++              <div key={st.label}>{st.label}: {pct(st.value, stages[i].value)}% carry-through from {stages[i].label.toLowerCase()}</div>
++            ))}
+           </div>
+         </div>
+         <div className="card">
+-          <div className="ph"><div><h3>Top Issue Categories</h3><small>Share of all issues</small></div></div>
++          <div className="card-h"><div><h2>Categories</h2><small>Share of all issues</small></div></div>
+           {data.categories.length === 0 ? <div className="empty">No categories yet</div> : (
+-            <div className="lst">
+-              {data.categories.map((c) => (
+-                <div key={c.label}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{c.label}</span><b>{fmtN(c.count)}</b></div>
+-                  <Bar pct={pct(c.count, k.total)} color="#F8C800" />
+-                </div>
+-              ))}
+-            </div>
++            <HBars rows={data.categories.map((c) => ({ label: c.label, value: c.count }))} color="#111216" />
+           )}
+         </div>
+       </div>
+@@ -158,40 +144,26 @@ export default function Analytics() {
+       <div className="grid g2">
+         <div className="card">
+           <div className="ph"><div><h3>Ops Status Mix</h3><small>Share of all issues</small></div></div>
+-          <div className="lst">
+-            {data.statuses.slice(0, 6).map((s) => (
+-              <div key={s.label}>
+-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><b style={{ color: STATUS_COLOR[s.label] }}>{s.label}</b><span>{fmtN(s.count)} · {pct(s.count, k.total)}%</span></div>
+-                <Bar pct={pct(s.count, k.total)} color={STATUS_COLOR[s.label] || STATUS_COLOR.Unspecified} />
+-              </div>
+-            ))}
+-          </div>
++          <HBars rows={data.statuses.slice(0, 6).map((st) => ({ label: st.label, value: st.count, color: STATUS_COLOR[st.label] || STATUS_COLOR.Unspecified }))} />
+         </div>
+         <div className="card">
+           <div className="ph"><div><h3>Channel Split</h3><small>KAM vs MX · MX issues go to the CM team</small></div></div>
+-          <div className="lst">
+-            {data.channels.map((c) => (
+-              <div key={c.label}>
+-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{c.label === 'Unspecified' ? 'Unspecified channel' : `${c.label} channel`}</span><b>{fmtN(c.count)}</b></div>
+-                <Bar pct={pct(c.count, k.total)} color="#3B9CFF" />
+-              </div>
+-            ))}
+-          </div>
++          <HBars rows={data.channels.map((c) => ({ label: c.label === 'Unspecified' ? 'Unspecified channel' : `${c.label} channel`, value: c.count, color: '#37A9FF' }))} />
+         </div>
+       </div>
+ 
+       <div className="grid g3">
+         <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+           <div className="ph" style={{ width: '100%' }}><div><h3>First Comment ≤ 2h</h3><small>Target 90%</small></div></div>
+-          <Ring pct={k.responseSlaPct} color="#F8C800" label={`Median ${fmtH(k.medianResponseHours)}`} />
++          <Gauge value={k.responseSlaPct ?? 0} color={(k.responseSlaPct ?? 0) >= 85 ? '#0A7A56' : '#FFCC00'} center={k.responseSlaPct == null ? '—' : `${k.responseSlaPct}%`} sub={`Median ${fmtH(k.medianResponseHours)}`} w={200} />
+         </div>
+         <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+           <div className="ph" style={{ width: '100%' }}><div><h3>Picked ≤ 4h</h3><small>Target 90%</small></div></div>
+-          <Ring pct={k.pickSlaPct} color="#3B9CFF" label={`Median ${fmtH(k.medianPickHours)}`} />
++          <Gauge value={k.pickSlaPct ?? 0} color={(k.pickSlaPct ?? 0) >= 85 ? '#0A7A56' : '#37A9FF'} center={k.pickSlaPct == null ? '—' : `${k.pickSlaPct}%`} sub={`Median ${fmtH(k.medianPickHours)}`} w={200} />
+         </div>
+         <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+           <div className="ph" style={{ width: '100%' }}><div><h3>Resolved</h3><small>{fmtN(k.resolved)} of {fmtN(k.total)} issues</small></div></div>
+-          <Ring pct={k.resolvedPct} color="#3DDC97" label="Resolved so far" />
++          <Gauge value={k.resolvedPct ?? 0} color="#0A7A56" center={k.resolvedPct == null ? '—' : `${k.resolvedPct}%`} sub="Resolved so far" w={200} />
+         </div>
+       </div>
+ 
+diff --git a/app/dashboard/page.js b/app/dashboard/page.js
+index 759f39f..fcad941 100644
+--- a/app/dashboard/page.js
++++ b/app/dashboard/page.js
+@@ -1,12 +1,13 @@
+ 'use client';
+ import Link from 'next/link';
+ import { useAnalytics } from '../../components/useAnalytics';
+-import { PageHead, Kpi, Seg, LiveChip, Ring, Legend, Bar, Donut, LineChart, PriPill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { PageHead, Kpi, Seg, LiveChip, PriPill, Zc, fmtN, fmtPct, fmtH } from '../../components/demo';
++import { WaveChart, BarChart, HBars, Donut as DonutChart, Gauge, DLegend } from '../../components/charts';
+ import { formatDhaka } from '../../lib/time';
+ import { teamActions, LAG_SCORE, IMPROVE_POINTS } from '../../lib/teamGuidance';
+ 
+-const ZONE_COLOR = { ISD: '#F8C800', OSD: '#3B9CFF', CTG: '#A78BFA' };
+-const PRI_COLOR = { P1: '#FF5D73', P2: '#FFB020', P3: '#A3A1A8', P4: '#6B6B73' };
++const ZONE_COLOR = { ISD: '#FFCC00', OSD: '#37A9FF', CTG: '#A78BFA' };
++const PRI_COLOR = { P1: '#FF5470', P2: '#FFCC00', P3: '#00E5A0', P4: '#A3A1A8' };
+ 
+ // Operations Command Centre (demo layout). Exception-first: SLA breaches, owners and next actions.
+ export default function Dashboard() {
+@@ -52,48 +53,51 @@ export default function Dashboard() {
+         <Kpi label="Resolved" value={fmtN(k.resolved)} sub={`${fmtPct(k.resolvedPct)} resolution rate`} icon="check" tone="g" />
+       </div>
+ 
+-      <div className="card only-desk">
+-          <div className="ph">
+-            <div><h3>Escalation Flow</h3><small>Daily intake, pick and first comment · last 14 days (Dhaka)</small></div>
+-            <Legend items={[['Submitted', '#F8C800'], ['Picked', '#3B9CFF'], ['Responded', '#3DDC97']]} />
+-          </div>
+-          <LineChart
+-            labels={data.trend.map((d) => d.date.slice(5).split('-').reverse().join(' '))}
+-            series={[
+-              { data: data.trend.map((d) => d.submitted), color: '#F8C800', fill: 1 },
+-              { data: data.trend.map((d) => d.picked), color: '#3B9CFF', fill: 1 },
+-              { data: data.trend.map((d) => d.responded), color: '#3DDC97', fill: 1 },
+-            ]}
+-            max={maxFlow}
+-            h={250}
+-          />
++      <div className="card only-desk dchart mt">
++        <div className="card-h">
++          <div><h2>Escalation flow</h2><small>Submitted, picked and first response · last 14 days · Asia/Dhaka</small></div>
++          <DLegend items={[{ c: '#08090B', l: 'Submitted' }, { c: '#37A9FF', l: 'Picked' }, { c: '#0A7A56', l: 'Responded' }]} />
+         </div>
++        <WaveChart
++          label="Escalation flow"
++          labels={data.trend.map((d) => d.date.slice(5).split('-').reverse().join(' '))}
++          every={1}
++          h={250}
++          series={[
++            { data: data.trend.map((d) => d.submitted), color: '#08090B', fillOpacity: 0.1 },
++            { data: data.trend.map((d) => d.picked), color: '#37A9FF', fillOpacity: 0.12 },
++            { data: data.trend.map((d) => d.responded), color: '#0A7A56', fillOpacity: 0.18 },
++          ]}
++        />
++      </div>
+ 
+-      <div className="grid g3 only-desk">
+-        <div className="card only-desk">
+-          <div className="ph"><div><h3>Open by Zone</h3><small>Share of open backlog · resolved and breached per zone</small></div></div>
+-          <div className="lst">
+-            {data.zones.map((z) => {
+-              const color = ZONE_COLOR[z.zone] || '#F8C800';
+-              return (
+-                <div key={z.zone}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, gap: 8, flexWrap: 'wrap' }}>
+-                    <b style={{ color }}>● {z.zone} Zone</b>
+-                    <span>{fmtN(z.open)} open · {fmtN(z.resolved)} resolved · <span className={z.breaches ? 'bad' : ''}>{fmtN(z.breaches)} breached</span></span>
+-                  </div>
+-                  <Bar pct={pct(z.open, k.open)} color={color} />
+-                </div>
+-              );
+-            })}
++      <div className="grid g3 only-desk mt dchart">
++        <div className="card">
++          <div className="card-h"><div><h2>Open by zone</h2><small>Open backlog per zone</small></div></div>
++          <BarChart
++            label="Open by zone"
++            h={200}
++            items={data.zones.map((z) => ({ label: z.zone, value: z.open, color: ZONE_COLOR[z.zone] || '#FFCC00' }))}
++          />
++          <div className="lst" style={{ marginTop: 10 }}>
++            {data.zones.map((z) => (
++              <div key={z.zone} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, gap: 8, flexWrap: 'wrap' }}>
++                <b style={{ color: ZONE_COLOR[z.zone] || '#FFCC00' }}>● {z.zone} Zone</b>
++                <span>{fmtN(z.open)} open · {fmtN(z.resolved)} resolved · <span className={z.breaches ? 'bad' : ''}>{fmtN(z.breaches)} breached</span></span>
++              </div>
++            ))}
+           </div>
+         </div>
++
+         <div className="card">
+-          <div className="ph"><div><h3>Priority Mix</h3><small>All escalations in scope</small></div></div>
++          <div className="card-h"><div><h2>Priority mix</h2><small>open</small></div></div>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+-            <Donut
+-              segments={data.priorities.map((p) => ({ label: p.label, value: p.total, color: PRI_COLOR[p.label] }))}
+-              center={fmtN(k.total)}
+-              sub="escalations"
++            <DonutChart
++              segments={data.priorities.map((p) => ({ label: p.label, value: p.open, color: PRI_COLOR[p.label] || '#A3A1A8' }))}
++              center={fmtN(k.open)}
++              sub="open"
++              size={140}
++              stroke={18}
+             />
+             <div className="lst" style={{ flex: '1 1 180px', minWidth: 0 }}>
+               {data.priorities.map((p) => (
+@@ -109,27 +113,22 @@ export default function Dashboard() {
+         </div>
+ 
+         <div className="card">
+-          <div className="ph"><div><h3>Top Issue Categories</h3><small>Highest volume drivers</small></div></div>
++          <div className="card-h"><div><h2>Top categories</h2><small>Highest volume drivers</small></div></div>
+           {data.categories.length === 0 ? <div className="empty">No categories yet</div> : (
+-            <div className="lst">
+-              {data.categories.map((c) => (
+-                <div key={c.label}>
+-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{c.label}</span><b>{fmtN(c.count)}</b></div>
+-                  <Bar pct={(c.count / maxCat) * 100} color="#F8C800" />
+-                </div>
+-              ))}
+-            </div>
++            <HBars rows={data.categories.map((c) => ({ label: c.label, value: c.count }))} color="#111216" />
+           )}
+         </div>
+       </div>
+ 
+       <div className="grid g2">
+-        <div className="card">
+-          <div className="ph"><div><h3>Operational Health</h3><small>Rolling compliance</small></div></div>
++        <div className="card dchart">
++          <div className="card-h"><div><h2>Operational health</h2><small>target met</small></div></div>
+           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+-            <Ring pct={k.responseSlaPct} color="#F8C800" label="SLA" sub="Comment ≤ 2h" />
+-            <Ring pct={k.pickSlaPct} color="#3B9CFF" label="Picked" sub="Pick ≤ 4h" />
+-            <Ring pct={k.resolvedPct} color="#3DDC97" label="Resolved" />
++            {[['SLA ≤ 2h', k.responseSlaPct], ['Picked ≤ 4h', k.pickSlaPct], ['Resolved', k.resolvedPct]].map(([sub, v]) => (
++              <div key={sub} className="dchart" style={{ textAlign: 'center' }}>
++                <Gauge value={v ?? 0} color={(v ?? 0) >= 85 ? '#0A7A56' : '#FFCC00'} center={v == null ? '—' : `${v}%`} sub={sub} w={150} />
++              </div>
++            ))}
+           </div>
+           <div className="grid g2e" style={{ marginTop: 14, gap: 10 }}>
+             <div className="card hot" style={{ padding: 12 }}><div className="kl">P1 open</div><div className="kv" style={{ fontSize: 26, color: 'var(--bad)' }}>{fmtN(k.p1Open)}</div></div>
+diff --git a/components/charts.css b/components/charts.css
+new file mode 100644
+index 0000000..498a29c
+--- /dev/null
++++ b/components/charts.css
+@@ -0,0 +1,37 @@
++/* Chart styling from the approved demo. Scoped to .dchart so no other page changes. */
++.dchart { --grid: #EEECE6; --track: #EFEDE7; --chart-bg: #FFFFFF; }
++html[data-theme="dark"] .dchart { --grid: #1C1F25; --track: #22252C; --chart-bg: #111317; }
++
++.dchart .chart { width: 100%; height: auto; display: block; overflow: visible; }
++.dchart .chart .gl { stroke: var(--grid); stroke-width: 1; }
++.dchart .chart .ax { font: 500 10.5px var(--font-sans, Inter, system-ui, sans-serif); fill: var(--mut); }
++.dchart .chart .val { font: 600 11px var(--font-sans, Inter, system-ui, sans-serif); fill: var(--text); }
++.dchart .chart .base { stroke: var(--line); stroke-width: 1; }
++.dchart .chart .gv { font: 700 26px var(--font-sans, Inter, system-ui, sans-serif); fill: var(--text); }
++.dchart .chart .dot-ring { stroke: var(--chart-bg); }
++
++.dchart .dlegend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--mut); }
++.dchart .dlegend span { display: inline-flex; align-items: center; gap: 6px; }
++.dchart .dlegend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
++
++.dchart .hbar { display: grid; grid-template-columns: 112px 1fr 40px; align-items: center; gap: 12px; margin: 10px 0; font-size: 13px; }
++.dchart .hbar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
++.dchart .hbar .track { height: 8px; border-radius: 99px; background: var(--track); overflow: hidden; }
++.dchart .hbar .fill { height: 100%; border-radius: 99px; }
++.dchart .hbar b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
++@media (max-width: 600px) { .dchart .hbar { grid-template-columns: 96px 1fr 36px; } }
++
++.dchart .donut { position: relative; width: max-content; }
++.dchart .donut svg { display: block; }
++.dchart .donut .donut-track { stroke: var(--track); }
++.dchart .donut .dc { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
++.dchart .donut .dc b { font: 700 24px var(--font-sans, Inter, system-ui, sans-serif); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
++.dchart .donut .dc span { font-size: 11px; color: var(--mut); }
++
++.dchart .gauge-track { stroke: rgba(128, 128, 128, .14); }
++
++/* Card header and spacing from the demo (scoped) */
++.dchart .card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
++.dchart .card-h h2 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -.005em; }
++.dchart .card-h small { color: var(--mut); font-size: 12px; }
++.dchart.mt, .dchart .mt { margin-top: 16px; }
+diff --git a/components/charts.js b/components/charts.js
+new file mode 100644
+index 0000000..0c92a2f
+--- /dev/null
++++ b/components/charts.js
+@@ -0,0 +1,226 @@
++'use client';
++// Chart renderers ported from the approved demo (carrybee-final-demo.html: wave, bars, hbars, donut, gauge, legend).
++// Same geometry and styling. Data comes only from live values passed in by the page; nothing is sample data.
++// Classes are scoped under .dchart (see charts.css) so the rest of the app is not affected.
++import { useId } from 'react';
++import './charts.css';
++
++const fmt = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US'));
++
++function niceMax(v) {
++  if (!(v > 0)) return 1;
++  const p = Math.pow(10, Math.floor(Math.log10(v)));
++  return Math.ceil(v / p) * p;
++}
++
++// Catmull-Rom through points, converted to cubic Bezier: a smooth wave line.
++function smooth(pts) {
++  if (pts.length < 2) return '';
++  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
++  for (let i = 0; i < pts.length - 1; i++) {
++    const p0 = pts[i - 1] || pts[i];
++    const p1 = pts[i];
++    const p2 = pts[i + 1];
++    const p3 = pts[i + 2] || p2;
++    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
++    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
++    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
++    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
++    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
++  }
++  return d;
++}
++
++// Wave chart: one or more smooth area/line series with gradient fills.
++export function WaveChart({ labels = [], series = [], every = 1, w = 640, h = 230, label = 'Trend' }) {
++  const uid = useId().replace(/:/g, '');
++  if (!labels.length || !series.length) return <div className="empty">No data in this range</div>;
++  const W = w;
++  const H = h;
++  const pl = 36;
++  const pr = 12;
++  const pt = 14;
++  const pb = 26;
++  const iw = W - pl - pr;
++  const ih = H - pt - pb;
++  const all = series.flatMap((s) => s.data);
++  const max = niceMax(Math.max(...all, 0));
++  const n = labels.length;
++  const x = (i) => pl + (n === 1 ? iw / 2 : (i * iw) / (n - 1));
++  const y = (v) => pt + ih * (1 - v / max);
++  const grid = [];
++  for (let k = 0; k <= 4; k++) {
++    const v = (max * k) / 4;
++    const yy = y(v);
++    grid.push(
++      <g key={`g${k}`}>
++        <line className="gl" x1={pl} x2={W - pr} y1={yy} y2={yy} />
++        <text className="ax" x={pl - 8} y={yy + 4} textAnchor="end">{Math.round(v)}</text>
++      </g>,
++    );
++  }
++  const xl = labels.map((l, i) =>
++    i % every === 0 || i === n - 1 ? (
++      <text key={`x${i}`} className="ax" x={x(i)} y={H - 6} textAnchor="middle">{l}</text>
++    ) : null,
++  );
++  const paths = [];
++  const defs = [];
++  series.forEach((s, si) => {
++    const pts = s.data.map((v, i) => [x(i), y(v)]);
++    const line = smooth(pts);
++    const gid = `${uid}g${si}`;
++    defs.push(
++      <linearGradient key={gid} id={gid} x1="0" x2="0" y1="0" y2="1">
++        <stop offset="0" stopColor={s.color} stopOpacity={s.fillOpacity ?? 0.22} />
++        <stop offset="1" stopColor={s.color} stopOpacity="0" />
++      </linearGradient>,
++    );
++    if (s.fill !== false) {
++      paths.push(<path key={`f${si}`} d={`${line} L${x(n - 1)},${pt + ih} L${x(0)},${pt + ih} Z`} fill={`url(#${gid})`} />);
++    }
++    paths.push(<path key={`l${si}`} d={line} fill="none" stroke={s.color} strokeWidth={s.width || 2.25} strokeLinecap="round" strokeLinejoin="round" />);
++    const last = pts[pts.length - 1];
++    paths.push(<circle key={`c${si}`} cx={last[0]} cy={last[1]} r="4.5" fill={s.color} className="dot-ring" strokeWidth="2" />);
++  });
++  return (
++    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
++      <defs>{defs}</defs>
++      {grid}
++      {paths}
++      {xl}
++    </svg>
++  );
++}
++
++// Vertical rounded bars with value labels.
++export function BarChart({ items = [], w = 320, h = 200, label = 'Bar chart' }) {
++  const W = w;
++  const H = h;
++  const pb = 28;
++  const pt = 22;
++  const ih = H - pb - pt;
++  const max = niceMax(Math.max(...items.map((i) => i.value), 1));
++  const n = items.length || 1;
++  const gap = 16;
++  const bw = (W - gap * (n + 1)) / n;
++  return (
++    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
++      {items.map((it, i) => {
++        const hh = (ih * it.value) / max;
++        const xx = gap + i * (bw + gap);
++        const yy = pt + ih - hh;
++        const r = Math.max(0, Math.min(10, bw / 2, hh / 2));
++        return (
++          <g key={`${it.label}-${i}`}>
++            {it.value > 0 && (
++              <path
++                d={`M${xx},${pt + ih} V${yy + r} Q${xx},${yy} ${xx + r},${yy} H${xx + bw - r} Q${xx + bw},${yy} ${xx + bw},${yy + r} V${pt + ih} Z`}
++                fill={it.color}
++              />
++            )}
++            <text className="val" x={xx + bw / 2} y={yy - 7} textAnchor="middle">{fmt(it.value)}</text>
++            <text className="ax" x={xx + bw / 2} y={H - 8} textAnchor="middle">{it.label}</text>
++          </g>
++        );
++      })}
++      <line className="base" x1="0" x2={W} y1={pt + ih} y2={pt + ih} />
++    </svg>
++  );
++}
++
++// Horizontal bars (HTML): label, track, value.
++export function HBars({ rows = [], color = '#111216' }) {
++  const max = Math.max(...rows.map((r) => r.value), 1);
++  if (!rows.length) return <div className="empty">No data in this range</div>;
++  return rows.map((r) => (
++    <div className="hbar" key={r.label}>
++      <span>{r.label}</span>
++      <div className="track">
++        <div className="fill" style={{ width: `${((r.value / max) * 100).toFixed(1)}%`, background: r.color || color }} />
++      </div>
++      <b>{fmt(r.value)}</b>
++    </div>
++  ));
++}
++
++// Donut: ring with a centre label.
++export function Donut({ segments = [], center, sub = '', size = 170, stroke = 20 }) {
++  const S = size;
++  const sw = stroke;
++  const r = (S - sw) / 2;
++  const c = 2 * Math.PI * r;
++  const total = segments.reduce((a, b) => a + (b.value || 0), 0) || 1;
++  const gapPx = 3;
++  let off = 0;
++  const arcs = segments.map((seg, i) => {
++    const len = (c * (seg.value || 0)) / total;
++    const dash = Math.max(0, len - gapPx);
++    const el = (
++      <circle
++        key={`${seg.label}-${i}`}
++        cx={S / 2}
++        cy={S / 2}
++        r={r}
++        fill="none"
++        stroke={seg.color}
++        strokeWidth={sw}
++        strokeDasharray={`${dash.toFixed(2)} ${(c - dash).toFixed(2)}`}
++        strokeDashoffset={(-off).toFixed(2)}
++        transform={`rotate(-90 ${S / 2} ${S / 2})`}
++      />
++    );
++    off += len;
++    return el;
++  });
++  return (
++    <div className="donut" style={{ width: S, height: S }}>
++      <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} role="img" aria-label={`${center} ${sub}`}>
++        <circle cx={S / 2} cy={S / 2} r={r} fill="none" className="donut-track" strokeWidth={sw} />
++        {arcs}
++      </svg>
++      <div className="dc">
++        <b>{center}</b>
++        <span>{sub}</span>
++      </div>
++    </div>
++  );
++}
++
++// Half gauge (0–100).
++export function Gauge({ value, color, center, sub = '', w = 200 }) {
++  const W = w;
++  const R = W / 2 - 14;
++  const cx = W / 2;
++  const cy = W / 2;
++  const t = Math.max(0, Math.min(100, value || 0)) / 100;
++  const pnt = (a) => [cx + R * Math.cos(a), cy + R * Math.sin(a)];
++  const start = pnt(Math.PI);
++  const end = pnt(2 * Math.PI);
++  const tip = pnt(Math.PI + Math.PI * t);
++  const large = t > 0.5 ? 1 : 0;
++  return (
++    <svg className="gauge" viewBox={`0 0 ${W} ${W / 2 + 16}`} width="100%" role="img" aria-label={`${sub} ${center}`}>
++      <path d={`M${start[0]},${start[1]} A${R},${R} 0 0 1 ${end[0]},${end[1]}`} fill="none" className="gauge-track" strokeWidth="14" strokeLinecap="round" />
++      {t > 0 && (
++        <path d={`M${start[0]},${start[1]} A${R},${R} 0 ${large} 1 ${tip[0]},${tip[1]}`} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" />
++      )}
++      <text className="gv" x={cx} y={cy - 6} textAnchor="middle">{center}</text>
++      <text className="ax" x={cx} y={cy + 12} textAnchor="middle">{sub}</text>
++    </svg>
++  );
++}
++
++// Legend: dot and label per series.
++export function DLegend({ items = [] }) {
++  return (
++    <div className="dlegend">
++      {items.map((i) => (
++        <span key={i.l}>
++          <i style={{ background: i.c }} />
++          {i.l}
++        </span>
++      ))}
++    </div>
++  );
++}
+-- 
+2.47.3
+

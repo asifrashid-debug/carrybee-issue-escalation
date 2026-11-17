@@ -1,0 +1,155 @@
+From 363c9285ad0d838568da41f603fc2f426e1976c0 Mon Sep 17 00:00:00 2001
+From: Ahmed Asif Rashid <asif.rashid@carrybee.com>
+Date: Sun, 15 Nov 2026 20:54:29 +0000
+Subject: [PATCH] Analytics: ageing of open cases and feedback outcomes from
+ live data; demo order
+
+lib/analytics.js: ageing buckets (0-1, 2-4, 5+ whole days since submission) for open cases; feedback outcome shares for closed cases, remainder shown as no feedback yet. tests/analyticsAgeing.test.mjs: 3 tests. app/analytics/page.js: two new cards after Zone SLA.
+---
+ app/analytics/page.js          | 30 ++++++++++++++++++++++
+ lib/analytics.js               | 20 +++++++++++++++
+ tests/analyticsAgeing.test.mjs | 46 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 96 insertions(+)
+ create mode 100644 tests/analyticsAgeing.test.mjs
+
+diff --git a/app/analytics/page.js b/app/analytics/page.js
+index 66b195e..3ec7d56 100644
+--- a/app/analytics/page.js
++++ b/app/analytics/page.js
+@@ -106,6 +106,36 @@ export default function Analytics() {
+         </div>
+       </div>
+ 
++      <div className="grid g2">
++        <div className="card">
++          <div className="ph"><div><h3>Ageing of Open Cases</h3><small>Whole days since submission · open issues</small></div></div>
++          {k.open === 0 ? <div className="empty">No open cases</div> : (
++            <div className="lst">
++              {data.ageing.map((a, i) => (
++                <div key={a.label}>
++                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{a.label}</span><b>{fmtN(a.count)}</b></div>
++                  <Bar pct={pct(a.count, k.open)} color={['#3DDC97', '#F8C800', '#FF5D73'][i]} />
++                </div>
++              ))}
++            </div>
++          )}
++        </div>
++
++        <div className="card">
++          <div className="ph"><div><h3>Feedback Outcomes</h3><small>Share of closed cases · {fmtN(data.feedbackOutcomes.closed)} closed</small></div></div>
++          {data.feedbackOutcomes.closed === 0 ? <div className="empty">No closed cases yet</div> : (
++            <div className="lst">
++              {data.feedbackOutcomes.items.map((f, i) => (
++                <div key={f.label}>
++                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}><span>{f.label}</span><b>{fmtN(f.count)} · {fmtPct(f.pct)}</b></div>
++                  <Bar pct={f.pct ?? 0} color={['#3DDC97', '#FF5D73', '#FFB020', '#A3A1A8'][i]} />
++                </div>
++              ))}
++            </div>
++          )}
++        </div>
++      </div>
++
+       <div className="grid g3">
+         <div className="card">
+           <div className="ph"><div><h3>Ops Status Mix</h3><small>Share of all issues</small></div></div>
+diff --git a/lib/analytics.js b/lib/analytics.js
+index 68be529..71b8a46 100644
+--- a/lib/analytics.js
++++ b/lib/analytics.js
+@@ -2,6 +2,7 @@
+ // Input: escalation rows, users_roles rows, hub_master rows. No I/O here.
+ 
+ import { indexCategories, resolutionCheck, DEFAULT_RESOLUTION_HOURS } from './categorySla.js';
++import { FEEDBACK_OUTCOMES } from './feedback.js';
+ 
+ // Spec: first comment within 2h of being raised (breach past 2h). Pick 4h kept as an informational metric.
+ // Resolution: per category, sub category and zone (days, see lib/categorySla.js). 72h is the default when none is set.
+@@ -224,6 +225,23 @@ export function computeAnalytics({ escalations = [], users = [], hubs = [], cate
+     .slice(0, 10)
+     .map((e) => ({ issue_id: e.issue_id, submitted_at: e.submitted_at, zone: e.zone, concern_hub: e.concern_hub, issue_category: e.issue_category, priority_scale: e.priority_scale, issue_status: e.issue_status, ops_issue_status: e.ops_issue_status, channel: e.channel }));
+ 
++  // Ageing of open cases: whole days since submission. 0–1 day = under 2 days; 2–4 days = 2 to under 5; 5+ days = 5 or more.
++  const openDays = (e) => Math.floor(hoursBetween(e.submitted_at, nowMs) / 24);
++  const ageing = [
++    { label: '0–1 day', count: rows.filter((e) => isOpen(e) && openDays(e) < 2).length },
++    { label: '2–4 days', count: rows.filter((e) => isOpen(e) && openDays(e) >= 2 && openDays(e) < 5).length },
++    { label: '5+ days', count: rows.filter((e) => isOpen(e) && openDays(e) >= 5).length },
++  ];
++
++  // Feedback outcomes: share of closed cases by KAM feedback result. Anything not in the outcome list counts as no feedback yet.
++  const closedRows = rows.filter((e) => e.issue_status === 'Closed');
++  const fbCount = (label) =>
++    closedRows.filter((e) => (label === 'No feedback yet' ? !FEEDBACK_OUTCOMES.includes(e.kam_feedback_status) : e.kam_feedback_status === label)).length;
++  const feedbackOutcomes = {
++    closed: closedRows.length,
++    items: [...FEEDBACK_OUTCOMES, 'No feedback yet'].map((label) => ({ label, count: fbCount(label), pct: pct(fbCount(label), closedRows.length) })),
++  };
++
+   return {
+     generatedAt: new Date(nowMs).toISOString(),
+     sla,
+@@ -235,6 +253,8 @@ export function computeAnalytics({ escalations = [], users = [], hubs = [], cate
+     priorities,
+     weeks,
+     trend,
++    ageing,
++    feedbackOutcomes,
+     hubs: hubPerf,
+     hubCount: { active: hubs.length, withIssues: hubPerf.length },
+     teams,
+diff --git a/tests/analyticsAgeing.test.mjs b/tests/analyticsAgeing.test.mjs
+new file mode 100644
+index 0000000..597558c
+--- /dev/null
++++ b/tests/analyticsAgeing.test.mjs
+@@ -0,0 +1,46 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { computeAnalytics } from '../lib/analytics.js';
++
++const now = new Date('2026-11-14T06:00:00Z');
++const hoursAgo = (h) => new Date(now.getTime() - h * 3600000).toISOString();
++const row = (over) => ({ submitted_at: hoursAgo(1), issue_status: 'Open', ops_issue_status: null, zone: 'ISD', priority_scale: 'P3', concern_hub: 'Uttara', ...over });
++
++test('ageing buckets count open cases by whole days since submission', () => {
++  const escalations = [
++    row({ submitted_at: hoursAgo(5) }),        // 0 days -> 0–1
++    row({ submitted_at: hoursAgo(30) }),       // 1 day  -> 0–1
++    row({ submitted_at: hoursAgo(49) }),       // 2 days -> 2–4
++    row({ submitted_at: hoursAgo(4 * 24 + 5) },),   // 4 days -> 2–4
++    row({ submitted_at: hoursAgo(5 * 24 + 1) }),    // 5 days -> 5+
++    row({ submitted_at: hoursAgo(30), issue_status: 'Closed' }), // closed: not aged
++  ];
++  const { ageing, kpi } = computeAnalytics({ escalations, now });
++  assert.deepEqual(ageing.map((a) => a.count), [2, 2, 1]);
++  assert.equal(ageing.reduce((n, a) => n + a.count, 0), kpi.open);
++});
++
++test('feedback outcomes are shares of closed cases, with no-feedback as the remainder', () => {
++  const escalations = [
++    row({ issue_status: 'Closed', kam_feedback_status: 'Resolved' }),
++    row({ issue_status: 'Closed', kam_feedback_status: 'Resolved' }),
++    row({ issue_status: 'Closed', kam_feedback_status: 'Not Resolved' }),
++    row({ issue_status: 'Closed', kam_feedback_status: 'Pending' }),
++    row({ issue_status: 'Open', kam_feedback_status: 'Resolved' }), // open: ignored
++  ];
++  const { feedbackOutcomes } = computeAnalytics({ escalations, now });
++  assert.equal(feedbackOutcomes.closed, 4);
++  const byLabel = Object.fromEntries(feedbackOutcomes.items.map((i) => [i.label, i]));
++  assert.equal(byLabel['Resolved'].count, 2);
++  assert.equal(byLabel['Resolved'].pct, 50);
++  assert.equal(byLabel['Not Resolved'].pct, 25);
++  assert.equal(byLabel['Improper Remarks'].count, 0);
++  assert.equal(byLabel['No feedback yet'].count, 1);
++  assert.equal(byLabel['No feedback yet'].pct, 25);
++});
++
++test('no closed cases gives null shares, not a division error', () => {
++  const { feedbackOutcomes } = computeAnalytics({ escalations: [row({})], now });
++  assert.equal(feedbackOutcomes.closed, 0);
++  assert.ok(feedbackOutcomes.items.every((i) => i.pct === null));
++});
+-- 
+2.47.3
+

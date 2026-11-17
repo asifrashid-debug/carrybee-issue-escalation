@@ -1,0 +1,33 @@
+From 41f5281b353bb8f4814151c6935b89e5565757b8 Mon Sep 17 00:00:00 2001
+From: Patch prep <patch-prep@localhost>
+Date: Sun, 15 Nov 2026 21:38:07 +0000
+Subject: [PATCH 4/4] No access: demo page header
+
+---
+ app/no-access/page.js | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/app/no-access/page.js b/app/no-access/page.js
+index 387375f..79192f2 100644
+--- a/app/no-access/page.js
++++ b/app/no-access/page.js
+@@ -1,9 +1,12 @@
++import { PageHead } from '../../components/demo';
++
++// Shown to roles that do not use the tracker. Access rules are unchanged.
+ export default function NoAccess() {
+   return (
+-    <div>
+-      <div className="empty" style={{ maxWidth: 560, margin: '48px auto' }}>
+-        <b>No tracker access</b>
+-        Your role does not use the Issue Escalation Tracker. Hub responses come from the hub response sheet. If you think this is wrong, contact the admin.
++    <div className="dm">
++      <PageHead kicker="Access" title="No tracker access" sub="Your role does not use the Issue Escalation Tracker." />
++      <div className="card" style={{ maxWidth: 560 }}>
++        <p style={{ margin: 0, color: 'var(--ink2)', lineHeight: 1.6 }}>Hub responses come from the hub response sheet. If you think this is wrong, contact the admin.</p>
+       </div>
+     </div>
+   );
+-- 
+2.47.3
+
