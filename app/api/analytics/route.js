@@ -6,7 +6,7 @@ import { loadScope, isVisible } from '../../../lib/visibility';
 
 export const dynamic = 'force-dynamic';
 
-const COLS = 'issue_id,cm_assigned,submitted_at,email,channel,zone,concern_hub,division,regional_lead,issue_status,issue_category,issue_sub_category,priority_scale,issue_pick_time,issue_response_datetime,ops_issue_status,is_archived,updated_at';
+const COLS = 'issue_id,cm_assigned,submitted_at,email,channel,zone,concern_hub,division,regional_lead,issue_status,kam_feedback_status,issue_category,issue_sub_category,priority_scale,issue_pick_time,issue_response_datetime,ops_issue_status,is_archived,updated_at';
 
 export async function GET(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
