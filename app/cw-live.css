@@ -425,3 +425,9 @@ html[data-theme=dark] .drawer{background:#16171C;border-left-color:#2A2E36;box-s
 .bell-btn{border:0;background:transparent;color:var(--ink2);border-radius:10px;padding:0;cursor:pointer}
 .bell-btn:hover{background:var(--paper)}
 .bell-btn:focus-visible{outline:2px solid var(--bee);outline-offset:2px}
+
+/* QA: touch targets at phone width (44px minimum) */
+@media (max-width:640px){
+  .lg-eye{width:44px;height:44px}
+  .install-box .btn{min-height:44px}
+}
