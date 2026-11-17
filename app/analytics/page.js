@@ -31,7 +31,7 @@ export default function Analytics() {
     { label: 'Picked by ops', value: k.picked, color: '#37A9FF' },
     { label: 'First response', value: k.responded, color: '#A78BFA' },
     { label: 'Resolved', value: k.resolved, color: '#00E5A0' },
-    { label: 'Closed', value: k.closed, color: '#00E5A0' },
+    { label: 'Closed (KAM feedback)', value: k.closed, color: '#00E5A0' },
   ];
   const fbSegs = data.feedbackOutcomes.items.map((f, i) => ({ label: f.label, value: f.count, color: FB_COLOR[i] }));
 
