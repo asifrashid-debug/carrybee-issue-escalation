@@ -18,10 +18,9 @@ export default function EscalationForm({ channel }) {
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
-  // "Find current hub in Hive". state: idle | loading | confirm | confirmed | manual | missing | error
+  // "Find current hub in Hive". state: idle | loading | manual | missing | error
   const [hubLookup, setHubLookup] = useState({ state: 'idle', message: '' });
-  const [hubAuto, setHubAuto] = useState(null);      // { hub_name } filled from Hive, waiting for the agent to confirm
-  const [hubConfirmed, setHubConfirmed] = useState(false);
+  const [hubAuto, setHubAuto] = useState(null);      // { hub_name } filled from Hive; cleared if the Consignment ID changes
   const hubReq = useRef(null);                        // the only lookup allowed to update the form
   const lastLookup = useRef('');                      // the Consignment ID most recently sent to Hive (each ID is looked up once)
   const consRef = useRef('');
@@ -82,8 +81,7 @@ export default function EscalationForm({ channel }) {
       if (m.status === 'unique') {
         set('concern_hub', m.hub.hub_name);
         setHubAuto({ hub_name: m.hub.hub_name });
-        setHubConfirmed(false);
-        setHubLookup({ state: 'confirm', message: `Found: ${m.hub.hub_name}. Confirm zone and hub before you submit.` });
+        setHubLookup({ state: 'idle', message: '' });
       } else {
         setHubLookup({ state: 'manual', message: NO_UNIQUE_MATCH_MESSAGE });
       }
@@ -113,14 +111,8 @@ export default function EscalationForm({ channel }) {
     if (hubAuto) {
       set('concern_hub', '');
       setHubAuto(null);
-      setHubConfirmed(false);
     }
     if (hubLookup.state !== 'loading') setHubLookup({ state: 'idle', message: '' });
-  }
-
-  function confirmHub() {
-    setHubConfirmed(true);
-    setHubLookup({ state: 'confirmed', message: `Zone and hub confirmed: ${form.concern_hub}.` });
   }
 
   const parcelOk = isValidParcelId(form.consignment_id);
@@ -135,7 +127,6 @@ export default function EscalationForm({ channel }) {
   async function submit(e) {
     e.preventDefault(); setErr(null); setMsg(null);
     if (!hub) { setErr('Select a Concern Hub from the list.'); return; }
-    if (hubAuto && !hubConfirmed) { setErr('Confirm zone and hub before you submit.'); return; }
     if (!form.issue_category || !form.issue_sub_category) { setErr('Select an Issue Category and Sub Category.'); return; }
     if (isKam && !form.consignment_id.trim()) { setErr('Consignment ID is required.'); return; }
     if (!isKam && !form.consignment_id.trim() && !form.merchant_name.trim()) { setErr('Consignment ID and Merchant name cannot both be empty. Provide at least one.'); return; }
@@ -150,7 +141,7 @@ export default function EscalationForm({ channel }) {
     setMsg({ id: j.data.issue_id, warn: j.duplicate_warning, kam: j.data.kam_name, zone: j.data.zone, at: j.data.submitted_at });
     setForm((f) => ({ ...f, consignment_id: '', merchant_name: '', concern_hub: '', issue_category: '', issue_sub_category: '', issue_details: '', kam_name: '' }));
     setBiz(null);
-    setHubAuto(null); setHubConfirmed(false); setHubLookup({ state: 'idle', message: '' });
+    setHubAuto(null); setHubLookup({ state: 'idle', message: '' });
     lastLookup.current = '';
   }
 
@@ -213,7 +204,7 @@ export default function EscalationForm({ channel }) {
               </div>
             </div>
 
-            <SearchSelect label="Concern Hub (225 master hubs, no free text)" value={form.concern_hub} onChange={(v) => { set('concern_hub', v); setHubAuto(null); setHubConfirmed(false); setHubLookup({ state: 'idle', message: '' }); }} options={hubOptions} placeholder="Type to search hub…" required emptyText="No hub matches. Try another spelling." />
+            <SearchSelect label="Concern Hub (225 master hubs, no free text)" value={form.concern_hub} onChange={(v) => { set('concern_hub', v); setHubAuto(null); setHubLookup({ state: 'idle', message: '' }); }} options={hubOptions} placeholder="Type to search hub…" required emptyText="No hub matches. Try another spelling." />
             <div>
               <label className="flabel">Zone <small>(from the chosen hub)</small></label>
               <div className="fctl lk"><input value={hub?.zone || ''} readOnly aria-readonly="true" placeholder="Select a hub first" /></div>
@@ -221,16 +212,6 @@ export default function EscalationForm({ channel }) {
             {hub && <div className="full" style={{ fontSize: 12, color: 'var(--mut)', fontWeight: 600 }}>Regional lead <b style={{ color: 'var(--ink)' }}>{hub.regional_lead || '—'}</b> · Cluster lead <b style={{ color: 'var(--ink)' }}>{hub.cluster_lead || '—'}</b> · Division <b style={{ color: 'var(--ink)' }}>{hub.division || '—'}</b></div>}
             <div className="full" aria-live="polite">
               {hubLookup.state === 'loading' && <div className="hint">Finding hub…</div>}
-              {hubLookup.state === 'confirm' && (
-                <div className="box box-ok">
-                  {/* Plain text: the hub name comes from the active hub list, never from raw HTML */}
-                  {hubLookup.message}
-                  <div style={{ marginTop: 8 }}>
-                    <button type="button" className="btn btn-primary" onClick={confirmHub} style={{ minHeight: 44 }}>Confirm zone and hub</button>
-                  </div>
-                </div>
-              )}
-              {hubLookup.state === 'confirmed' && <div className="box box-ok">{hubLookup.message}</div>}
               {['manual', 'missing', 'error'].includes(hubLookup.state) && <div className="box box-warn" role="alert">{hubLookup.message}</div>}
             </div>
 
