@@ -1,7 +1,0 @@
-components/AppHeader.js
-app/design-v3.css
-app/dashboard/page.js
-app/analytics/page.js
-app/hubs/page.js
-app/teams/page.js
-app/sync/page.js
