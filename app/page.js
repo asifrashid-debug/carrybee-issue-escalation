@@ -7,6 +7,7 @@ import { useVisibleInterval } from '../components/cw/useVisibleInterval';
 import { getMe } from '../components/cw/meClient';
 const IssueDrawer = dynamic(() => import('../components/IssueDrawer'), { ssr: false });
 import CopyButton from '../components/CopyButton';
+import HiveStatus from '../components/HiveStatus';
 import { useAnalytics } from '../components/useAnalytics';
 import { fmtN } from '../components/cw/format';
 import { kpiStrip, pie, stackbar } from '../components/cw/chartlib';
@@ -582,18 +583,10 @@ export default function Tracker() {
                       <div className="bar"><i style={{ width: `${pct}%`, background: col }} /></div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
-                      {/* Status button (Hive order status). Placed here; the Hive lookup is connected in the next step. */}
-                      <button
-                        type="button"
-                        className="btn sm"
-                        style={{ height: 28, fontSize: 12 }}
-                        onClick={stop}
-                        disabled={!e.consignment_id}
-                        title={e.consignment_id ? 'Check the Hive order status' : 'No consignment ID on this issue'}
-                        aria-label={`Status for ${e.issue_id}`}
-                      >
-                        Status
-                      </button>
+                      {/* Status: press to show the Hive order status in place of the button; press the status to bring the button back. */}
+                      <div onClick={stop} onKeyDown={(ev) => ev.stopPropagation()}>
+                        <HiveStatus consignmentId={e.consignment_id} />
+                      </div>
                       <span className="avatar" title="Owner" aria-label={`Owner ${who}`}>{who}</span>
                       <span className="btn primary" style={{ height: 32, fontSize: 12.5 }}>Open</span>
                     </div>
