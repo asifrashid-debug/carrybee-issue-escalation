@@ -48,6 +48,8 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
   const [tab, setTab] = useState('case');
   const open = !!issueId;
   const hubReadOnly = user?.role === 'hub_ops';
+  // CM function (CM follow-ups, CM picked) is for CM members, CM leads and admin only
+  const isCmFunctionViewer = ['cm_member', 'cm_lead', 'admin'].includes(user?.role);
 
   const load = useCallback(async () => {
     if (!issueId) return;
@@ -327,7 +329,7 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                             ? <button type="button" className="btn y sm" disabled={!!busy} onClick={() => followup(0)}>{busy === 'fu-0' ? 'Recording…' : 'Record'}</button>
                             : null}
                         />
-                        {plan.cm.map((c, i) => (
+                        {isCmFunctionViewer && plan.cm.map((c, i) => (
                           <TL
                             key={i}
                             state={FU_STATE[c.status] || 'wait'}

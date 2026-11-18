@@ -44,7 +44,9 @@ export async function POST(req, ctx) {
 
   // Who may act: KAM followup = the raiser (or admin); CM followups = ops roles that can edit this issue.
   const isRaiser = esc.email === actor;
-  const allowed = level === 0 ? (isRaiser || user.role === 'admin') : (canEditOps(user, esc, requester) || user.role === 'admin');
+  // CM followups: CM member or CM lead on a CM-eligible issue (canEditOps), or admin. Regional leads and others cannot.
+  const cmRole = ['cm_member', 'cm_lead'].includes(user.role);
+  const allowed = level === 0 ? (isRaiser || user.role === 'admin') : (user.role === 'admin' || (cmRole && canEditOps(user, esc, requester)));
   if (!allowed) return NextResponse.json({ error: 'Your role cannot record this follow-up' }, { status: 403 });
 
   const plan = followupPlan(esc, fus || []);
