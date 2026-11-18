@@ -10,6 +10,7 @@ import { priorityForIssueType } from '../../../lib/priority';
 import { feedbackPhase, windowEndFrom, FEEDBACK_PENDING } from '../../../lib/feedback';
 import { pickDeadline, pickJustifyDueFrom, pickPhase } from '../../../lib/pickSla';
 import { indexCategories, resolutionCheck } from '../../../lib/categorySla';
+import { notifyNewCmIssue } from '../../../lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -188,5 +189,7 @@ export async function POST(req) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   await audit(sb, data.issue_id, 'create', null, data.issue_id, session.email, 'form');
   await queueSync(sb, data);
+  // Bell + sound for CM members and CM leads when the issue is CM-assigned. Never blocks the response.
+  await notifyNewCmIssue(sb, data);
   return NextResponse.json({ data, duplicate_warning }, { status: 201 });
 }

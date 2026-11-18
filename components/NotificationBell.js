@@ -1,27 +1,72 @@
 'use client';
-import { useVisibleInterval } from './cw/useVisibleInterval';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatDhaka } from '../lib/time';
+import { freshUnread, soundEnabled, setSoundEnabled, unlockAudio, playChime, osAlertState, requestOsAlerts, showOsAlert } from '../lib/notifySound';
 
-// Bell in the header: unread hub-response notifications for the signed-in user. Polls every 30 seconds.
+// Bell in the header: unread notifications for the signed-in user (hub responses and new CM issues).
+// Polls every 30 seconds, including in background tabs, so OS alerts can fire while the tracker is not in front.
 export default function NotificationBell() {
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
+  const [sound, setSound] = useState(true);
+  const [osState, setOsState] = useState('unsupported');
   const wrap = useRef(null);
+  // null until the first load: existing notifications are recorded silently, so opening the page does not chime.
+  const seen = useRef(null);
+  const soundOn = useRef(true);
+
+  useEffect(() => {
+    const on = soundEnabled();
+    setSound(on);
+    soundOn.current = on;
+    setOsState(osAlertState());
+  }, []);
+
+  const alertFor = useCallback((fresh) => {
+    if (!soundOn.current || !fresh.length) return;
+    if (typeof document !== 'undefined' && document.hidden) {
+      // Background tab: OS notification (plays the system sound). Only the newest one, to avoid a burst.
+      showOsAlert(fresh[0]);
+    } else {
+      playChime();
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
       const r = await fetch('/api/notifications', { cache: 'no-store' });
       if (!r.ok) return;
       const j = await r.json();
-      setItems(j.data || []);
+      const list = j.data || [];
+      if (seen.current === null) {
+        seen.current = new Set(list.map((n) => n.id));
+      } else {
+        const fresh = freshUnread(list, seen.current);
+        list.forEach((n) => seen.current.add(n.id));
+        alertFor(fresh);
+      }
+      setItems(list);
       setUnread(j.unread || 0);
     } catch (e) { /* offline: keep the last list */ }
-  }, []);
+  }, [alertFor]);
 
   useEffect(() => { load(); }, [load]);
-  useVisibleInterval(load, 30000);
+  useEffect(() => {
+    const t = setInterval(load, 30000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  // Browsers only let audio start after a user gesture. The first tap or key press unlocks it.
+  useEffect(() => {
+    const unlock = () => unlockAudio();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
 
   // Close when clicking outside the bell.
   useEffect(() => {
@@ -35,6 +80,28 @@ export default function NotificationBell() {
     await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     load();
   }
+
+  function toggleSound() {
+    const next = !sound;
+    setSound(next);
+    soundOn.current = next;
+    setSoundEnabled(next);
+    unlockAudio();
+    if (next) playChime();
+  }
+
+  async function enableOs() {
+    const res = await requestOsAlerts();
+    setOsState(res);
+  }
+
+  const osLine = osState === 'granted'
+    ? 'Desktop alerts on.'
+    : osState === 'denied'
+      ? 'Desktop alerts are blocked in browser settings.'
+      : osState === 'default'
+        ? null
+        : 'Desktop alerts need Chrome, Edge or Firefox, or the app installed on your phone home screen.';
 
   return (
     <div className="bell" ref={wrap}>
@@ -52,9 +119,20 @@ export default function NotificationBell() {
         <div className="bell-panel" role="dialog" aria-label="Notifications">
           <div className="bell-head">
             <b>Notifications</b>
-            {unread > 0 && <button type="button" className="bell-link" onClick={() => markRead({ all: true })}>Mark all read</button>}
+            <span>
+              <button type="button" className="bell-link" aria-pressed={sound} onClick={toggleSound}>
+                {sound ? 'Sound on' : 'Sound off'}
+              </button>
+              {unread > 0 && <button type="button" className="bell-link" onClick={() => markRead({ all: true })}>Mark all read</button>}
+            </span>
           </div>
-          {items.length === 0 && <div className="bell-empty">No hub responses yet.</div>}
+          {osState === 'default' && (
+            <div className="bell-empty">
+              <button type="button" className="bell-link" onClick={enableOs}>Turn on desktop alerts</button>
+            </div>
+          )}
+          {osLine && <div className="bell-empty">{osLine}</div>}
+          {items.length === 0 && <div className="bell-empty">No notifications yet.</div>}
           <ul>
             {items.map((n) => (
               <li key={n.id} className={n.read_at ? '' : 'new'}>
