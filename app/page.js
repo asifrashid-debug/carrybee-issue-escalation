@@ -582,6 +582,18 @@ export default function Tracker() {
                       <div className="bar"><i style={{ width: `${pct}%`, background: col }} /></div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+                      {/* Status button (Hive order status). Placed here; the Hive lookup is connected in the next step. */}
+                      <button
+                        type="button"
+                        className="btn sm"
+                        style={{ height: 28, fontSize: 12 }}
+                        onClick={stop}
+                        disabled={!e.consignment_id}
+                        title={e.consignment_id ? 'Check the Hive order status' : 'No consignment ID on this issue'}
+                        aria-label={`Status for ${e.issue_id}`}
+                      >
+                        Status
+                      </button>
                       <span className="avatar" title="Owner" aria-label={`Owner ${who}`}>{who}</span>
                       <span className="btn primary" style={{ height: 32, fontSize: 12.5 }}>Open</span>
                     </div>
