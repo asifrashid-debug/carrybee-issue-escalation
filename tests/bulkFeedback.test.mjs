@@ -44,7 +44,7 @@ test('Resolved is blocked without a hub response for team lead and cm lead', () 
   assert.equal(bulkBlockReason(lead, noResp, scope, 'Resolved'), 'No hub response yet');
   // cm lead sees MX-raised issues, so use an MX raiser for this row
   const mxScope = { all: false, user: cmLead, byEmail: new Map([['mx@cb.com', { email: 'mx@cb.com', role: 'mx', teams: ['IB'] }]]), pickedIds: [] };
-  const mxRow = { ...noResp, email: 'mx@cb.com' };
+  const mxRow = { ...noResp, email: 'mx@cb.com', channel: 'MX' };
   assert.equal(bulkBlockReason(cmLead, mxRow, mxScope, 'Resolved'), 'No hub response yet');
 });
 

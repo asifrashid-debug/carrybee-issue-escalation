@@ -17,6 +17,7 @@ export async function GET(_req, ctx) {
   ]);
   if (!esc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!isVisible(await loadScope(sb, session), esc)) return NextResponse.json({ error: 'Not found' }, { status: 404 }); // not visible to this viewer
+  if (session.role === 'mx') return NextResponse.json({ plan: null, followups: [] }); // MX: no follow-up section in the drawer
   return NextResponse.json({ plan: followupPlan(esc, fus || []), followups: fus || [] });
 }
 
@@ -27,6 +28,7 @@ export async function POST(req, ctx) {
   const body = await req.json().catch(() => ({}));
   const level = Number(body.level);
   const actor = session.email;
+  if (session.role === 'mx') return NextResponse.json({ error: 'MX users cannot record follow-ups' }, { status: 403 });
   if (![0, 1, 2, 3].includes(level)) return NextResponse.json({ error: 'level must be 0, 1, 2 or 3' }, { status: 400 });
   if (!actor) return NextResponse.json({ error: 'actor_email is required' }, { status: 400 });
 

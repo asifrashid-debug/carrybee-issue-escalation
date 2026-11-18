@@ -48,7 +48,8 @@ test('two justifications then justified', () => {
 
 test('no justification in its window -> escalated to CM lead', () => {
   assert.equal(pickPhase(base(), new Date(raised.getTime() + 25 * 3600e3)), 'escalated');
-  assert.equal(pickWriteBlock(cm, base(), new Date(raised.getTime() + 25 * 3600e3)).status, 409);
+  assert.equal(pickWriteBlock(cm, base({ cm_owner_email: cm.email }), new Date(raised.getTime() + 25 * 3600e3)).status, 409);
+  assert.equal(pickWriteBlock(cm, base({ cm_owner_email: 'other@carrybee.com' }), new Date(raised.getTime() + 25 * 3600e3)).status, 403);
 });
 
 test('pick and justify permissions: CM members, CM lead and admin only', () => {
@@ -56,16 +57,18 @@ test('pick and justify permissions: CM members, CM lead and admin only', () => {
   assert.equal(pickBlock(cmLead, base()), null);
   assert.equal(pickBlock({ role: 'admin' }, base()), null);
   assert.equal(pickBlock(kam, base()).status, 403);
-  assert.equal(canJustifyPick(cm, base()), true);
+  assert.equal(canJustifyPick(cm, base({ cm_owner_email: cm.email })), true);
+  assert.equal(canJustifyPick(cm, base({ cm_owner_email: 'other@carrybee.com' })), false);
   assert.equal(canJustifyPick(kam, base()), false);
 });
 
-test('CM members see the unpicked CM pool, their own picks and their own issues only', () => {
-  const pool = { email: 'mx@carrybee.com', cm_assigned: true, business_pick_time: null };
-  const picked = { email: 'mx@carrybee.com', cm_assigned: true, business_pick_time: '2026-11-14T04:05:00Z' };
-  assert.equal(cmCanSee(cm, pool, mxRow), true);
-  assert.equal(cmCanSee(cm, picked, mxRow), false);
-  assert.equal(cmCanSee(cm, { ...picked, issue_id: 'ESC-1' }, mxRow, true), true); // picked by this member
+test('CM members see all MX-channel issues and issues named CM, plus their own issues', () => {
+  const mxPool = { email: 'mx@carrybee.com', channel: 'MX', kam_name: 'CM', cm_assigned: true, business_pick_time: null };
+  const mxPicked = { ...mxPool, business_pick_time: '2026-11-14T04:05:00Z' };
+  const kamOther = { email: 'req@carrybee.com', channel: 'KAM', kam_name: 'Someone', cm_assigned: false };
+  assert.equal(cmCanSee(cm, mxPool, mxRow), true);
+  assert.equal(cmCanSee(cm, mxPicked, mxRow), true);
+  assert.equal(cmCanSee(cm, kamOther, kam), false);
   assert.equal(cmCanSee(cm, { email: cm.email, cm_assigned: false }, null), true); // own issue
 });
 

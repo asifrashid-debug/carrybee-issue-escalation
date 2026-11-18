@@ -6,6 +6,7 @@ import { isHubRole } from '../lib/hubPolicy.js';
 const hub = { email: 'hub@carrybee.com', role: 'hub_ops', zone: 'ISD' };
 const admin = { email: 'a@carrybee.com', role: 'admin' };
 const esc = { email: 'kam@carrybee.com', zone: 'ISD', issue_pick_time: null, division: 'Dhaka' };
+const cmIssue = { ...esc, channel: 'MX', kam_name: 'CM', cm_assigned: true, cm_owner_email: 'cm@x', business_pick_time: null };
 
 test('hub_ops cannot edit ops fields or pick, even in their own zone', () => {
   assert.equal(canEditOps(hub, esc), false);
@@ -15,11 +16,10 @@ test('hub_ops cannot edit ops fields or pick, even in their own zone', () => {
 test('admin keeps ops edit; CM picked applies only to CM-assigned issues', () => {
   assert.equal(canEditOps(admin, esc), true);
   assert.equal(canPick(admin, esc), false); // normal issue: picked at raise, no CM pick button
-  assert.equal(canPick(admin, { ...esc, cm_assigned: true, business_pick_time: null }), true);
+  assert.equal(canPick(admin, cmIssue), true);
 });
 
 test('CM picked button: only CM members, CM leads and admin, only on unpicked CM-assigned issues', () => {
-  const cmIssue = { ...esc, cm_assigned: true, business_pick_time: null };
   assert.equal(canPick({ role: 'cm_member', email: 'cm@x' }, cmIssue), true);
   assert.equal(canPick({ role: 'cm_lead', email: 'cml@x' }, cmIssue), true);
   assert.equal(canPick({ role: 'mx', email: 'mx@x' }, cmIssue), false);

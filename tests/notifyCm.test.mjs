@@ -18,10 +18,11 @@ test('cmRecipients drops duplicates and missing emails', () => {
   assert.deepEqual(cmRecipients([{ email: 'A@x.com', role: 'cm_lead' }, { email: 'a@x.com', role: 'cm_lead' }, { role: 'cm_member' }]), ['a@x.com']);
 });
 
-test('a CM-assigned issue writes one row per CM recipient, with kind cm_new_issue', () => {
-  const esc = { issue_id: 'CB-18-11-AAAA', cm_assigned: true, zone: 'ISD', concern_hub: 'Mirpur', issue_category: 'Delivery Delay' };
+test('a CM-assigned issue writes one row, to the assigned CM member only', () => {
+  const esc = { issue_id: 'CB-18-11-AAAA', cm_assigned: true, cm_owner_email: 'Cm.Member@carrybee.com', zone: 'ISD', concern_hub: 'Mirpur', issue_category: 'Delivery Delay' };
   const rows = cmNoticeRows(esc, users);
-  assert.equal(rows.length, 2);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].recipient_email, 'Cm.Member@carrybee.com');
   assert.ok(rows.every((r) => r.kind === 'cm_new_issue' && r.issue_id === 'CB-18-11-AAAA'));
   assert.equal(rows[0].title, 'CB-18-11-AAAA: new CM issue');
   assert.equal(rows[0].body, 'Delivery Delay · ISD · Mirpur');
@@ -43,4 +44,9 @@ test('hub response notices and recipients are unchanged', () => {
   const raiser = { teams: ['KAM A'] };
   const got = notifyRecipients({ email: 'KAM@carrybee.com' }, raiser, [{ email: 'tl@carrybee.com', role: 'team_lead', teams: ['KAM A'] }]);
   assert.deepEqual(got.sort(), ['kam@carrybee.com', 'tl@carrybee.com']);
+});
+
+test('no owner yet: the CM leads are told instead', () => {
+  const esc = { issue_id: 'CB-5', cm_assigned: true, cm_owner_email: null };
+  assert.deepEqual(cmNoticeRows(esc, users).map((r) => r.recipient_email), ['cm.lead@carrybee.com']);
 });

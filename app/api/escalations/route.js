@@ -11,6 +11,7 @@ import { feedbackPhase, windowEndFrom, FEEDBACK_PENDING } from '../../../lib/fee
 import { pickDeadline, pickJustifyDueFrom, pickPhase } from '../../../lib/pickSla';
 import { indexCategories, resolutionCheck } from '../../../lib/categorySla';
 import { notifyNewCmIssue } from '../../../lib/notify';
+import { nextCmOwner } from '../../../lib/cmAssign';
 
 export const dynamic = 'force-dynamic';
 
@@ -184,6 +185,10 @@ export async function POST(req) {
   if (row.cm_assigned) {
     row.pick_due_at = pickDeadline(now, priority_scale);
     row.pick_justify_due_at = pickJustifyDueFrom(row.pick_due_at);
+    // Round-robin owner among active CM members (lib/cmAssign.js). Two raises at the same moment can get the same owner.
+    const { data: cmMembers } = await sb.from('users_roles').select('email').eq('role', 'cm_member').eq('is_active', true);
+    const { data: lastCm } = await sb.from('escalations').select('cm_owner_email').eq('cm_assigned', true).not('cm_owner_email', 'is', null).order('submitted_at', { ascending: false }).limit(1);
+    row.cm_owner_email = nextCmOwner((cmMembers || []).map((m) => m.email), lastCm?.[0]?.cm_owner_email || null);
   }
   const { data, error } = await sb.from('escalations').insert(row).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

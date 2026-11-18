@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canView, emailScope, inCmPool } from '../lib/roles.js';
+import { canView, emailScope } from '../lib/roles.js';
 import { scopeFilter, isVisible } from '../lib/visibility.js';
 
 const users = [
@@ -31,19 +31,18 @@ test('a team lead sees their full team, not other teams', () => {
   assert.equal(canView(tl, { email: 'other@carrybee.com' }, by('other@carrybee.com')), false);
 });
 
-test('a CM member sees their picks and the unpicked pool, not other CM issues', () => {
+test('a CM member sees all MX-channel issues and issues named CM, not other KAM issues', () => {
   const cm = user('cm1@carrybee.com');
-  const pool = { email: 'mx1@carrybee.com', cm_assigned: true, business_pick_time: null };
-  const pickedByOther = { email: 'mx1@carrybee.com', cm_assigned: true, business_pick_time: '2026-11-14T05:00:00Z' };
-  assert.equal(canView(cm, pool, by('mx1@carrybee.com')), true);
-  assert.equal(canView(cm, pickedByOther, by('mx1@carrybee.com')), false);
-  assert.equal(canView(cm, pickedByOther, by('mx1@carrybee.com'), true), true);
-  assert.equal(canView(cm, { email: 'req1@carrybee.com', cm_assigned: false }, by('req1@carrybee.com')), false);
+  const mxIssue = { email: 'mx1@carrybee.com', channel: 'MX', kam_name: 'Rakib', cm_assigned: false };
+  const cmNamed = { email: 'req1@carrybee.com', channel: 'KAM', kam_name: 'CM', cm_assigned: false };
+  assert.equal(canView(cm, mxIssue, by('mx1@carrybee.com')), true);
+  assert.equal(canView(cm, cmNamed, by('req1@carrybee.com')), true);
+  assert.equal(canView(cm, { email: 'req1@carrybee.com', channel: 'KAM', kam_name: 'Someone', cm_assigned: false }, by('req1@carrybee.com')), false);
 });
 
 test('a CM lead sees the CM team and MX issues, as before', () => {
   const lead = user('lead@carrybee.com');
-  assert.equal(canView(lead, { email: 'mx1@carrybee.com' }, by('mx1@carrybee.com')), true);
+  assert.equal(canView(lead, { email: 'mx1@carrybee.com', channel: 'MX' }, by('mx1@carrybee.com')), true);
   assert.equal(canView(lead, { email: 'cm2@carrybee.com' }, by('cm2@carrybee.com')), true);
   assert.equal(canView(lead, { email: 'req1@carrybee.com' }, by('req1@carrybee.com')), false);
 });
@@ -60,13 +59,13 @@ test('admin sees everything through isVisible', () => {
   assert.equal(isVisible({ all: true }, { email: 'x@carrybee.com' }), true);
 });
 
-test('list filter matches the rules: member, team lead, CM member', () => {
-  assert.equal(scopeFilter({ emails: ['req1@carrybee.com'], pickedIds: [], pool: false }), 'email.in.("req1@carrybee.com")');
-  const cmFilter = scopeFilter({ emails: ['cm1@carrybee.com'], pickedIds: ['ESC-1'], pool: true });
+test('list filter matches the rules: member and CM member', () => {
+  assert.equal(scopeFilter({ emails: ['req1@carrybee.com'], pickedIds: [], kamNameList: [] }), 'email.in.("req1@carrybee.com")');
+  const cmFilter = scopeFilter({ emails: ['cm1@carrybee.com'], pickedIds: [], kamNameList: [], user: { role: 'cm_member' } });
   assert.match(cmFilter, /email\.in\.\("cm1@carrybee\.com"\)/);
-  assert.match(cmFilter, /issue_id\.in\.\("ESC-1"\)/);
-  assert.match(cmFilter, /and\(cm_assigned\.eq\.true,business_pick_time\.is\.null\)/);
-  assert.equal(scopeFilter({ emails: [], pickedIds: [], pool: false }), 'issue_id.eq.__none__');
+  assert.match(cmFilter, /channel\.eq\.MX/);
+  assert.match(cmFilter, /kam_name\.ilike\."CM"/);
+  assert.equal(scopeFilter({ emails: [], pickedIds: [], kamNameList: [] }), 'issue_id.eq.__none__');
 });
 
 test('emailScope for a team lead includes the team and the lead', () => {
@@ -77,8 +76,3 @@ test('emailScope for a team lead includes the team and the lead', () => {
   assert.ok(!scope.includes('other@carrybee.com'));
 });
 
-test('pool helper: only unpicked CM-assigned issues', () => {
-  assert.equal(inCmPool({ cm_assigned: true, business_pick_time: null }), true);
-  assert.equal(inCmPool({ cm_assigned: true, business_pick_time: '2026-11-14T05:00:00Z' }), false);
-  assert.equal(inCmPool({ cm_assigned: false, business_pick_time: null }), false);
-});

@@ -122,5 +122,11 @@ export async function GET(req, ctx) {
   const pick = pickView(session, esc, pickJusts || [], new Date());
   const { data: cats } = await sb.from('category_master').select('category, sub_category, side, is_active, sla_isd, sla_osd, sla_ctg').eq('side', 'requester').eq('is_active', true);
   const res = resolutionCheck(esc, indexCategories(cats || []), Date.now());
-  return NextResponse.json({ data: { ...esc, feedback_phase: feedback.phase, pick_phase: pick.phase, resolution_days: res.days, resolution_due_at: res.dueAt, resolution_breach: res.breach }, audit: audit||[], feedback, pick });
+  // Name of the assigned CM member, for the drawer's "Assigned to" line
+  let cm_owner_name = null;
+  if (esc.cm_owner_email) {
+    const { data: owner } = await sb.from('users_roles').select('display_name').eq('email', esc.cm_owner_email).maybeSingle();
+    cm_owner_name = owner?.display_name || null;
+  }
+  return NextResponse.json({ data: { ...esc, cm_owner_name, feedback_phase: feedback?.phase, pick_phase: pick?.phase, resolution_days: res.days, resolution_due_at: res.dueAt, resolution_breach: res.breach }, audit: audit||[], feedback, pick });
 }

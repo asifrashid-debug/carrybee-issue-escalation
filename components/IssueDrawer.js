@@ -197,6 +197,7 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                   <div className="kvs">
                     <div><b>Consignment ID</b><span>{e.consignment_id || '—'}</span></div>
                     <div><b>Merchant</b><span>{e.merchant_name || '—'}</span></div>
+                    {e.cm_assigned && <div><b>Assigned to</b><span>{e.cm_owner_name || e.cm_owner_email || 'No CM member yet'}</span></div>}
                     <div><b>Category</b><span>{e.issue_category || '—'}{e.issue_sub_category ? ` · ${e.issue_sub_category}` : ''}</span></div>
                     <div><b>Hub</b><span>{e.concern_hub || '—'}</span></div>
                     <div><b>Channel / KAM</b><span>{e.channel || '—'} · {e.kam_name || '—'}</span></div>

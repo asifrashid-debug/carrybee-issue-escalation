@@ -32,13 +32,13 @@ test('management and hub roles never gain access through a name', () => {
 
 test('scope filter adds the MX name clause only when the viewer has names', () => {
   const f = scopeFilter({ emails: [sazzad.email], pickedIds: [], pool: false, kamNameList: ['Sazzad Haider', 'Mohammad Sazzad Haider'] });
-  assert.match(f, /and\(channel\.eq\.MX,kam_name\.in\.\("Sazzad Haider","Mohammad Sazzad Haider"\)\)/);
+  assert.match(f, /and\(channel\.eq\.MX,or\(kam_name\.ilike\."Sazzad Haider",kam_name\.ilike\."Mohammad Sazzad Haider"\)\)/);
   const none = scopeFilter({ emails: [], pickedIds: [], pool: false, kamNameList: [] });
   assert.equal(none.includes('channel.eq.MX'), false);
 });
 
-test('MX-role KAM (for example Rakib) sees MX issues named to them', () => {
+test('MX-role KAM (for example Rakib) sees MX issues named to them, but gives no feedback', () => {
   const rakib = { email: 'rakib.c@carrybee.com', role: 'mx', teams: ['IB'], display_name: 'MD Rakib Chowdhury', kam_aliases: ['Rakib'] };
   assert.equal(canView(rakib, { email: 'someone@carrybee.com', channel: 'MX', kam_name: 'Rakib' }, null), true);
-  assert.equal(isFeedbackOwner(rakib, { email: 'someone@carrybee.com', channel: 'MX', kam_name: 'Rakib' }), true);
+  assert.equal(isFeedbackOwner(rakib, { email: 'someone@carrybee.com', channel: 'MX', kam_name: 'Rakib' }), false); // MX raise and view only
 });
