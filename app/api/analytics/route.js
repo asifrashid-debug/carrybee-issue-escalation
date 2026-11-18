@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { computeAnalytics } from '../../../lib/analytics';
+import { teamPerformanceView } from '../../../lib/teamScope';
 import { requireUser } from '../../../lib/session';
 import { loadScope, isVisible } from '../../../lib/visibility';
 import { resolveRange, rangeBounds, rangeDays } from '../../../lib/dateRange';
@@ -49,6 +50,10 @@ export async function GET(req) {
     const inRange = rb ? visible.filter((e) => { const t = Date.parse(e.submitted_at); return (rb.start == null || t >= rb.start) && (rb.end == null || t < rb.end); }) : visible;
     const calcNow = rb?.end != null ? new Date(Math.min(now.getTime(), rb.end)) : now;
     const days = rangeDays(range, calcNow.getTime());
+    // Team Performance (?view=teams): each role sees only its own teams / own figures (lib/teamScope.js)
+    if (new URL(req.url).searchParams.get('view') === 'teams') {
+      return NextResponse.json({ mode: 'live', ...teamPerformanceView({ session, users: users || [], escalations: inRange, hubs: hubs || [], categories: cats || [], now: calcNow }) });
+    }
     const result = computeAnalytics({ escalations: inRange, users: users || [], hubs: hubs || [], categories: cats || [], now: calcNow, days });
     // Team leads and CM leads see only their own team(s) in Team Performance (members and admin keep the full list)
     if (['team_lead', 'cm_lead'].includes(session.role)) {

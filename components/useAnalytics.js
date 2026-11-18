@@ -4,7 +4,7 @@ import { useDateRange } from './cw/useDateRange';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Live data only. Generated sample figures are not shown on any tracker page.
-export function useAnalytics() {
+export function useAnalytics(view) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,7 @@ export function useAnalytics() {
       const qs = new URLSearchParams();
       if (from) qs.set('from', from);
       if (to) qs.set('to', to);
+    if (view) qs.set('view', view);
       const r = await fetch(`/api/analytics?${qs}`, { cache: 'no-store' });
       const j = await r.json();
       if (id !== latest.current) return;
@@ -33,7 +34,7 @@ export function useAnalytics() {
     } finally {
       if (id === latest.current) setLoading(false);
     }
-  }, [ready, from, to]);
+  }, [ready, from, to, view]);
 
   useEffect(() => { load(); }, [load]);
   useVisibleInterval(load, 60000);

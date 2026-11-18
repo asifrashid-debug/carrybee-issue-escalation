@@ -13,7 +13,7 @@ const PALETTE = ['#FFCC00', '#37A9FF', '#A78BFA', '#00E5A0', '#FF9F1C', '#FF5470
 
 // Team Performance, demo layout (carrybee-complete-web.html pTeams). Team scope follows the same rules as the tracker.
 export default function TeamPerformance() {
-  const { data, error, loading, reload } = useAnalytics();
+  const { data, error, loading, reload } = useAnalytics('teams');
   const { range } = useDateRange();
 
   if (!data) {
