@@ -75,9 +75,33 @@ var PILL = {
   display: 'inline-block', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   borderRadius: 999, padding: '4px 10px', fontSize: 12, lineHeight: '18px', boxSizing: 'border-box'
 };
-var PILL_OK = Object.assign({}, PILL, { background: '#FFCC00', color: '#111', fontWeight: 700, border: '1px solid #E0B000' });
+// Colour of the status box by Hive status. Status words are compared without case, spaces or underscores.
+var TONES = {
+  green: { bg: '#d4ebdc', text: '#ffffff' },   // Delivered, Exchange, Partial Delivery
+  red: { bg: '#d88080', text: '#ffffff' },     // Return, Paid Return
+  blue: { bg: '#61cae9', text: '#000000' },    // Request to customer change
+  other: { bg: '#e6cd74', text: '#000000' }    // every other status
+};
+var TONE_BY_STATUS = {
+  'delivered': 'green',
+  'exchange': 'green',
+  'partial delivery': 'green',
+  'return': 'red',
+  'paid return': 'red',
+  'request to customer change': 'blue'
+};
+
+function normalStatus(s) {
+  return String(s || '').replace(/_+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function okPillFor(status) {
+  var t = TONES[TONE_BY_STATUS[normalStatus(status)]] || TONES.other;
+  return Object.assign({}, PILL, { background: t.bg, color: t.text, fontWeight: 700, border: '1px solid ' + t.bg });
+}
+
 var PILL_ERR = Object.assign({}, PILL, { background: '#FDECEC', color: '#B42318', fontWeight: 700, border: '1px solid #F5C2C0' });
-var PILL_BUSY = Object.assign({}, PILL, { background: '#EEF0F3', color: '#4B5563', fontWeight: 600, border: '1px solid #D9DDE3' });
+var PILL_BUSY = Object.assign({}, PILL, { background: '#EEF0F3', color: '#4B5563', fontWeight: 700, border: '1px solid #D9DDE3' });
 
 function StatusView({ result, onBack }) {
   var pill = PILL_BUSY;
@@ -86,7 +110,7 @@ function StatusView({ result, onBack }) {
   var tip = 'Checking Hive…';
   if (result) {
     if (result.ok) {
-      pill = PILL_OK;
+      pill = okPillFor(result.orderStatus);
       text = result.orderStatus || 'No status';
       tip = result.orderStatus || 'No status';
       sub = formatTime(result.statusUpdatedAt);
@@ -108,7 +132,7 @@ function StatusView({ result, onBack }) {
       }}
     >
       <span style={pill}>{text}</span>
-      {sub && <span style={{ fontSize: 11, color: '#6b7280', whiteSpace: 'nowrap' }}>{sub}</span>}
+      {sub && <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap' }}>{sub}</span>}
     </button>
   );
 }
