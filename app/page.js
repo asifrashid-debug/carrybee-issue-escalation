@@ -168,11 +168,12 @@ export default function Tracker() {
   const [selected, setSelected] = useState(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkMsg, setBulkMsg] = useState(null);
+  const [review, setReview] = useState(null); // { outcome, will, skipped } from the review step
 
   const user = me || { email: '', role: '—' };
   const canSeeFailures = ['team_lead', 'cm_lead', 'admin', 'management'].includes(user.role);
   const canSeePickFailures = ['cm_lead', 'admin', 'management'].includes(user.role);
-  const isLead = user.role === 'team_lead'; // bulk KAM feedback is for team leads only
+  const isLead = ['team_lead', 'cm_lead', 'admin'].includes(user.role); // bulk KAM feedback: team leads, CM leads, admin
   const filterCount = [prio, channel, istat, ostat].filter(Boolean).length;
 
   const load = useCallback(async () => {
@@ -229,7 +230,7 @@ export default function Tracker() {
   useEffect(() => { loadCounts(); }, [loadCounts]);
   useVisibleInterval(loadCounts, 30000);
   useEffect(() => { setPage(1); }, [search, prio, channel, istat, ostat, zone, view]);
-  useEffect(() => { setSelected(new Set()); }, [zone, view, page, search, prio, channel, istat, ostat]);
+  useEffect(() => { setSelected(new Set()); setReview(null); }, [zone, view, page, search, prio, channel, istat, ostat]);
 
   // Views bar: zone chips set the zone; the other views set the view. Zone and view stay in step.
   const views = [
@@ -283,9 +284,25 @@ export default function Tracker() {
   function togglePage() {
     setSelected((cur) => { const n = new Set(cur); pageIds.forEach((id) => { if (pageAllSelected) n.delete(id); else n.add(id); }); return n; });
   }
-  // Team lead: set KAM feedback on the selected issues (server checks team scope and skips any already set).
-  async function bulkFeedback(outcome) {
+  // Step 1 (review): ask the server which selected issues would change. Writes nothing.
+  async function reviewBulk(outcome) {
     const ids = [...selected];
+    if (!ids.length) return;
+    setBulkBusy(true);
+    setBulkMsg(null);
+    try {
+      const r = await fetch('/api/escalations/bulk-feedback/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ issue_ids: ids, outcome }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Review failed');
+      setReview({ outcome, will: j.will_resolve, skipped: j.skipped });
+    } catch (e) {
+      setBulkMsg(`Could not review: ${e.message || e}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+  // Step 2 (confirm): the server re-checks scope and blocks at write time, then writes.
+  async function bulkFeedback(outcome, ids) {
     if (!ids.length) return;
     setBulkBusy(true);
     setBulkMsg(null);
@@ -298,6 +315,7 @@ export default function Tracker() {
       if (j.failed.length) parts.push(`${j.failed.length} failed`);
       setBulkMsg(`${parts.join(' · ')}.`);
       setSelected(new Set());
+      setReview(null);
       load();
     } catch (e) {
       setBulkMsg(`Could not update: ${e.message || e}`);
@@ -464,10 +482,34 @@ export default function Tracker() {
             {isLead && selected.size > 0 && (
               <div className="bulk-bar" role="region" aria-label="Bulk KAM feedback">
                 <b>{selected.size} selected</b>
-                <button type="button" className="btn bee sm" disabled={bulkBusy} onClick={() => bulkFeedback('Resolved')}>{bulkBusy ? 'Saving…' : 'Mark KAM feedback Resolved'}</button>
-                <button type="button" className="btn sm" disabled={bulkBusy} onClick={() => bulkFeedback('Not Resolved')}>Mark Not Resolved</button>
-                <button type="button" className="btn sm" disabled={bulkBusy} onClick={() => setSelected(new Set())}>Clear</button>
-                <span className="muted small">Team leads only · up to 50 at a time</span>
+                <button type="button" className="btn bee sm" disabled={bulkBusy} onClick={() => reviewBulk('Resolved')}>{bulkBusy ? 'Checking…' : 'Review: mark Resolved'}</button>
+                <button type="button" className="btn sm" disabled={bulkBusy} onClick={() => reviewBulk('Not Resolved')}>Review: mark Not Resolved</button>
+                <button type="button" className="btn sm" disabled={bulkBusy} onClick={() => { setSelected(new Set()); setReview(null); }}>Clear</button>
+                <span className="muted small">Team leads, CM leads, admin · up to 50 at a time</span>
+              </div>
+            )}
+            {isLead && review && (
+              <div className="box" role="region" aria-label="Review bulk KAM feedback" style={{ marginBottom: 12 }}>
+                <b>Review: set {review.will.length} to {review.outcome}</b>
+                {review.will.length > 0 && (
+                  <ul style={{ margin: '6px 0', maxHeight: 180, overflowY: 'auto' }}>
+                    {review.will.map((w) => (
+                      <li key={w.issue_id}>{w.issue_id} · {w.zone} · {w.concern_hub} · Ops {w.ops_issue_status} · KAM {w.kam_feedback_status}{review.outcome === 'Resolved' && !w.has_hub_response ? ' · no hub response (admin only)' : ''}</li>
+                    ))}
+                  </ul>
+                )}
+                {review.skipped.length > 0 && (
+                  <>
+                    <div style={{ marginTop: 8 }}><b>Skipped: {review.skipped.length}</b></div>
+                    <ul style={{ margin: '6px 0', maxHeight: 180, overflowY: 'auto' }}>
+                      {review.skipped.map((s) => <li key={s.issue_id}>{s.issue_id} · {s.reason}</li>)}
+                    </ul>
+                  </>
+                )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button type="button" className="btn bee sm" disabled={bulkBusy || review.will.length === 0} onClick={() => bulkFeedback(review.outcome, review.will.map((w) => w.issue_id))}>{bulkBusy ? 'Saving…' : `Confirm: set ${review.will.length} to ${review.outcome}`}</button>
+                  <button type="button" className="btn sm" disabled={bulkBusy} onClick={() => setReview(null)}>Cancel</button>
+                </div>
               </div>
             )}
             {isLead && bulkMsg && <div className="box" role="status" style={{ marginBottom: 12 }}>{bulkMsg}</div>}
