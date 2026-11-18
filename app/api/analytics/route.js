@@ -5,6 +5,7 @@ import { teamPerformanceView } from '../../../lib/teamScope';
 import { requireUser } from '../../../lib/session';
 import { loadScope, isVisible } from '../../../lib/visibility';
 import { resolveRange, rangeBounds, rangeDays } from '../../../lib/dateRange';
+import { fetchAllEscalations } from '../../../lib/escalationsPaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,13 +26,10 @@ export async function GET(req) {
     if (escCache.rows && Date.now() - escCache.at < ESC_TTL) {
       escalations = escCache.rows;
     } else {
-      escalations = [];
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await sb.from('escalations').select(COLS).order('submitted_at', { ascending: false }).range(from, from + 999);
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        escalations.push(...data);
-        if (data.length < 1000) break;
-      }
+      // Pages are requested in parallel after the first page (see lib/escalationsPaging.js).
+      const paged = await fetchAllEscalations(sb, COLS);
+      if (paged.error) return NextResponse.json({ error: paged.error }, { status: 500 });
+      escalations = paged.rows;
       escCache = { at: Date.now(), rows: escalations };
     }
     const [{ data: users, error: uErr }, { data: hubs, error: hErr }, { data: cats, error: cErr }] = await Promise.all([
