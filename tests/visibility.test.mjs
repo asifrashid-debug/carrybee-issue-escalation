@@ -33,8 +33,8 @@ test('a team lead sees their full team, not other teams', () => {
 
 test('a CM member sees their picks and the unpicked pool, not other CM issues', () => {
   const cm = user('cm1@carrybee.com');
-  const pool = { email: 'mx1@carrybee.com', cm_assigned: true, issue_pick_time: null };
-  const pickedByOther = { email: 'mx1@carrybee.com', cm_assigned: true, issue_pick_time: '2026-11-14T05:00:00Z' };
+  const pool = { email: 'mx1@carrybee.com', cm_assigned: true, business_pick_time: null };
+  const pickedByOther = { email: 'mx1@carrybee.com', cm_assigned: true, business_pick_time: '2026-11-14T05:00:00Z' };
   assert.equal(canView(cm, pool, by('mx1@carrybee.com')), true);
   assert.equal(canView(cm, pickedByOther, by('mx1@carrybee.com')), false);
   assert.equal(canView(cm, pickedByOther, by('mx1@carrybee.com'), true), true);
@@ -65,7 +65,7 @@ test('list filter matches the rules: member, team lead, CM member', () => {
   const cmFilter = scopeFilter({ emails: ['cm1@carrybee.com'], pickedIds: ['ESC-1'], pool: true });
   assert.match(cmFilter, /email\.in\.\("cm1@carrybee\.com"\)/);
   assert.match(cmFilter, /issue_id\.in\.\("ESC-1"\)/);
-  assert.match(cmFilter, /and\(cm_assigned\.eq\.true,issue_pick_time\.is\.null\)/);
+  assert.match(cmFilter, /and\(cm_assigned\.eq\.true,business_pick_time\.is\.null\)/);
   assert.equal(scopeFilter({ emails: [], pickedIds: [], pool: false }), 'issue_id.eq.__none__');
 });
 
@@ -78,7 +78,7 @@ test('emailScope for a team lead includes the team and the lead', () => {
 });
 
 test('pool helper: only unpicked CM-assigned issues', () => {
-  assert.equal(inCmPool({ cm_assigned: true, issue_pick_time: null }), true);
-  assert.equal(inCmPool({ cm_assigned: true, issue_pick_time: '2026-11-14T05:00:00Z' }), false);
-  assert.equal(inCmPool({ cm_assigned: false, issue_pick_time: null }), false);
+  assert.equal(inCmPool({ cm_assigned: true, business_pick_time: null }), true);
+  assert.equal(inCmPool({ cm_assigned: true, business_pick_time: '2026-11-14T05:00:00Z' }), false);
+  assert.equal(inCmPool({ cm_assigned: false, business_pick_time: null }), false);
 });

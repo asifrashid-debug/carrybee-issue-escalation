@@ -5,7 +5,7 @@ import { issueClock, followupPlan } from '../lib/sla.js';
 const H = 3600e3;
 const raised = new Date('2026-11-14T06:00:00Z');
 const at = (h) => new Date(raised.getTime() + h * H);
-const issue = (extra = {}) => ({ submitted_at: raised.toISOString(), issue_status: 'Open', issue_pick_time: null, issue_response_datetime: null, ...extra });
+const issue = (extra = {}) => ({ submitted_at: raised.toISOString(), issue_status: 'Open', business_pick_time: null, issue_response_datetime: null, ...extra });
 
 test('comment breach after 2h with no comment, not before', () => {
   assert.equal(issueClock(issue(), at(1.9)).commentBreach, false);
@@ -17,12 +17,12 @@ test('comment breach after 2h with no comment, not before', () => {
 test('KAM followup available until 2.5h, only before pick', () => {
   assert.equal(followupPlan(issue(), [], at(2)).kam.available, true);
   assert.equal(followupPlan(issue(), [], at(2.6)).kam.available, false);
-  assert.equal(followupPlan(issue({ issue_pick_time: at(1).toISOString() }), [], at(1.5)).kam.available, false);
+  assert.equal(followupPlan(issue({ business_pick_time: at(1).toISOString() }), [], at(1.5)).kam.available, false);
 });
 
 test('CM followups lock until pick, then chain 2.5h / +2h / +2h', () => {
   const pickAt = at(1);
-  const p = followupPlan(issue({ issue_pick_time: pickAt.toISOString() }), [], at(1.5));
+  const p = followupPlan(issue({ business_pick_time: pickAt.toISOString() }), [], at(1.5));
   assert.equal(p.cm[0].status, 'due');
   assert.equal(new Date(p.cm[0].dueAt).getTime(), pickAt.getTime() + 2.5 * H);
   assert.equal(new Date(p.cm[1].dueAt).getTime(), pickAt.getTime() + 4.5 * H);
@@ -32,7 +32,7 @@ test('CM followups lock until pick, then chain 2.5h / +2h / +2h', () => {
 });
 
 test('overdue follow-up and sequential completion', () => {
-  const pick = { issue_pick_time: at(1).toISOString() };
+  const pick = { business_pick_time: at(1).toISOString() };
   const late = followupPlan(issue(pick), [], at(5));
   assert.equal(late.cm[0].status, 'overdue');
   assert.equal(late.cm[1].status, 'waiting');

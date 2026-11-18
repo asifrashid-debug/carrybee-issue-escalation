@@ -12,9 +12,19 @@ test('hub_ops cannot edit ops fields or pick, even in their own zone', () => {
   assert.equal(canPick(hub, esc), false);
 });
 
-test('admin keeps ops edit and pick', () => {
+test('admin keeps ops edit; CM picked applies only to CM-assigned issues', () => {
   assert.equal(canEditOps(admin, esc), true);
-  assert.equal(canPick(admin, esc), true);
+  assert.equal(canPick(admin, esc), false); // normal issue: picked at raise, no CM pick button
+  assert.equal(canPick(admin, { ...esc, cm_assigned: true, business_pick_time: null }), true);
+});
+
+test('CM picked button: only CM members, CM leads and admin, only on unpicked CM-assigned issues', () => {
+  const cmIssue = { ...esc, cm_assigned: true, business_pick_time: null };
+  assert.equal(canPick({ role: 'cm_member', email: 'cm@x' }, cmIssue), true);
+  assert.equal(canPick({ role: 'cm_lead', email: 'cml@x' }, cmIssue), true);
+  assert.equal(canPick({ role: 'mx', email: 'mx@x' }, cmIssue), false);
+  assert.equal(canPick({ role: 'requester', email: 'r@x' }, cmIssue), false);
+  assert.equal(canPick({ role: 'cm_member', email: 'cm@x' }, { ...cmIssue, business_pick_time: '2026-11-18T09:00:00Z' }), false);
 });
 
 test('hub role detection is server-side policy', () => {

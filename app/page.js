@@ -52,7 +52,7 @@ function sla(e) {
   const age = hoursSince(e.submitted_at);
   if (e.ops_issue_status === 'Resolved') return { state: 'ok', text: 'Resolved' };
   if (!e.issue_response_datetime && age > 2) return { state: 'br', text: `No comment · ${fmtN(Math.round(age - 2))}h over` };
-  if (!e.issue_pick_time && age > 4) return { state: 'br', text: `Unpicked · ${Math.round(age)}h` };
+  if (!e.business_pick_time && age > 4) return { state: 'br', text: `Unpicked · ${Math.round(age)}h` };
   if (!e.issue_response_datetime) return { state: 'risk', text: `${Math.max(0, 2 - age).toFixed(1)}h to limit` };
   const limitH = (e.resolution_days || 3) * 24;
   if (e.resolution_breach) return { state: 'br', text: `Resolution overdue · ${spanText(age - limitH)}` };
@@ -63,7 +63,7 @@ function sla(e) {
 // CM pick SLA line (only CM-assigned MX issues). Deadline is pick_due_at from the API.
 function pickLine(e) {
   if (!e.cm_assigned) return null;
-  if (e.issue_pick_time) {
+  if (e.business_pick_time) {
     return e.pick_missed ? { cls: 'sla-bad', text: 'Picked late · justification' } : { cls: 'sla-ok', text: 'Picked on time' };
   }
   const left = (new Date(e.pick_due_at).getTime() - Date.now()) / 60e3;

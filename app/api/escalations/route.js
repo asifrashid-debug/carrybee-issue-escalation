@@ -73,7 +73,7 @@ export async function GET(req) {
   if (fb === 'overdue') q = q.eq('kam_feedback_status', FEEDBACK_PENDING).lt('feedback_due_at', new Date().toISOString()).lt('feedback_justifications', 2);
   if (fb === 'failure') q = q.eq('kam_feedback_status', FEEDBACK_PENDING).lt('feedback_due_at', new Date().toISOString()).gte('feedback_justifications', 2);
   // Pick failures (CM pick SLA): missed or late pick, a justification window passed, fewer than 2 justifications
-  if (searchParams.get('pick') === 'failure') q = q.eq('cm_assigned', true).lt('pick_justify_due_at', new Date().toISOString()).lt('pick_justifications', 2).or('pick_missed.eq.true,issue_pick_time.is.null');
+  if (searchParams.get('pick') === 'failure') q = q.eq('cm_assigned', true).lt('pick_justify_due_at', new Date().toISOString()).lt('pick_justifications', 2).or('pick_missed.eq.true,business_pick_time.is.null');
   // My escalations: issues I raised, plus issues I picked (audit_log picks, loaded in lib/visibility.js)
   if (view === 'mine') {
     const ids = scope.pickedIds || [];
@@ -178,6 +178,8 @@ export async function POST(req) {
     pick_due_at: null, pick_missed: false, pick_justifications: 0, pick_justify_due_at: null,
     regional_lead: hub.regional_lead, division: hub.division, duplicate_of, row_version: 1
   };
+  // Business Pick timing: a normal issue is picked automatically at raise. A CM-assigned issue waits for "CM picked".
+  row.business_pick_time = row.cm_assigned ? null : now;
   if (row.cm_assigned) {
     row.pick_due_at = pickDeadline(now, priority_scale);
     row.pick_justify_due_at = pickJustifyDueFrom(row.pick_due_at);

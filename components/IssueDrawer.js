@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatDhaka, hoursSince } from '../lib/time';
 import { PriPill, SlaPill, StatusPill, Zc } from './demo';
+import { canPick } from '../lib/roles';
 
 const LAYERS = [
   { key: 'layer1_response', label: 'Layer 1 · HUB Incharge', hours: 2 },
@@ -132,8 +133,8 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
   let next = { tone: 'calm', text: 'No action needed from you yet. Waiting on the hub.' };
   if (e && pk?.phase === 'justification_due' && pk.can_justify && !hubReadOnly) {
     next = { tone: 'warn', text: `Give a pick justification (${pk.justifications_used + 1} of ${pk.justification_limit}) within 24h.` };
-  } else if (e && !e.issue_pick_time && !hubReadOnly) {
-    next = { tone: 'warn', text: 'Pick this issue. A pick is set once.' };
+  } else if (e && e.cm_assigned && !e.business_pick_time && !hubReadOnly && canPick(user, e)) {
+    next = { tone: 'warn', text: 'Press CM picked on this issue. It is set once.' };
   } else if (e && fb?.phase === 'justification_due' && fb.can_justify && !hubReadOnly) {
     next = { tone: 'warn', text: `Give a feedback justification (${fb.justifications_used + 1} of ${fb.justification_limit}) to reopen the 24h window.` };
   } else if (e && fb?.can_respond && fb.phase === 'pending' && !hubReadOnly) {
@@ -216,8 +217,8 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                     <TL state="done" title="Escalation created" meta={`${formatDhaka(e.submitted_at)} · ${e.channel || '—'} · ${e.kam_name || '—'}`} />
 
                     {/* CM pick (set once) with its SLA and justifications */}
-                    {e.issue_pick_time ? (
-                      <TL state="done" title="CM pick" meta={`Picked ${formatDhaka(e.issue_pick_time)}`}>
+                    {e.business_pick_time ? (
+                      <TL state="done" title="Business Pick timing" meta={`Picked ${formatDhaka(e.business_pick_time)} · ${e.cm_assigned ? 'CM picked' : 'at raise'}`}>
                         {pk?.justifications?.length > 0 && (
                           <ul className="audit">
                             {pk.justifications.map((j) => (
@@ -227,13 +228,13 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                         )}
                       </TL>
                     ) : hubReadOnly ? (
-                      <TL state="wait" title="CM pick" meta="Not picked yet. Picks come from the hub response sheet." />
+                      <TL state="wait" title="Business Pick timing" meta="Not picked yet. Picks come from the hub response sheet." />
                     ) : (
                       <TL
                         state={pk?.phase === 'escalated' || pk?.phase === 'justification_due' ? 'late' : 'due'}
-                        title="CM pick"
-                        meta={pk?.applies ? `${pk.priority} within ${pk.minutes_limit} min · due by ${formatDhaka(pk.deadline_at)} · ${pk.phase_label || ''}` : 'Not picked yet. A pick is set once.'}
-                        action={<button type="button" className="btn y sm" disabled={!!busy} onClick={pick}>{busy === 'pick' ? 'Picking…' : 'Pick issue'}</button>}
+                        title="Business Pick timing"
+                        meta={pk?.applies ? `${pk.priority} within ${pk.minutes_limit} min · due by ${formatDhaka(pk.deadline_at)} · ${pk.phase_label || ''}` : 'Waiting for CM picked.'}
+                        action={canPick(user, e) && !hubReadOnly ? <button type="button" className="btn y sm" disabled={!!busy} onClick={pick}>{busy === 'pick' ? 'Saving…' : 'CM picked'}</button> : null}
                       >
                         {pk?.phase === 'justification_due' && <div className="box box-warn">{pk.missed && pk.picked_at ? 'The pick was late' : 'The pick was missed'}. Give a justification ({pk.justifications_used + 1} of {pk.justification_limit}) within 24h.</div>}
                         {pk?.phase === 'escalated' && <div className="box box-bad">Pick failure. The justification window passed. Raised to the CM Lead.</div>}

@@ -8,7 +8,7 @@ const cm = { email: 'cm@carrybee.com', role: 'cm_member', teams: ['CM'], display
 const cmLead = { email: 'lead@carrybee.com', role: 'cm_lead', teams: ['CM'] };
 const kam = { email: 'kam@carrybee.com', role: 'requester' };
 const mxRow = { email: 'mx@carrybee.com', role: 'mx', teams: [] };
-const base = (over = {}) => ({ cm_assigned: true, priority_scale: 'P1', submitted_at: raised.toISOString(), pick_due_at: pickDeadline(raised, 'P1'), pick_justifications: 0, pick_justify_due_at: pickJustifyDueFrom(pickDeadline(raised, 'P1')), issue_pick_time: null, ...over });
+const base = (over = {}) => ({ cm_assigned: true, priority_scale: 'P1', submitted_at: raised.toISOString(), pick_due_at: pickDeadline(raised, 'P1'), pick_justifications: 0, pick_justify_due_at: pickJustifyDueFrom(pickDeadline(raised, 'P1')), business_pick_time: null, ...over });
 
 test('deadlines: P1 10 min, P2 15 min, P3 20 min, P4 20 min', () => {
   assert.equal(new Date(pickDeadline(raised, 'P1')) - raised, 10 * 60e3);
@@ -24,7 +24,7 @@ test('not CM-assigned issues have no pick SLA', () => {
 });
 
 test('picked on time is met, no justification', () => {
-  assert.equal(pickPhase(base({ issue_pick_time: m(9).toISOString() }), m(30)), 'met');
+  assert.equal(pickPhase(base({ business_pick_time: m(9).toISOString() }), m(30)), 'met');
 });
 
 test('unpicked before the deadline is pending', () => {
@@ -36,7 +36,7 @@ test('unpicked past the deadline needs a justification', () => {
 });
 
 test('picked late needs a justification, even after pick', () => {
-  assert.equal(pickPhase(base({ issue_pick_time: m(12).toISOString() }), m(13)), 'justification_due');
+  assert.equal(pickPhase(base({ business_pick_time: m(12).toISOString() }), m(13)), 'justification_due');
 });
 
 test('two justifications then justified', () => {
@@ -61,10 +61,22 @@ test('pick and justify permissions: CM members, CM lead and admin only', () => {
 });
 
 test('CM members see the unpicked CM pool, their own picks and their own issues only', () => {
-  const pool = { email: 'mx@carrybee.com', cm_assigned: true, issue_pick_time: null };
-  const picked = { email: 'mx@carrybee.com', cm_assigned: true, issue_pick_time: '2026-11-14T04:05:00Z' };
+  const pool = { email: 'mx@carrybee.com', cm_assigned: true, business_pick_time: null };
+  const picked = { email: 'mx@carrybee.com', cm_assigned: true, business_pick_time: '2026-11-14T04:05:00Z' };
   assert.equal(cmCanSee(cm, pool, mxRow), true);
   assert.equal(cmCanSee(cm, picked, mxRow), false);
   assert.equal(cmCanSee(cm, { ...picked, issue_id: 'ESC-1' }, mxRow, true), true); // picked by this member
   assert.equal(cmCanSee(cm, { email: cm.email, cm_assigned: false }, null), true); // own issue
+});
+
+// CM picked (server check): CM-assigned only, CM roles or admin, set once.
+import { cmPickBlock } from '../lib/pickSla.js';
+test('cmPickBlock: CM members pick CM-assigned issues once; others and normal issues are refused', () => {
+  const open = { cm_assigned: true, business_pick_time: null };
+  assert.equal(cmPickBlock({ role: 'cm_member' }, open), null);
+  assert.equal(cmPickBlock({ role: 'cm_lead' }, open), null);
+  assert.equal(cmPickBlock({ role: 'admin' }, open), null);
+  assert.equal(cmPickBlock({ role: 'mx' }, open).status, 403);
+  assert.equal(cmPickBlock({ role: 'cm_member' }, { cm_assigned: false, business_pick_time: null }).status, 409);
+  assert.equal(cmPickBlock({ role: 'cm_member' }, { ...open, business_pick_time: '2026-11-18T09:00:00Z' }).status, 400);
 });
