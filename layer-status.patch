@@ -1,0 +1,213 @@
+From be8880d4d7942903b3a9aaebcd2ac1a9d24dd434 Mon Sep 17 00:00:00 2001
+From: Arena Agent <agent@arena.local>
+Date: Tue, 17 Nov 2026 20:47:26 +0000
+Subject: [PATCH] Sheet: Layer Status column AI (live formula) for hub Layers
+ 1-3 at 2h/4h/6h, same rule as the drawer. Reconcile backfills only the AI
+ cell. Tests: 142 pass with googleapis installed.
+
+---
+ app/api/sync/reconcile/route.js | 16 +++++++++---
+ lib/layerStatus.js              | 32 ++++++++++++++++++++++++
+ lib/sheets.js                   | 30 ++++++++++++++++++++---
+ tests/layerStatus.test.mjs      | 43 +++++++++++++++++++++++++++++++++
+ 4 files changed, 113 insertions(+), 8 deletions(-)
+ create mode 100644 lib/layerStatus.js
+ create mode 100644 tests/layerStatus.test.mjs
+
+diff --git a/app/api/sync/reconcile/route.js b/app/api/sync/reconcile/route.js
+index f63b13a..45ddab9 100644
+--- a/app/api/sync/reconcile/route.js
++++ b/app/api/sync/reconcile/route.js
+@@ -1,6 +1,7 @@
+ import { NextResponse } from 'next/server';
+ import { supabaseAdmin } from '../../../../lib/supabase';
+-import { pushToSheet, readSheetOps, withDerived } from '../../../../lib/sheets';
++import { pushToSheet, readSheetOps, withDerived, writeLayerStatusCells } from '../../../../lib/sheets';
++import { LAYER_STATUS_VALUES } from '../../../../lib/layerStatus';
+ import { requireUser, requireRole } from '../../../../lib/session';
+ export const dynamic = 'force-dynamic';
+ // Reconciliation: compare sheet Ops block with DB; repair drift by field ownership; re-append missing rows.
+@@ -18,7 +19,9 @@ export async function POST(req) {
+   const { data: dbRows } = await sb.from('escalations').select('*').eq('zone', zone).eq('is_archived', false);
+   const sheetById = new Map();
+   for (let i=1;i<sheetRows.length;i++) { const r = sheetRows[i]; if (r[0]) sheetById.set(r[0], { rowNum: i+1, vals: r }); }
+-  let repaired = 0, reappended = 0, checked = 0, derivedFixed = 0;
++  let repaired = 0, reappended = 0, checked = 0, derivedFixed = 0, layerFixed = 0;
++  // Rows that only need the Layer Status cell (AI). Written in one batch at the end, so hub cells are never rewritten.
++  const layerRows = [];
+   for (const e of (dbRows||[])) {
+     checked++;
+     const s = sheetById.get(e.issue_id);
+@@ -34,8 +37,13 @@ export async function POST(req) {
+     if (sheetVer !== e.row_version || derivedDrift) {
+       if (derivedDrift && sheetVer === e.row_version) derivedFixed++;
+       try { await pushToSheet(e); repaired++; } catch {}
++    } else if (!LAYER_STATUS_VALUES.includes(String(s.vals[34] ?? '').trim())) {
++      layerRows.push(s.rowNum);
+     }
+   }
+-  await sb.from('sync_log').insert({ direction:'reconciliation', status:'success', payload:{ zone, checked, repaired, reappended, derivedFixed } });
+-  return NextResponse.json({ ok: true, zone, checked, repaired, reappended, derivedFixed });
++  if (layerRows.length) {
++    try { layerFixed = await writeLayerStatusCells(sid, layerRows); } catch (err) { await sb.from('sync_log').insert({ direction:'reconciliation', status:'failed', error_message: `Layer status backfill failed: ${String(err.message || err).slice(0, 300)}` }); }
++  }
++  await sb.from('sync_log').insert({ direction:'reconciliation', status:'success', payload:{ zone, checked, repaired, reappended, derivedFixed, layerFixed } });
++  return NextResponse.json({ ok: true, zone, checked, repaired, reappended, derivedFixed, layerFixed });
+ }
+diff --git a/lib/layerStatus.js b/lib/layerStatus.js
+new file mode 100644
+index 0000000..bb57b8b
+--- /dev/null
++++ b/lib/layerStatus.js
+@@ -0,0 +1,32 @@
++// Layer status (sheet column AI). Pure, no imports, so it can be tested without the Google or Supabase clients.
++// Mirrors the drawer rule in components/IssueDrawer.js: a layer is overdue only when it is empty, every earlier
++// layer is empty, and the issue has been open longer than the layer's hours (Layer 1 2h, Layer 2 4h, Layer 3 6h).
++// The sheet cell is a live formula, so it follows the clock and the hub's Layer 1-3 cells without waiting for a sync.
++const H_MS = 3600e3;
++
++export const LAYER_STATUS_COL = 'AI';
++export const LAYER_HOURS = [2, 4, 6];
++export const LAYER_STATUS_VALUES = ['Layer 1 overdue', 'Layer 2 overdue', 'Layer 3 overdue', 'No layer overdue'];
++
++// Formula for one row. Q, R, S are Layer 1-3 responses; B is the Timestamp (raised).
++export function layerStatusFormula(rowNum) {
++  const r = rowNum;
++  const empty = (c) => `LEN(${c}${r})=0`;
++  const [h1, h2, h3] = LAYER_HOURS;
++  return `=IF(B${r}="","",IF(AND(${empty('Q')},NOW()>B${r}+${h1}/24),"Layer 1 overdue",` +
++    `IF(AND(${empty('Q')},${empty('R')},NOW()>B${r}+${h2}/24),"Layer 2 overdue",` +
++    `IF(AND(${empty('Q')},${empty('R')},${empty('S')},NOW()>B${r}+${h3}/24),"Layer 3 overdue","No layer overdue"))))`;
++}
++
++// Pure mirror of the formula, used by the tests. Returns the same text the sheet shows (to the minute).
++export function layerStatus(e, nowMs = Date.now()) {
++  if (!e.submitted_at) return '';
++  const raised = new Date(e.submitted_at).getTime();
++  const filled = [e.layer1_response, e.layer2_response, e.layer3_response].map((v) => String(v ?? '').trim().length > 0);
++  for (let i = 0; i < 3; i++) {
++    const ownEmpty = !filled[i];
++    const earlierEmpty = filled.slice(0, i).every((f) => !f);
++    if (ownEmpty && earlierEmpty && nowMs > raised + LAYER_HOURS[i] * H_MS) return `Layer ${i + 1} overdue`;
++  }
++  return 'No layer overdue';
++}
+diff --git a/lib/sheets.js b/lib/sheets.js
+index 468c107..9c40285 100644
+--- a/lib/sheets.js
++++ b/lib/sheets.js
+@@ -1,5 +1,6 @@
+ import { google } from 'googleapis';
+ import { supabaseAdmin } from './supabase.js';
++import { LAYER_STATUS_COL, layerStatusFormula } from './layerStatus.js';
+ 
+ // Sheet layout A-AH (34 cols). A-AE are DB fields; AF-AH are derived (see derivedCells). Layer cells replace old Comments 1/2.
+ export const COLS = ['issue_id','submitted_at','email','consignment_id','merchant_name','channel','zone','concern_hub','issue_status','issue_category','issue_sub_category','issue_details','kam_name','week','priority_scale','kam_feedback_status','layer1_response','layer2_response','layer3_response','issue_pick_time','ops_issue_status','remarks','regional_lead','issue_response_datetime','division','ops_status','validation','ops_category','row_version','last_synced_at','completed_at','issue_pick_check','issue_resolution_check','overall_validation'];
+@@ -59,6 +60,11 @@ export function derivedCells(e, slaHours) {
+   return [pickCell, resCell, overallCell];
+ }
+ 
++// Full sheet row (A-AI) for an escalation. Used when a row is written or appended.
++export function rowWithLayerStatus(esc, rowNum) {
++  return [...escToRow(esc), layerStatusFormula(rowNum)];
++}
++
+ // Adds _derived (AF-AH values) to an escalation, reading its category SLA from category_master.
+ export async function withDerived(e) {
+   let slaHours = null;
+@@ -82,12 +88,11 @@ export async function pushToSheet(input) {
+   const res = await sheets.spreadsheets.values.get({ spreadsheetId: sid, range: 'Active!A:A' });
+   const rows = res.data.values || [];
+   const idx = rows.findIndex(r => r[0] === esc.issue_id);
+-  const row = escToRow(esc);
+   if (idx >= 0) {
+-    await sheets.spreadsheets.values.update({ spreadsheetId: sid, range: `Active!A${idx+1}:AH${idx+1}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [row] } });
++    await sheets.spreadsheets.values.update({ spreadsheetId: sid, range: `Active!A${idx+1}:AI${idx+1}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [rowWithLayerStatus(esc, idx+1)] } });
+     return { row: idx+1, action: 'updated' };
+   } else {
+-    await sheets.spreadsheets.values.append({ spreadsheetId: sid, range: 'Active!A:AH', valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', requestBody: { values: [row] } });
++    await sheets.spreadsheets.values.append({ spreadsheetId: sid, range: 'Active!A:AI', valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', requestBody: { values: [rowWithLayerStatus(esc, rows.length+1)] } });
+     return { row: rows.length+1, action: 'appended' };
+   }
+ }
+@@ -141,10 +146,27 @@ export async function pushFields(input, fields) {
+ 
+ export async function readSheetOps(sid) {
+   const sheets = getSheetsClient();
+-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: sid, range: 'Active!A1:AH5000' });
++  const res = await sheets.spreadsheets.values.get({ spreadsheetId: sid, range: 'Active!A1:AI5000' });
+   return res.data.values || [];
+ }
+ 
++// Writes only the Layer Status cell (AI) for the given sheet rows, in batches. Never touches any other column.
++export async function writeLayerStatusCells(sid, rowNums) {
++  const sheets = getSheetsClient();
++  const nums = [...new Set(rowNums)];
++  for (let i = 0; i < nums.length; i += 200) {
++    const chunk = nums.slice(i, i + 200);
++    await sheets.spreadsheets.values.batchUpdate({
++      spreadsheetId: sid,
++      requestBody: {
++        valueInputOption: 'USER_ENTERED',
++        data: chunk.map((n) => ({ range: `Active!${LAYER_STATUS_COL}${n}`, values: [[layerStatusFormula(n)]] })),
++      },
++    });
++  }
++  return nums.length;
++}
++
+ // Read-only: returns every row of one tab (used by the KAM funnel upload). Never writes to the sheet.
+ export async function readSheetTab(sid, tab) {
+   const sheets = getSheetsClient();
+diff --git a/tests/layerStatus.test.mjs b/tests/layerStatus.test.mjs
+new file mode 100644
+index 0000000..14428b1
+--- /dev/null
++++ b/tests/layerStatus.test.mjs
+@@ -0,0 +1,43 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { layerStatus, layerStatusFormula, LAYER_STATUS_VALUES } from '../lib/layerStatus.js';
++
++const raised = '2026-11-14T06:00:00Z'; // 12:00 Dhaka
++const at = (hours) => new Date(raised).getTime() + hours * 3600e3;
++
++test('Layer 1 is overdue after 2h with no response', () => {
++  assert.equal(layerStatus({ submitted_at: raised }, at(2.1)), 'Layer 1 overdue');
++  assert.equal(layerStatus({ submitted_at: raised }, at(1.9)), 'No layer overdue');
++});
++
++test('once Layer 1 is answered, Layer 2 is not flagged (drawer rule)', () => {
++  const e = { submitted_at: raised, layer1_response: 'Rider assigned' };
++  // Layer 1 filled: Layer 2 is only overdue when Layer 1 is also empty (drawer rule), so this stays clear.
++  assert.equal(layerStatus(e, at(5)), 'No layer overdue');
++});
++
++test('Layer 2 and 3 are overdue only while every earlier layer is empty', () => {
++  assert.equal(layerStatus({ submitted_at: raised }, at(4.1)), 'Layer 1 overdue'); // first empty layer wins
++  assert.equal(layerStatus({ submitted_at: raised, layer1_response: 'x' }, at(7)), 'No layer overdue');
++  assert.equal(layerStatus({ submitted_at: raised, layer1_response: 'x', layer2_response: 'y' }, at(9)), 'No layer overdue');
++});
++
++test('whitespace-only responses count as empty', () => {
++  assert.equal(layerStatus({ submitted_at: raised, layer1_response: '   ' }, at(2.5)), 'Layer 1 overdue');
++});
++
++test('no timestamp gives a blank status, as the formula does', () => {
++  assert.equal(layerStatus({}, at(10)), '');
++});
++
++test('formula uses the right cells, hours and labels', () => {
++  const f = layerStatusFormula(42);
++  assert.ok(f.startsWith('=IF(B42="","",'));
++  assert.ok(f.includes('NOW()>B42+2/24'));
++  assert.ok(f.includes('NOW()>B42+4/24'));
++  assert.ok(f.includes('NOW()>B42+6/24'));
++  assert.ok(f.includes('LEN(Q42)=0') && f.includes('LEN(R42)=0') && f.includes('LEN(S42)=0'));
++  for (const v of LAYER_STATUS_VALUES) assert.ok(f.includes(`"${v}"`), v);
++  // Balanced brackets, so Sheets will parse it.
++  assert.equal([...f].filter((c) => c === '(').length, [...f].filter((c) => c === ')').length);
++});
+-- 
+2.47.3
+

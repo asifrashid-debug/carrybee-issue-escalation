@@ -1,4 +1,5 @@
 'use client';
+import SendReportButton from '../../components/SendReportButton';
 import DateRangeFilter from '../../components/cw/DateRangeFilter';
 import { useDateRange } from '../../components/cw/useDateRange';
 import { rangeLabel, rangePhrase } from '../../lib/dateRange';

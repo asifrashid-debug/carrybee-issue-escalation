@@ -1,0 +1,385 @@
+From 4d67e32950dc5a725f08f9c79fcf6efe9e3aea56 Mon Sep 17 00:00:00 2001
+From: Arena Agent <agent@arena.local>
+Date: Tue, 17 Nov 2026 18:38:05 +0000
+Subject: [PATCH] Admin & Masters: Save buttons on Hub, Category, User and
+ Setting forms (super admin only, validated, audited); migration 015
+ masters_audit_log
+
+---
+ app/admin/page.js                         |  45 ++++++---
+ app/api/masters/route.js                  |  43 ++++++++-
+ lib/mastersWrite.js                       | 112 ++++++++++++++++++++++
+ supabase/migrations/015_masters_audit.sql |  14 +++
+ tests/mastersWrite.test.mjs               |  54 +++++++++++
+ 5 files changed, 255 insertions(+), 13 deletions(-)
+ create mode 100644 lib/mastersWrite.js
+ create mode 100644 supabase/migrations/015_masters_audit.sql
+ create mode 100644 tests/mastersWrite.test.mjs
+
+diff --git a/app/admin/page.js b/app/admin/page.js
+index a7999e1..be8b819 100644
+--- a/app/admin/page.js
++++ b/app/admin/page.js
+@@ -180,6 +180,26 @@ export default function Admin() {
+   const [newUser, setNewUser] = useState(EMPTY_USER);
+   const [newSetting, setNewSetting] = useState(EMPTY_SETTING);
+   const [loadedAt, setLoadedAt] = useState(null);
++  const [saving, setSaving] = useState(null); // entity being saved, or null
++  const [saveMsg, setSaveMsg] = useState(null); // { entity, kind: 'ok' | 'bad', text }
++
++  // Saves one Add form (super admin). The server validates and audits; the form resets on success.
++  async function saveMaster(entity, data, reset) {
++    setSaving(entity); setSaveMsg(null);
++    try {
++      const r = await fetch('/api/masters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entity, data }) });
++      const j = await r.json().catch(() => ({}));
++      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
++      setSaveMsg({ entity, kind: 'ok', text: `Saved ${j.entity_key}. The change is in the audit log.` });
++      reset();
++      load();
++    } catch (e) {
++      setSaveMsg({ entity, kind: 'bad', text: String(e.message || e) });
++    } finally { setSaving(null); }
++  }
++  const msgFor = (entity) => (saveMsg && saveMsg.entity === entity ? (
++    <div className={`box ${saveMsg.kind === 'ok' ? 'box-ok' : 'box-bad'}`} role={saveMsg.kind === 'ok' ? 'status' : 'alert'}>{saveMsg.text}</div>
++  ) : null);
+ 
+   async function load() {
+     try {
+@@ -267,7 +287,7 @@ export default function Admin() {
+             </div>
+ 
+             <aside className="card admin-add" aria-label="Add hub">
+-              <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add hub</h2><small>Super admin only · syncs to the hub response sheet</small></div></div>
++              <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add hub</h2><small>Super admin only · saves to the database</small></div></div>
+               <div className="stack" style={{ gap: 12, marginTop: 14 }}>
+                 <div className="field">
+                   <label htmlFor="new-hub-name">Hub name *</label>
+@@ -294,8 +314,9 @@ export default function Admin() {
+                   <label htmlFor="new-hub-cluster">Cluster lead</label>
+                   <div className="fctl"><input id="new-hub-cluster" value={newHub.cluster_lead} onChange={(e) => setHubField('cluster_lead', e.target.value)} /></div>
+                 </div>
+-                <div className="box box-warn" role="status">Sync is off. Nothing is written to the database or the hub response sheet until the sheet ID, tab name and header row are confirmed.</div>
+-                <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save hub (sync off)</button>
++                <p className="note" style={{ margin: 0 }}>Saves to the database only. The hub response sheet is not changed.</p>
++                {msgFor('hub')}
++                <button type="button" className="btn bee" disabled={saving === 'hub'} onClick={() => saveMaster('hub', newHub, () => setNewHub(EMPTY_HUB))} style={{ justifyContent: 'center' }}>{saving === 'hub' ? 'Saving…' : 'Save hub'}</button>
+               </div>
+             </aside>
+           </div>
+@@ -331,7 +352,7 @@ export default function Admin() {
+             </div>
+             {addFor === 'cats' && (
+               <aside className="card admin-add" aria-label="Add category">
+-                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add category</h2><small>Super admin only · saving not connected yet</small></div></div>
++                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add category</h2><small>Super admin only · saves to the category master</small></div></div>
+                 <div className="stack" style={{ gap: 12, marginTop: 14 }}>
+                   <Field id="new-cat-category" label="Issue category" required><input id="new-cat-category" value={newCat.category} onChange={(e) => setNewCat({ ...newCat, category: e.target.value })} placeholder="e.g. Pickup Issue" /></Field>
+                   <Field id="new-cat-sub" label="Sub-category" required><input id="new-cat-sub" value={newCat.sub_category} onChange={(e) => setNewCat({ ...newCat, sub_category: e.target.value })} /></Field>
+@@ -351,8 +372,8 @@ export default function Admin() {
+                       <input id={`new-cat-${k}`} type="number" min="1" value={newCat[k]} onChange={(e) => setNewCat({ ...newCat, [k]: e.target.value })} />
+                     </Field>
+                   ))}
+-                  <div className="box box-warn" role="status">Saving is not connected yet. Nothing is written to the category master from this form.</div>
+-                  <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save category (not connected)</button>
++                  {msgFor('category')}
++                  <button type="button" className="btn bee" disabled={saving === 'category'} onClick={() => saveMaster('category', newCat, () => setNewCat(EMPTY_CAT))} style={{ justifyContent: 'center' }}>{saving === 'category' ? 'Saving…' : 'Save category'}</button>
+                 </div>
+               </aside>
+             )}
+@@ -390,7 +411,7 @@ export default function Admin() {
+             </div>
+             {addFor === 'users' && (
+               <aside className="card admin-add" aria-label="Add user">
+-                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add user</h2><small>Super admin only · saving not connected yet</small></div></div>
++                <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add user</h2><small>Super admin only · the user can sign in with this role once saved</small></div></div>
+                 <div className="stack" style={{ gap: 12, marginTop: 14 }}>
+                   <Field id="new-user-name" label="Name" required><input id="new-user-name" value={newUser.display_name} onChange={(e) => setNewUser({ ...newUser, display_name: e.target.value })} placeholder="e.g. Md. Rahim Uddin" /></Field>
+                   <Field id="new-user-email" label="Email" required><input id="new-user-email" type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="name@carrybee.com" /></Field>
+@@ -401,8 +422,8 @@ export default function Admin() {
+                   </Field>
+                   <Field id="new-user-teams" label="Teams (comma separated)"><input id="new-user-teams" value={newUser.teams} onChange={(e) => setNewUser({ ...newUser, teams: e.target.value })} placeholder="e.g. KAM, CM" /></Field>
+                   <Field id="new-user-zone" label="Zone"><select id="new-user-zone" value={newUser.zone} onChange={(e) => setNewUser({ ...newUser, zone: e.target.value })}><option value="">None</option>{ZONES_LIST.map((x) => <option key={x} value={x}>{x}</option>)}</select></Field>
+-                  <div className="box box-warn" role="status">Saving is not connected yet. Nothing is written to users or access rules from this form.</div>
+-                  <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save user (not connected)</button>
++                  {msgFor('user')}
++                  <button type="button" className="btn bee" disabled={saving === 'user'} onClick={() => saveMaster('user', newUser, () => setNewUser(EMPTY_USER))} style={{ justifyContent: 'center' }}>{saving === 'user' ? 'Saving…' : 'Save user'}</button>
+                 </div>
+               </aside>
+             )}
+@@ -430,13 +451,13 @@ export default function Admin() {
+               </div>
+               {addFor === 'sla' && (
+                 <aside className="card admin-add" aria-label="Add setting">
+-                  <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add setting</h2><small>Super admin only · saving not connected yet</small></div></div>
++                  <div className="card-h" style={{ marginBottom: 4 }}><div><h2>Add setting</h2><small>Super admin only · saves to app settings</small></div></div>
+                   <div className="stack" style={{ gap: 12, marginTop: 14 }}>
+                     <Field id="new-set-key" label="Setting key" required><input id="new-set-key" value={newSetting.key} onChange={(e) => setNewSetting({ ...newSetting, key: e.target.value })} placeholder="e.g. pick_hours" /></Field>
+                     <Field id="new-set-value" label="Value (text or JSON)" required><input id="new-set-value" value={newSetting.value} onChange={(e) => setNewSetting({ ...newSetting, value: e.target.value })} placeholder='e.g. 4 or {"hours": 4}' /></Field>
+                     <Field id="new-set-desc" label="Description"><input id="new-set-desc" value={newSetting.description} onChange={(e) => setNewSetting({ ...newSetting, description: e.target.value })} /></Field>
+-                    <div className="box box-warn" role="status">Saving is not connected yet. Nothing is written to app settings from this form.</div>
+-                    <button type="button" className="btn bee" disabled aria-disabled="true" style={{ justifyContent: 'center' }}>Save setting (not connected)</button>
++                    {msgFor('setting')}
++                    <button type="button" className="btn bee" disabled={saving === 'setting'} onClick={() => saveMaster('setting', newSetting, () => setNewSetting(EMPTY_SETTING))} style={{ justifyContent: 'center' }}>{saving === 'setting' ? 'Saving…' : 'Save setting'}</button>
+                   </div>
+                 </aside>
+               )}
+diff --git a/app/api/masters/route.js b/app/api/masters/route.js
+index 0a3c2cd..0749a2e 100644
+--- a/app/api/masters/route.js
++++ b/app/api/masters/route.js
+@@ -1,6 +1,7 @@
+ import { NextResponse } from 'next/server';
+ import { supabaseAdmin } from '../../../lib/supabase';
+-import { requireUser } from '../../../lib/session';
++import { requireUser, requireRole } from '../../../lib/session';
++import { MasterInputError, BUILDERS, TABLES, entityKey } from '../../../lib/mastersWrite';
+ export const dynamic = 'force-dynamic';
+ export async function GET() {
+   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
+@@ -16,3 +17,43 @@ export async function GET() {
+   const isAdmin = session.role === 'admin';
+   return NextResponse.json({ hubs: hubs||[], categories: cats||[], users: isAdmin ? (users||[]) : [], config: isAdmin ? (cfg||[]) : [] });
+ }
++
++// Super admin adds one row to a master, then writes an audit entry. Body: { entity, data }.
++// Writes only to the database. Nothing is written to the zone or hub response sheets.
++export async function POST(request) {
++  const auth = await requireUser(); if (auth.response) return auth.response;
++  const user = auth.user;
++  const denied = requireRole(user, ['admin']); if (denied) return denied;
++
++  let body;
++  try { body = await request.json(); } catch { return NextResponse.json({ error: 'Send the form as JSON.' }, { status: 400 }); }
++  const entity = body?.entity;
++  const build = BUILDERS[entity];
++  if (!build) return NextResponse.json({ error: 'Unknown form.' }, { status: 400 });
++
++  let row;
++  try { row = build(body.data || {}); }
++  catch (e) {
++    if (e instanceof MasterInputError) return NextResponse.json({ error: e.message }, { status: 400 });
++    throw e;
++  }
++
++  const sb = supabaseAdmin();
++  const { error } = await sb.from(TABLES[entity]).insert(row);
++  if (error) {
++    if (error.code === '23505') {
++      return NextResponse.json({ error: `That ${entity} already exists: ${entityKey(entity, row)}.` }, { status: 409 });
++    }
++    return NextResponse.json({ error: `Could not save: ${error.message}` }, { status: 500 });
++  }
++
++  const key = entityKey(entity, row);
++  const { error: auditErr } = await sb.from('masters_audit_log').insert({
++    entity, entity_key: key, action: 'add', actor_email: user.email, details: row,
++  });
++  if (auditErr) {
++    // The row is saved. Report it so the admin can record it by hand.
++    return NextResponse.json({ error: `Saved ${key}, but the audit entry failed: ${auditErr.message}` }, { status: 500 });
++  }
++  return NextResponse.json({ ok: true, entity, entity_key: key });
++}
+diff --git a/lib/mastersWrite.js b/lib/mastersWrite.js
+new file mode 100644
+index 0000000..040ecf7
+--- /dev/null
++++ b/lib/mastersWrite.js
+@@ -0,0 +1,112 @@
++// Validation and row builders for the Admin & Masters "Add" forms (super admin only).
++// Pure functions: no database or network, so the rules can be tested directly.
++// Each builder returns the exact row to insert, or throws MasterInputError with a message for the user.
++
++export class MasterInputError extends Error {}
++
++export const ZONES = ['ISD', 'OSD', 'CTG'];
++export const SIDES = ['requester', 'ops'];
++export const ISSUE_TYPES = ['Critical', 'Urgent', 'Regular'];
++// Same list as the users_roles CHECK constraint (migrations 001 and 004).
++export const ROLES = ['requester', 'hub_ops', 'regional_lead', 'admin', 'management', 'team_lead', 'cm_lead', 'cm_member', 'mx'];
++export const SLA_MIN = 1;
++export const SLA_MAX = 10;
++
++const SETTING_KEY_RE = /^[a-z][a-z0-9_]{1,63}$/;
++const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
++
++const clean = (v) => String(v ?? '').trim().replace(/\s+/g, ' ');
++const orNull = (v) => { const c = clean(v); return c === '' ? null : c; };
++
++function required(v, label, max = 120) {
++  const c = clean(v);
++  if (!c) throw new MasterInputError(`${label} is required.`);
++  if (c.length > max) throw new MasterInputError(`${label} is longer than ${max} characters.`);
++  return c;
++}
++
++function slaDays(v, label) {
++  const c = clean(v);
++  if (c === '') return null;
++  const n = Number(c);
++  if (!Number.isInteger(n) || n < SLA_MIN || n > SLA_MAX) {
++    throw new MasterInputError(`${label} must be a whole number of days from ${SLA_MIN} to ${SLA_MAX}, or blank.`);
++  }
++  return n;
++}
++
++// Hub Master. Division and regional lead are NOT NULL in hub_master, so they are required here.
++export function buildHub(input = {}) {
++  const zone = clean(input.zone);
++  if (!ZONES.includes(zone)) throw new MasterInputError('Choose a zone (ISD, OSD or CTG).');
++  return {
++    hub_name: required(input.hub_name, 'Hub name'),
++    zone,
++    division: required(input.division, 'Division', 80),
++    regional_lead: required(input.regional_lead, 'Regional lead', 120),
++    cluster_lead: orNull(input.cluster_lead),
++    is_active: true,
++  };
++}
++
++// Category Master. Unique on (category, sub_category, side) in the database.
++export function buildCategory(input = {}) {
++  const side = clean(input.side) || 'requester';
++  if (!SIDES.includes(side)) throw new MasterInputError('Side must be requester or ops.');
++  const type = clean(input.issue_type);
++  if (type && !ISSUE_TYPES.includes(type)) throw new MasterInputError('Issue type must be Critical, Urgent or Regular, or None.');
++  return {
++    category: required(input.category, 'Issue category'),
++    sub_category: required(input.sub_category, 'Sub-category'),
++    side,
++    issue_type: type || null,
++    sla_isd: slaDays(input.sla_isd, 'SLA days for ISD'),
++    sla_osd: slaDays(input.sla_osd, 'SLA days for OSD'),
++    sla_ctg: slaDays(input.sla_ctg, 'SLA days for CTG'),
++    is_active: true,
++  };
++}
++
++// Users & RBAC. Creating the row is what lets this Google account sign in with this role.
++export function buildUser(input = {}) {
++  const email = clean(input.email).toLowerCase();
++  if (!email) throw new MasterInputError('Email is required.');
++  if (!EMAIL_RE.test(email)) throw new MasterInputError('Email does not look valid.');
++  const role = clean(input.role);
++  if (!ROLES.includes(role)) throw new MasterInputError('Choose a valid role.');
++  const teams = [...new Set(String(input.teams ?? '').split(',').map(clean).filter(Boolean))];
++  const zone = clean(input.zone);
++  if (zone && !ZONES.includes(zone)) throw new MasterInputError('Zone must be ISD, OSD or CTG, or None.');
++  return {
++    email,
++    display_name: required(input.display_name, 'Name'),
++    role,
++    teams,
++    zone: zone || null,
++    region: null,
++    is_active: true,
++  };
++}
++
++// App settings (app_config). Value is JSON when it parses, otherwise stored as text.
++export function buildSetting(input = {}) {
++  const key = clean(input.key);
++  if (!SETTING_KEY_RE.test(key)) throw new MasterInputError('Setting key: use lower-case letters, digits and underscores, starting with a letter (e.g. pick_hours).');
++  const raw = String(input.value ?? '').trim();
++  if (!raw) throw new MasterInputError('Value is required.');
++  let value;
++  try { value = JSON.parse(raw); } catch { value = raw; }
++  return { key, value, description: orNull(input.description) };
++}
++
++// Human-readable key for the audit row and the success message.
++export function entityKey(entity, row) {
++  if (entity === 'hub') return row.hub_name;
++  if (entity === 'category') return `${row.category} / ${row.sub_category} / ${row.side}`;
++  if (entity === 'user') return row.email;
++  if (entity === 'setting') return row.key;
++  return '';
++}
++
++export const BUILDERS = { hub: buildHub, category: buildCategory, user: buildUser, setting: buildSetting };
++export const TABLES = { hub: 'hub_master', category: 'category_master', user: 'users_roles', setting: 'app_config' };
+diff --git a/supabase/migrations/015_masters_audit.sql b/supabase/migrations/015_masters_audit.sql
+new file mode 100644
+index 0000000..4076d32
+--- /dev/null
++++ b/supabase/migrations/015_masters_audit.sql
+@@ -0,0 +1,14 @@
++-- 015: audit log for Admin & Masters adds (hub, category, user, setting). Super admin only.
++-- Separate from audit_log, which is tied to escalations (issue_id).
++CREATE TABLE IF NOT EXISTS public.masters_audit_log (
++  id           BIGSERIAL PRIMARY KEY,
++  entity       TEXT NOT NULL CHECK (entity IN ('hub','category','user','setting')),
++  entity_key   TEXT NOT NULL,
++  action       TEXT NOT NULL CHECK (action IN ('add')),
++  actor_email  TEXT NOT NULL,
++  details      JSONB NOT NULL,
++  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
++);
++CREATE INDEX IF NOT EXISTS idx_masters_audit_created ON public.masters_audit_log (created_at DESC);
++
++ALTER TABLE public.masters_audit_log ENABLE ROW LEVEL SECURITY;
+diff --git a/tests/mastersWrite.test.mjs b/tests/mastersWrite.test.mjs
+new file mode 100644
+index 0000000..05fa142
+--- /dev/null
++++ b/tests/mastersWrite.test.mjs
+@@ -0,0 +1,54 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { buildHub, buildCategory, buildUser, buildSetting, entityKey, MasterInputError, ROLES } from '../lib/mastersWrite.js';
++
++const bad = (fn, re) => assert.throws(fn, (e) => e instanceof MasterInputError && re.test(e.message));
++
++test('hub: required fields, cluster lead optional, active by default', () => {
++  const row = buildHub({ hub_name: '  Chattogram   Central ', zone: 'ISD', division: 'Chattogram', regional_lead: 'A B', cluster_lead: '' });
++  assert.deepEqual(row, { hub_name: 'Chattogram Central', zone: 'ISD', division: 'Chattogram', regional_lead: 'A B', cluster_lead: null, is_active: true });
++  bad(() => buildHub({ hub_name: '', zone: 'ISD', division: 'x', regional_lead: 'y' }), /Hub name is required/);
++  bad(() => buildHub({ hub_name: 'H', zone: 'XYZ', division: 'x', regional_lead: 'y' }), /zone/);
++  bad(() => buildHub({ hub_name: 'H', zone: 'ISD', division: '', regional_lead: 'y' }), /Division is required/);
++  bad(() => buildHub({ hub_name: 'H', zone: 'ISD', division: 'x', regional_lead: '' }), /Regional lead is required/);
++});
++
++test('category: side and issue type checked; None becomes null; SLA days 1-10 or blank', () => {
++  const row = buildCategory({ category: 'Pickup Issue', sub_category: 'Late pickup', side: 'ops', issue_type: '', sla_isd: '3', sla_osd: '', sla_ctg: '10' });
++  assert.deepEqual(row, { category: 'Pickup Issue', sub_category: 'Late pickup', side: 'ops', issue_type: null, sla_isd: 3, sla_osd: null, sla_ctg: 10, is_active: true });
++  bad(() => buildCategory({ category: 'a', sub_category: 'b', side: 'admin' }), /Side/);
++  bad(() => buildCategory({ category: 'a', sub_category: 'b', side: 'ops', issue_type: 'Huge' }), /Issue type/);
++  bad(() => buildCategory({ category: 'a', sub_category: 'b', sla_isd: '0' }), /SLA days for ISD/);
++  bad(() => buildCategory({ category: 'a', sub_category: 'b', sla_osd: '11' }), /SLA days for OSD/);
++  bad(() => buildCategory({ category: 'a', sub_category: 'b', sla_ctg: '2.5' }), /SLA days for CTG/);
++  bad(() => buildCategory({ category: '', sub_category: 'b' }), /Issue category is required/);
++});
++
++test('user: email lower-cased and checked; role must be a real role; teams split and de-duplicated', () => {
++  const row = buildUser({ display_name: 'Asif', email: ' Asif.Rashid@CarryBee.com ', role: 'cm_lead', teams: 'CM, KAM, CM,', zone: '' });
++  assert.deepEqual(row, { email: 'asif.rashid@carrybee.com', display_name: 'Asif', role: 'cm_lead', teams: ['CM', 'KAM'], zone: null, region: null, is_active: true });
++  bad(() => buildUser({ display_name: 'x', email: 'not-an-email', role: 'admin' }), /Email does not look valid/);
++  bad(() => buildUser({ display_name: 'x', email: 'a@b.com', role: 'root' }), /valid role/);
++  bad(() => buildUser({ display_name: 'x', email: 'a@b.com', role: 'admin', zone: 'XYZ' }), /Zone/);
++});
++
++test('every role in the form is allowed by the database constraint list', () => {
++  const dbRoles = ['requester', 'hub_ops', 'regional_lead', 'admin', 'management', 'team_lead', 'cm_lead', 'cm_member', 'mx'];
++  assert.deepEqual([...ROLES].sort(), [...dbRoles].sort());
++});
++
++test('setting: key format, JSON value when valid, plain text otherwise', () => {
++  assert.deepEqual(buildSetting({ key: 'pick_hours', value: '4', description: '' }), { key: 'pick_hours', value: 4, description: null });
++  assert.deepEqual(buildSetting({ key: 'label', value: '{"hours": 4}', description: 'x' }), { key: 'label', value: { hours: 4 }, description: 'x' });
++  assert.deepEqual(buildSetting({ key: 'note', value: 'hello there' }), { key: 'note', value: 'hello there', description: null });
++  bad(() => buildSetting({ key: 'Pick Hours', value: '4' }), /Setting key/);
++  bad(() => buildSetting({ key: '1abc', value: '4' }), /Setting key/);
++  bad(() => buildSetting({ key: 'ok_key', value: '   ' }), /Value is required/);
++});
++
++test('audit key for each entity', () => {
++  assert.equal(entityKey('hub', { hub_name: 'H' }), 'H');
++  assert.equal(entityKey('category', { category: 'C', sub_category: 'S', side: 'ops' }), 'C / S / ops');
++  assert.equal(entityKey('user', { email: 'a@b.com' }), 'a@b.com');
++  assert.equal(entityKey('setting', { key: 'k' }), 'k');
++});
+-- 
+2.47.3
+

@@ -1,0 +1,27 @@
+--- app/api/analytics/route.js	2026-11-17 22:30:01.190733734 +0000
++++ app/api/analytics/route.js	2026-11-17 22:30:01.190733734 +0000
+@@ -14,12 +14,18 @@
+   try {
+     const sb = supabaseAdmin();
+     // PostgREST returns max 1000 rows per request; page through all escalations.
+-    const escalations = [];
+-    for (let from = 0; ; from += 1000) {
+-      const { data, error } = await sb.from('escalations').select(COLS).order('submitted_at', { ascending: false }).range(from, from + 999);
+-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+-      escalations.push(...data);
+-      if (data.length < 1000) break;
++    // First page with the total count, then the remaining pages in parallel (same order as before).
++    const first = await sb.from('escalations').select(COLS, { count: 'exact' }).order('submitted_at', { ascending: false }).range(0, 999);
++    if (first.error) return NextResponse.json({ error: first.error.message }, { status: 500 });
++    const total = first.count ?? first.data.length;
++    const starts = [];
++    for (let from = 1000; from < total; from += 1000) starts.push(from);
++    const rest = await Promise.all(starts.map((from) =>
++      sb.from('escalations').select(COLS).order('submitted_at', { ascending: false }).range(from, from + 999)));
++    const escalations = [...first.data];
++    for (const page of rest) {
++      if (page.error) return NextResponse.json({ error: page.error.message }, { status: 500 });
++      escalations.push(...page.data);
+     }
+     const [{ data: users, error: uErr }, { data: hubs, error: hErr }, { data: cats, error: cErr }] = await Promise.all([
+       sb.from('users_roles').select('email, display_name, role, teams').eq('is_active', true),

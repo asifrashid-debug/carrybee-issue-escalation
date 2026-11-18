@@ -1,0 +1,19 @@
+--- a/lib/sheets.js	2026-11-17 22:19:33.133867188 +0000
++++ b/lib/sheets.js	2026-11-17 22:19:33.133867188 +0000
+@@ -38,6 +38,8 @@
+   return [e.issue_id, fmtDhaka(e.submitted_at), e.email, e.consignment_id||'', e.merchant_name||'', e.channel, e.zone, e.concern_hub, e.issue_status, e.issue_category, e.issue_sub_category, e.issue_details, e.kam_name||'', e.week, e.priority_scale, e.kam_feedback_status, e.layer1_response||'', e.layer2_response||'', e.layer3_response||'', fmtDhaka(e.issue_pick_time), e.ops_issue_status, e.remarks||'', e.regional_lead||'', fmtDhaka(e.issue_response_datetime), e.division||'', e.ops_status, e.validation||'', e.ops_category||'', String(e.row_version||1), fmtDhaka(e.last_synced_at||new Date().toISOString()), fmtDhaka(e.completed_at)];
+ }
+ export async function pushToSheet(esc) {
++  // Imported legacy rows (OLD-) keep their live import formulas in Active; never overwrite them.
++  if (String(esc.issue_id || '').startsWith('OLD-')) return { action: 'skipped_legacy' };
+   const sid = sheetIdForZone(esc.zone);
+   if (!sid) throw new Error(`No sheet for zone ${esc.zone}`);
+   const sheets = getSheetsClient();
+@@ -80,6 +82,7 @@
+ // Write only the changed cells of an existing row, so a stale DB value cannot overwrite
+ // a hub edit in another column. Falls back to a full append if the Issue ID is not on the sheet yet.
+ export async function pushFields(esc, fields) {
++  if (String(esc.issue_id || '').startsWith('OLD-')) return { action: 'skipped_legacy' };
+   const sid = sheetIdForZone(esc.zone);
+   if (!sid) throw new Error(`No sheet for zone ${esc.zone}`);
+   const sheets = getSheetsClient();

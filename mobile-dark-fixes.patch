@@ -1,0 +1,137 @@
+From ace61863f6fe3e7143338676e6591bfe20169b70 Mon Sep 17 00:00:00 2001
+From: Arena Agent <agent@arena.local>
+Date: Tue, 17 Nov 2026 19:00:28 +0000
+Subject: [PATCH] Mobile and dark mode: notification items no longer show as
+ blue links, bell button matches header, calendar sheet has Close and
+ tap-outside to close; dark theme covers status boxes, inputs, combo list,
+ timeline, dividers, popups and drawer
+
+---
+ app/cw-live.css                  | 75 ++++++++++++++++++++++++++++++++
+ components/cw/DateRangeFilter.js |  4 ++
+ 2 files changed, 79 insertions(+)
+
+diff --git a/app/cw-live.css b/app/cw-live.css
+index 44dc30b..734e7a6 100644
+--- a/app/cw-live.css
++++ b/app/cw-live.css
+@@ -215,6 +215,12 @@
+ .bell-body{font-size:12.5px;color:var(--mut)}
+ .bell-time{font-size:11px;color:var(--mut)}
+ .bell-empty{padding:14px 6px;color:var(--mut);font-size:13px}
++/* Notification items are links: no default blue or underline; unread items get a bee dot */
++.bell-panel li a{display:grid;gap:4px;color:inherit;text-decoration:none;border-radius:12px;padding:10px;min-width:0}
++.bell-panel li a:hover,.bell-panel li a:focus-visible{background:var(--paper);outline:none}
++.bell-panel li a:focus-visible{box-shadow:0 0 0 2px var(--bee)}
++.bell-panel li.new .bell-title::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--bee);margin-right:7px;vertical-align:middle}
++.bell-title,.bell-body{overflow-wrap:anywhere}
+ .skeleton{padding:24px;text-align:center;color:var(--mut)}
+ .lg-card{position:relative;max-width:400px;margin:0 auto;background:var(--card);border:1px solid rgba(232,168,0,.18);border-radius:22px;padding:34px 30px 28px;overflow:hidden;box-shadow:0 1px 2px rgba(60,50,0,.06),0 18px 48px -12px rgba(120,90,0,.22);animation:lg-rise .7s cubic-bezier(.2,.8,.2,1) both}
+ .lg-card::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--bee),#FFE46B,#E8A800)}
+@@ -327,6 +333,10 @@
+ .dr-custom input{font:inherit;font-size:14px;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:40px}
+ .dr-actions{display:flex;justify-content:flex-end;gap:8px}
+ .dr-actions .submit:disabled{opacity:.5}
++.dr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
++.dr-head b{font-size:14px}
++.dr-close{min-height:40px;padding:0 12px;border:1px solid var(--line);background:transparent;border-radius:10px;color:var(--text);font:600 13px var(--font);cursor:pointer}
++.dr-scrim{display:none}
+ 
+ /* ===== Mobile: notifications and date filter as full-width sheets with large tap targets ===== */
+ @media (max-width:640px){
+@@ -349,4 +359,69 @@
+   .dr-custom input{min-height:48px;font-size:16px}
+   .dr-actions{gap:10px}
+   .dr-actions button{flex:1;min-height:48px;font-size:15px}
++  .dr-scrim{display:block;position:fixed;inset:0;z-index:59;background:rgba(23,23,28,.35)}
++  .dr-close{min-height:44px;padding:0 16px;font-size:14px}
++  .dr-head b{font-size:16px}
+ }
++
++/* ===== Dark theme: live-only components ===== */
++html[data-theme=dark]{--azure:#37A9FF;--azure-ink:#7CC3FF;--violet-ink:#B7A4FF}
++/* status boxes, alerts and badges */
++html[data-theme=dark] .box-bad,
++html[data-theme=dark] .lg-alert-bad{background:rgba(255,84,112,.16);color:#FF8DA0}
++html[data-theme=dark] .err{background:rgba(255,84,112,.16);color:#FF8DA0;border-color:rgba(255,84,112,.35)}
++html[data-theme=dark] .lg-alert-bad{border-color:rgba(255,84,112,.35)}
++html[data-theme=dark] .box-warn,
++html[data-theme=dark] .p-risk,
++html[data-theme=dark] .p-B{background:rgba(255,204,0,.14);color:#FFD84D}
++html[data-theme=dark] .y{color:#FFD84D}
++html[data-theme=dark] .box-ok,
++html[data-theme=dark] .lg-alert-ok{background:rgba(0,229,160,.14);color:#4DF5BC}
++html[data-theme=dark] .lg-alert-ok{border-color:rgba(0,229,160,.3)}
++html[data-theme=dark] .ico-badge{background:rgba(255,204,0,.14);color:#FFD84D}
++html[data-theme=dark] .ico-badge.r{background:rgba(255,84,112,.16);color:#FF8DA0}
++html[data-theme=dark] .ico-badge.g{background:rgba(0,229,160,.14);color:#4DF5BC}
++html[data-theme=dark] .sla-bad,
++html[data-theme=dark] .stats3 b.bad,
++html[data-theme=dark] .tl.late .tl-state{color:#FF8DA0}
++html[data-theme=dark] .nextstep.bad::before,
++html[data-theme=dark] .tl.late .tl-dot{background:#FF5470;border-color:#FF5470}
++html[data-theme=dark] .tl-dot{background:#16171C;border-color:#3A3F49}
++/* dividers that were light grey */
++html[data-theme=dark] .kvs>div,
++html[data-theme=dark] .audit li,
++html[data-theme=dark] .entry{border-bottom-color:#22252C}
++/* inputs, selects and the combo list */
++html[data-theme=dark] .inp,
++html[data-theme=dark] .fctl select,
++html[data-theme=dark] .combo .inp{background:#0E0F12;color:#F4F4F5;border-color:#2A2E36}
++html[data-theme=dark] .combo-list{background:#16171C;border-color:#2A2E36;box-shadow:0 18px 40px -18px rgba(0,0,0,.7)}
++html[data-theme=dark] .combo-list li.active,
++html[data-theme=dark] .combo-list li:hover{background:rgba(255,204,0,.14)}
++html[data-theme=dark] .fctl input::placeholder,
++html[data-theme=dark] .fctl textarea::placeholder,
++html[data-theme=dark] .lg-inp::placeholder{color:#7A808A}
++/* labels and text that were fixed dark grey */
++html[data-theme=dark] .kside-steps,
++html[data-theme=dark] .admtabs button,
++html[data-theme=dark] .combo>label.field{color:#C4C9D2}
++html[data-theme=dark] .admtabs button{background:#16171C;border-color:#2A2E36}
++/* bee-yellow buttons and chips keep dark text in dark mode */
++html[data-theme=dark] .submit,
++html[data-theme=dark] .dr-presets button.on{color:#08090B}
++html[data-theme=dark] .dr-presets button.on{background:#FFCC00;border-color:#FFCC00}
++/* notifications and calendar popups */
++html[data-theme=dark] .bell-panel{background:#16171C;border-color:#2A2E36;box-shadow:0 30px 60px -20px rgba(0,0,0,.8)}
++html[data-theme=dark] .bell-panel li.new a{background:rgba(255,204,0,.07)}
++html[data-theme=dark] .bell-badge{box-shadow:0 0 0 2px #16171C}
++html[data-theme=dark] .dr-pop{background:#16171C;border-color:#2A2E36;box-shadow:0 18px 40px -18px rgba(0,0,0,.8)}
++html[data-theme=dark] .dr-presets button{color:#F4F4F5;border-color:#2A2E36}
++html[data-theme=dark] .dr-close{color:#F4F4F5;border-color:#2A2E36;background:#1C1F25}
++html[data-theme=dark] .dr-scrim{background:rgba(0,0,0,.55)}
++/* drawer and scrim */
++html[data-theme=dark] .scrim{background:rgba(0,0,0,.6)}
++html[data-theme=dark] .drawer{background:#16171C;border-left-color:#2A2E36;box-shadow:-24px 0 48px -32px rgba(0,0,0,.8)}
++/* Bell button matches the header icon buttons in both themes */
++.bell-btn{border:0;background:transparent;color:var(--ink2);border-radius:10px;padding:0;cursor:pointer}
++.bell-btn:hover{background:var(--paper)}
++.bell-btn:focus-visible{outline:2px solid var(--bee);outline-offset:2px}
+diff --git a/components/cw/DateRangeFilter.js b/components/cw/DateRangeFilter.js
+index 386ff80..ff3ab0b 100644
+--- a/components/cw/DateRangeFilter.js
++++ b/components/cw/DateRangeFilter.js
+@@ -38,7 +38,10 @@ export default function DateRangeFilter() {
+         {rangeLabel(range)}
+       </button>
+       {open && (
++        <>
++        <div className="dr-scrim" aria-hidden="true" onClick={() => setOpen(false)} />
+         <div className="dr-pop" role="dialog" aria-label="Choose date range">
++          <div className="dr-head"><b>Date range</b><button type="button" className="dr-close" onClick={() => setOpen(false)}>Close</button></div>
+           <div className="dr-presets">
+             <button type="button" className={range.key === 'all' ? 'on' : ''} onClick={() => { choose({ key: 'all' }); setOpen(false); }}>All time</button>
+             {PRESETS.map((p) => (
+@@ -54,6 +57,7 @@ export default function DateRangeFilter() {
+             <button type="button" className="submit" disabled={!from && !to} onClick={applyCustom}>Apply</button>
+           </div>
+         </div>
++        </>
+       )}
+     </div>
+   );
+-- 
+2.47.3
+
