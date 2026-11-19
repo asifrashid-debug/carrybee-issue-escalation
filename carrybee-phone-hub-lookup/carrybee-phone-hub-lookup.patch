@@ -1,0 +1,650 @@
+diff --git a/.env.example b/.env.example
+index e16573f..247d51a 100644
+--- a/.env.example
++++ b/.env.example
+@@ -3,3 +3,17 @@
+ GMAIL_USER=<...>
+ GMAIL_APP_PASSWORD=<...>
+ CRON_SECRET=<...>
++
++# Server-side hub lookup for phones (no browser extension needed). All optional.
++# When HIVE_API_URL is empty, the form fills the hub from the last escalation
++# for the same Consignment ID, and offers manual selection when there is none.
++# HIVE_API_URL: URL template with {id} replaced by the Consignment ID
++HIVE_API_URL=<...>
++# HIVE_API_KEY: optional, sent as "Authorization: Bearer <key>"
++HIVE_API_KEY=<...>
++# HIVE_HUB_JSON_PATH: dot path to the hub text in the JSON response (default: hub)
++HIVE_HUB_JSON_PATH=<...>
++# HIVE_LOOKUP_METHOD: GET (default) or POST
++HIVE_LOOKUP_METHOD=<...>
++# HIVE_TIMEOUT_MS: request timeout in ms (default 8000)
++HIVE_TIMEOUT_MS=<...>
+diff --git a/MOBILE-SETUP.md b/MOBILE-SETUP.md
+new file mode 100644
+index 0000000..abe0446
+--- /dev/null
++++ b/MOBILE-SETUP.md
+@@ -0,0 +1,77 @@
++# Using the tracker on a phone (iPhone and Android)
++
++The tracker now auto-fills the **Concern Hub** on a phone too — **no browser extension is needed**.
++The laptop extension ("CarryBee Hive to Tracker") keeps working exactly as before; on a phone the
++tracker does the same job from the server.
++
++## 1. Put the tracker on your home screen (once)
++
++The site is installable as an app on both iPhone and Android. Open
++`https://carrybee-escalation-tracker.vercel.app` in your phone's browser, sign in, and tap the
++**Install app** button on the page (or the steps below). After that, a **CB Tracker** icon appears
++on your home screen and the app opens full screen, like a normal app.
++
++- **Android (Chrome):** tap the ⋮ menu → **Install app** (or *Add to Home screen*).
++- **iPhone (Safari):** tap the **Share** button (square with arrow) → **Add to Home Screen**.
++
++## 2. Filing an escalation on a phone
++
++1. Open **CB Tracker** → sign in.
++2. Open the **KAM** or **MX** form.
++3. Type the **Consignment ID** (for example `CB-2026110899`).
++4. Pause typing for one second — **the Concern Hub fills itself automatically**. A green note says
++   where it came from:
++   - **"Hub filled from Hive."** — real-time from Hive (only after step 4 below is set up), or
++   - **"Hub filled from the last escalation for this Consignment ID on …"** — from the tracker's own history.
++5. Choose **Issue Category → Sub Category** (priority is set automatically), write **Issue Details**
++   (at least 20 characters), and press **Submit**.
++
++If no hub could be found automatically (for example a brand-new Consignment ID that was never
++escalated before, while Hive is not connected yet), the form shows:
++*"Auto hub lookup is not available on this device. Select the Concern Hub from the list (type to
++search)."* — just type the first letters in the **Concern Hub** box and pick from the 225 master
++hubs. Nothing breaks; the rest of the form works the same on a phone as on a laptop.
++
++## 3. What changed (technical)
++
++- New endpoint `POST /api/hub-lookup` (`app/api/hub-lookup/route.js`, logic in
++  `lib/hubLookupServer.mjs`), signed-in users only. It tries, in order:
++  1. **Hive** — when `HIVE_API_URL` is configured (server-side version of the extension).
++  2. **Tracker history** — the most recent escalation for the same Consignment ID
++     (`escalations` table).
++- The escalation form (`components/EscalationForm.js`) asks the extension first (laptop, unchanged),
++  then falls back to the endpoint. The hub text is still matched against the active hub list
++  before it is written to the form — same trust rules as before.
++- Tests: `tests/hubLookupServer.test.mjs`, plus new cases in `tests/hubLookup.test.mjs`.
++
++## 4. (Admin) Connecting Hive for real-time lookup on phones
++
++Until this is done, phones use the "last escalation" history from step 2. To get the real-time
++Hive answer on every device (and to make the laptop extension optional), the server needs a way to
++ask Hive for a Consignment ID's current hub.
++
++Ask the Hive team for:
++- an endpoint that takes a Consignment ID and returns its current hub (for example
++  `https://<hive>/api/track/{id}` returning JSON),
++- an API key (or any auth header they provide),
++- the JSON path where the hub text sits (for example `data.currentHub`).
++
++Then in **Vercel → Project → Settings → Environment Variables (Production)** add:
++
++| Variable | Value |
++| --- | --- |
++| `HIVE_API_URL` | the endpoint URL, with `{id}` where the Consignment ID goes |
++| `HIVE_API_KEY` | the API key (sent as `Authorization: Bearer …`) |
++| `HIVE_HUB_JSON_PATH` | dot path to the hub text, e.g. `data.currentHub` (omit if it is `hub`) |
++| `HIVE_LOOKUP_METHOD` | `GET` (default) or `POST` |
++| `HIVE_TIMEOUT_MS` | optional, default `8000` |
++
++Then **redeploy** (settings only apply on the next deploy). From that moment, the escalation form
++on **any** device — phone or laptop — gets the live Hive hub first, and the laptop extension is
++only a backup. If a Hive call fails, the form automatically falls back to the tracker history, and
++then to manual selection.
++
++## Rollback
++
++If anything looks wrong after the deploy: Vercel → previous READY production deployment →
++**Instant Rollback** (the site serves the previous commit until you fix it).
+diff --git a/app/api/hub-lookup/route.js b/app/api/hub-lookup/route.js
+new file mode 100644
+index 0000000..fd8bb30
+--- /dev/null
++++ b/app/api/hub-lookup/route.js
+@@ -0,0 +1,19 @@
++import { NextResponse } from 'next/server';
++import { supabaseAdmin } from '../../../lib/supabase';
++import { requireUser } from '../../../lib/session';
++import { serverHubLookup } from '../../../lib/hubLookupServer';
++
++export const dynamic = 'force-dynamic';
++
++// Hub lookup for the escalation form without a browser extension (phones and any device).
++// POST { consignment_id }
++// -> { ok, hub, source: 'hive'|'history'|null, history_at, hive_configured, error }
++// Tries Hive (when HIVE_API_URL is configured), then the most recent escalation for the same
++// Consignment ID. The hub text is untrusted: the client matches it against the active hub list.
++export async function POST(req) {
++  const auth = await requireUser();
++  if (auth.response) return auth.response;
++  const body = await req.json().catch(() => ({}));
++  const result = await serverHubLookup(body.consignment_id, { sb: supabaseAdmin(), env: process.env });
++  return NextResponse.json({ ok: true, ...result });
++}
+diff --git a/components/EscalationForm.js b/components/EscalationForm.js
+index 6c77737..7da0ad0 100644
+--- a/components/EscalationForm.js
++++ b/components/EscalationForm.js
+@@ -2,7 +2,11 @@
+ import { getMe } from './cw/meClient';
+ import { useEffect, useMemo, useRef, useState } from 'react';
+ import SearchSelect from './SearchSelect';
+-import { isValidParcelId, matchActiveHub, requestHubLookup, COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE, MISSING_EXTENSION_MESSAGE } from '../lib/hubLookup.mjs';
++import {
++  isValidParcelId, matchActiveHub, requestHubLookup, serverHubLookupClient, isMobileAgent,
++  COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE,
++  MOBILE_NO_AUTO_HUB_MESSAGE, DESKTOP_NO_AUTO_HUB_MESSAGE,
++} from '../lib/hubLookup.mjs';
+ import { priorityForIssueType } from '../lib/priority';
+ import { formatDhaka } from '../lib/time';
+ 
+@@ -19,7 +23,7 @@ export default function EscalationForm({ channel }) {
+   const [msg, setMsg] = useState(null);
+   const [err, setErr] = useState(null);
+   const [busy, setBusy] = useState(false);
+-  // "Find current hub in Hive". state: idle | loading | manual | missing | error
++  // "Find current hub in Hive". state: idle | loading | found | manual | error
+   const [hubLookup, setHubLookup] = useState({ state: 'idle', message: '' });
+   const [hubAuto, setHubAuto] = useState(null);      // { hub_name } filled from Hive; cleared if the Consignment ID changes
+   const hubReq = useRef(null);                        // the only lookup allowed to update the form
+@@ -67,29 +71,49 @@ export default function EscalationForm({ channel }) {
+   const kamShown = !isKam && merchantQ ? (bizNow ? (bizNow.found ? bizNow.kam_name : CM) : 'Checking…') : CM;
+   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+ 
+-  // Looks up the hub for one Consignment ID in Hive and preselects it. Nothing is submitted here.
++  // Short note shown when a hub was filled automatically.
++  function hubFoundNote(source, historyAt) {
++    if (source === 'hive') return 'Hub filled from Hive.';
++    if (source === 'history' && historyAt) return `Hub filled from the last escalation for this Consignment ID on ${formatDhaka(historyAt)}.`;
++    return 'Hub filled automatically.';
++  }
++
++  // Looks up the hub for one Consignment ID and preselects it. Nothing is submitted here.
++  // 1. The CarryBee Hive helper extension (laptops, no change).
++  // 2. The tracker server (/api/hub-lookup): Hive when configured, otherwise the last escalation
++  //    for the same Consignment ID. This is what makes auto hub-fill work on iPhone and Android.
+   async function findHub(parcel) {
+     const token = {};
+     hubReq.current = token;
+     lastLookup.current = parcel;
+     setHubLookup({ state: 'loading', message: 'Finding hub…' });
+-    const r = await requestHubLookup(parcel, { win: window, origin: window.location.origin });
++    let r = await requestHubLookup(parcel, { win: window, origin: window.location.origin });
+     if (hubReq.current !== token) return; // a newer lookup replaced this one
+     if (consRef.current !== parcel) { setHubLookup({ state: 'idle', message: '' }); return; } // the ID changed while waiting
++    if (r.kind !== 'hub') {
++      // Extension is not there (phone) or failed: ask the tracker server.
++      const s = await serverHubLookupClient(parcel);
++      if (hubReq.current !== token) return;
++      if (consRef.current !== parcel) { setHubLookup({ state: 'idle', message: '' }); return; }
++      if (s.kind === 'hub') r = s;
++      else if (s.kind === 'error' && (r.kind === 'missing' || r.kind === 'timeout')) r = s;
++    }
+     if (r.kind === 'hub') {
+-      // The Hive text is only compared with the active list. It is never written into the form.
++      // The hub text (Hive, history or server) is only compared with the active list. It is never written into the form as-is.
+       const m = matchActiveHub(r.hub, masters.hubs);
+       if (m.status === 'unique') {
+         set('concern_hub', m.hub.hub_name);
+         setHubAuto({ hub_name: m.hub.hub_name });
+-        setHubLookup({ state: 'idle', message: '' });
++        setHubLookup({ state: 'found', message: hubFoundNote(r.source, r.history_at) });
+       } else {
+         setHubLookup({ state: 'manual', message: NO_UNIQUE_MATCH_MESSAGE });
+       }
+     } else if (r.kind === 'timeout') {
+       setHubLookup({ state: 'manual', message: TIMEOUT_MESSAGE });
+     } else if (r.kind === 'missing') {
+-      setHubLookup({ state: 'missing', message: MISSING_EXTENSION_MESSAGE });
++      // No extension and the server found nothing: phones cannot run the extension, so the message differs by device.
++      const message = isMobileAgent(navigator.userAgent) ? MOBILE_NO_AUTO_HUB_MESSAGE : DESKTOP_NO_AUTO_HUB_MESSAGE;
++      setHubLookup({ state: 'manual', message });
+     } else {
+       setHubLookup({ state: 'error', message: r.message });
+     }
+@@ -213,6 +237,7 @@ export default function EscalationForm({ channel }) {
+             {hub && <div className="full" style={{ fontSize: 12, color: 'var(--mut)', fontWeight: 600 }}>Regional lead <b style={{ color: 'var(--ink)' }}>{hub.regional_lead || '—'}</b> · Cluster lead <b style={{ color: 'var(--ink)' }}>{hub.cluster_lead || '—'}</b> · Division <b style={{ color: 'var(--ink)' }}>{hub.division || '—'}</b></div>}
+             <div className="full" aria-live="polite">
+               {hubLookup.state === 'loading' && <div className="hint">Finding hub…</div>}
++              {hubLookup.state === 'found' && <div className="box box-ok" role="status">{hubLookup.message}</div>}
+               {['manual', 'missing', 'error'].includes(hubLookup.state) && <div className="box box-warn" role="alert">{hubLookup.message}</div>}
+             </div>
+ 
+diff --git a/lib/hubLookup.mjs b/lib/hubLookup.mjs
+index 2a7c078..3ec023f 100644
+--- a/lib/hubLookup.mjs
++++ b/lib/hubLookup.mjs
+@@ -1,8 +1,11 @@
+ // Hub lookup for the escalation form ("Find current hub in Hive").
+ //
+ // The form asks the CarryBee Hive helper extension for the hub through window.postMessage. The
+-// extension's content script answers on the same window. Pure helpers (validation, message filter,
+-// hub matching) are exported for tests. requestHubLookup is the browser entry point and never rejects.
++// extension's content script answers on the same window. When the extension is not there (for
++// example on a phone) the form falls back to the /api/hub-lookup server endpoint (see
++// lib/hubLookupServer.mjs), so auto hub-fill works on iPhone and Android without any extension.
++// Pure helpers (validation, message filter, hub matching) are exported for tests.
++// requestHubLookup is the browser entry point and never rejects.
+ //
+ // Rules this module enforces:
+ // - Only messages from the same window (event.source === win) and the same origin are accepted.
+@@ -20,8 +23,21 @@ export const NO_UNIQUE_MATCH_MESSAGE = "Couldn't match this hub uniquely. Select
+ export const MISSING_EXTENSION_MESSAGE =
+   'The CarryBee Hive helper is not responding. Install or enable the "CarryBee Hive to Tracker" extension in Chrome, then reload this page. Until then, select the hub manually.';
+ 
++// Shown when neither the extension nor the server found a hub. The desktop variant still offers
++// the extension; the phone variant does not (phones cannot run the Chrome extension).
++export const MOBILE_NO_AUTO_HUB_MESSAGE =
++  'Auto hub lookup is not available on this device. Select the Concern Hub from the list (type to search).';
++export const DESKTOP_NO_AUTO_HUB_MESSAGE =
++  'Auto hub lookup is not available right now. Select the Concern Hub from the list, or install the "CarryBee Hive to Tracker" extension in Chrome and reload this page.';
++
+ const MAX_ERROR_LENGTH = 200;
+ 
++// Mobile user-agent detection for device-appropriate messages. Pure, so it is testable.
++const MOBILE_UA_RE = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i;
++export function isMobileAgent(userAgent) {
++  return typeof userAgent === 'string' && MOBILE_UA_RE.test(userAgent);
++}
++
+ // The Consignment ID is trimmed first, then checked against /^[a-zA-Z0-9_-]{1,80}$/.
+ export function normalizeParcelId(value) {
+   return typeof value === 'string' ? value.trim() : '';
+@@ -126,3 +142,32 @@ export async function requestHubLookup(parcelId, opts = {}) {
+     win.postMessage({ type: 'CARRYBEE_HUB_LOOKUP_REQUEST', requestId, parcelId: id }, origin);
+   });
+ }
++
++// Ask the tracker server for the hub (the /api/hub-lookup endpoint, lib/hubLookupServer.mjs).
++// This is the no-extension path: on a phone the form calls this when the extension is not there.
++// Resolves one of:
++//   { kind: 'hub', hub, source: 'hive' | 'history', history_at }
++//   { kind: 'none' }   the server found no hub (the form offers manual selection)
++//   { kind: 'error', message }
++// It never rejects.
++export async function serverHubLookupClient(parcelId) {
++  const id = normalizeParcelId(parcelId);
++  if (!PARCEL_ID_RE.test(id)) return { kind: 'error', message: 'Enter a valid Consignment ID first.' };
++  try {
++    const res = await fetch('/api/hub-lookup', {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json' },
++      body: JSON.stringify({ consignment_id: id }),
++      cache: 'no-store',
++    });
++    const j = await res.json().catch(() => ({}));
++    if (!res.ok) return { kind: 'error', message: (typeof j.error === 'string' && j.error) || 'Hub lookup failed.' };
++    if (typeof j.hub === 'string' && j.hub.trim()) {
++      return { kind: 'hub', hub: j.hub.trim(), source: j.source || null, history_at: j.history_at || null };
++    }
++    if (typeof j.error === 'string' && j.error) return { kind: 'error', message: j.error.slice(0, MAX_ERROR_LENGTH) };
++    return { kind: 'none' };
++  } catch {
++    return { kind: 'error', message: 'Hub lookup failed.' };
++  }
++}
+diff --git a/lib/hubLookupServer.mjs b/lib/hubLookupServer.mjs
+new file mode 100644
+index 0000000..c3e3284
+--- /dev/null
++++ b/lib/hubLookupServer.mjs
+@@ -0,0 +1,117 @@
++// Server-side hub lookup for the escalation form — works on any device, no browser extension.
++//
++// Two sources, in priority order:
++// 1. Hive (real-time) — only when HIVE_API_URL is configured. This is the server-side version of
++//    the "CarryBee Hive to Tracker" extension: the tracker itself asks a Hive endpoint for the
++//    current hub of a Consignment ID.
++// 2. Tracker history (always available) — the most recent escalation for the same Consignment ID,
++//    from the escalations table. Works immediately, no configuration needed.
++//
++// The returned hub is untrusted text: the client compares it against the active hub list with
++// matchActiveHub before anything is written to the form (same trust model as the extension path).
++// Pure helpers are exported for tests; serverHubLookup takes injectable sb / env / fetchImpl.
++
++import { isValidParcelId, normalizeParcelId } from './hubLookup.mjs';
++
++const MAX_ERROR_LENGTH = 200;
++const DEFAULT_HIVE_TIMEOUT_MS = 8000;
++
++// Resolve a dot path (for example "data.currentHub") inside a JSON value.
++// Returns the terminal as a trimmed string when it is a string or number, otherwise null.
++export function extractByPath(value, dotPath) {
++  if (value == null || !dotPath) return null;
++  let cur = value;
++  for (const part of String(dotPath).split('.')) {
++    if (cur == null || typeof cur !== 'object') return null;
++    cur = cur[part];
++  }
++  if (typeof cur === 'string') return cur.trim();
++  if (typeof cur === 'number' && Number.isFinite(cur)) return String(cur);
++  return null;
++}
++
++// Build the Hive request. HIVE_API_URL must contain {id}, replaced by the Consignment ID.
++// HIVE_LOOKUP_METHOD: GET (default) or POST (the ID is also sent in a JSON body).
++// HIVE_API_KEY is sent as a Bearer token when set.
++export function buildHiveRequest(env, parcelId) {
++  const url = String(env.HIVE_API_URL || '').replace(/\{id\}/g, encodeURIComponent(parcelId));
++  const method = String(env.HIVE_LOOKUP_METHOD || 'GET').toUpperCase() === 'POST' ? 'POST' : 'GET';
++  const headers = {};
++  if (env.HIVE_API_KEY) headers['authorization'] = `Bearer ${env.HIVE_API_KEY}`;
++  if (method === 'POST') headers['content-type'] = 'application/json';
++  return {
++    url,
++    method,
++    headers,
++    body: method === 'POST' ? JSON.stringify({ consignment_id: parcelId }) : undefined,
++  };
++}
++
++// rows: [{ concern_hub, submitted_at }] sorted newest first.
++// Returns the first row with a non-empty hub as { hub, at }, or null.
++export function historyHubFromRows(rows) {
++  if (!Array.isArray(rows)) return null;
++  for (const r of rows) {
++    const hub = r && typeof r.concern_hub === 'string' ? r.concern_hub.trim() : '';
++    if (hub) return { hub, at: r.submitted_at || null };
++  }
++  return null;
++}
++
++// The whole server-side lookup. deps: { sb (supabase admin client), env, fetchImpl }.
++// Resolves, never throws:
++//   { hub, source: 'hive' | 'history' | null, history_at, hive_configured, error }
++export async function serverHubLookup(parcelId, deps = {}) {
++  const { sb, env = {}, fetchImpl = fetch } = deps;
++  const id = normalizeParcelId(parcelId);
++  if (!isValidParcelId(id)) {
++    return { hub: null, source: null, history_at: null, hive_configured: false, error: 'Enter a valid Consignment ID first.' };
++  }
++
++  const hiveConfigured = !!env.HIVE_API_URL;
++  let hiveHub = null;
++  let hiveError = null;
++  if (hiveConfigured) {
++    try {
++      const req = buildHiveRequest(env, id);
++      const timeoutMs = Number(env.HIVE_TIMEOUT_MS || DEFAULT_HIVE_TIMEOUT_MS);
++      const res = await fetchImpl(req.url, {
++        method: req.method,
++        headers: req.headers,
++        body: req.body,
++        signal: AbortSignal.timeout(timeoutMs),
++      });
++      if (res.ok) {
++        const json = await res.json().catch(() => null);
++        hiveHub = extractByPath(json, env.HIVE_HUB_JSON_PATH || 'hub');
++        if (!hiveHub) hiveError = 'Hive returned no hub for this Consignment ID.';
++      } else {
++        hiveError = `Hive lookup failed (HTTP ${res.status}).`;
++      }
++    } catch (e) {
++      hiveError = String(e && e.message ? e.message : e || 'Hive lookup failed.').slice(0, MAX_ERROR_LENGTH);
++    }
++  }
++
++  let history = null;
++  let historyError = null;
++  if (sb) {
++    const q = await sb
++      .from('escalations')
++      .select('concern_hub,submitted_at')
++      .eq('consignment_id', id)
++      .order('submitted_at', { ascending: false })
++      .limit(5);
++    if (q.error) historyError = String(q.error.message || 'Tracker history lookup failed.');
++    else history = historyHubFromRows(q.data || []);
++  }
++
++  const hub = hiveHub || (history && history.hub) || null;
++  return {
++    hub,
++    source: hiveHub ? 'hive' : history ? 'history' : null,
++    history_at: history ? history.at : null,
++    hive_configured: hiveConfigured,
++    error: hub ? null : (hiveError || historyError || null),
++  };
++}
+diff --git a/tests/hubLookup.test.mjs b/tests/hubLookup.test.mjs
+index a8e07c6..3666af3 100644
+--- a/tests/hubLookup.test.mjs
++++ b/tests/hubLookup.test.mjs
+@@ -2,8 +2,9 @@
+ import { test } from 'node:test';
+ import assert from 'node:assert/strict';
+ import {
+-  isValidParcelId, isAcceptedMessage, matchActiveHub, requestHubLookup, pingExtension,
++  isValidParcelId, isAcceptedMessage, matchActiveHub, requestHubLookup, pingExtension, serverHubLookupClient, isMobileAgent,
+   TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE,
++  MOBILE_NO_AUTO_HUB_MESSAGE, DESKTOP_NO_AUTO_HUB_MESSAGE,
+ } from '../lib/hubLookup.mjs';
+ 
+ const ORIGIN = 'https://carrybee-escalation-tracker.vercel.app';
+@@ -189,3 +190,67 @@ test('pingExtension: false when nothing answers', async () => {
+ test('unique and no-match messages match the spec wording', () => {
+   assert.equal(NO_UNIQUE_MATCH_MESSAGE, "Couldn't match this hub uniquely. Select manually.");
+ });
++
++test('isMobileAgent: phones are mobile, laptops are not', () => {
++  assert.equal(isMobileAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'), true);
++  assert.equal(isMobileAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36 Chrome/120.0'), true);
++  assert.equal(isMobileAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'), false);
++  assert.equal(isMobileAgent(''), false);
++  assert.equal(isMobileAgent(undefined), false);
++});
++
++test('no-auto messages differ by device: phones never mention the extension', () => {
++  assert.ok(!/extension/i.test(MOBILE_NO_AUTO_HUB_MESSAGE));
++  assert.ok(/extension/i.test(DESKTOP_NO_AUTO_HUB_MESSAGE));
++});
++
++// Stub the global fetch the way the browser provides it, and restore it afterwards.
++function stubFetch(impl) {
++  const real = globalThis.fetch;
++  globalThis.fetch = impl;
++  return () => { globalThis.fetch = real; };
++}
++
++test('serverHubLookupClient: valid ID posts to /api/hub-lookup and returns the hub with its source', async () => {
++  const calls = [];
++  const stop = stubFetch(async (url, opts) => {
++    calls.push({ url, opts });
++    return { ok: true, json: async () => ({ ok: true, hub: '  Dhaka ', source: 'history', history_at: '2026-11-08T06:00:00Z' }) };
++  });
++  try {
++    const r = await serverHubLookupClient('CB-2026110899');
++    assert.deepEqual(r, { kind: 'hub', hub: 'Dhaka', source: 'history', history_at: '2026-11-08T06:00:00Z' });
++    assert.equal(calls.length, 1);
++    assert.equal(calls[0].url, '/api/hub-lookup');
++    assert.equal(calls[0].opts.method, 'POST');
++    assert.equal(calls[0].opts.body, JSON.stringify({ consignment_id: 'CB-2026110899' }));
++  } finally { stop(); }
++});
++
++test('serverHubLookupClient: no hub in the response is kind none', async () => {
++  const stop = stubFetch(async () => ({ ok: true, json: async () => ({ ok: true, hub: null, source: null }) }));
++  try {
++    assert.deepEqual(await serverHubLookupClient('CB-1'), { kind: 'none' });
++  } finally { stop(); }
++});
++
++test('serverHubLookupClient: server error and failed request become kind error, never a rejection', async () => {
++  let stop = stubFetch(async () => ({ ok: false, json: async () => ({ error: 'boom' }) }));
++  try {
++    assert.deepEqual(await serverHubLookupClient('CB-2'), { kind: 'error', message: 'boom' });
++  } finally { stop(); }
++  stop = stubFetch(async () => { throw new Error('offline'); });
++  try {
++    assert.deepEqual(await serverHubLookupClient('CB-3'), { kind: 'error', message: 'Hub lookup failed.' });
++  } finally { stop(); }
++});
++
++test('serverHubLookupClient: invalid ID is rejected before any network call', async () => {
++  let called = false;
++  const stop = stubFetch(async () => { called = true; return { ok: true, json: async () => ({}) }; });
++  try {
++    const r = await serverHubLookupClient('bad id!');
++    assert.equal(r.kind, 'error');
++    assert.equal(called, false);
++  } finally { stop(); }
++});
+diff --git a/tests/hubLookupServer.test.mjs b/tests/hubLookupServer.test.mjs
+new file mode 100644
+index 0000000..2f2d771
+--- /dev/null
++++ b/tests/hubLookupServer.test.mjs
+@@ -0,0 +1,146 @@
++// Tests for lib/hubLookupServer.mjs: the no-extension hub lookup (Hive API + tracker history)
++// used by /api/hub-lookup so phones can auto-fill the Concern Hub.
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import {
++  extractByPath, buildHiveRequest, historyHubFromRows, serverHubLookup,
++} from '../lib/hubLookupServer.mjs';
++
++// A thenable stand-in for the supabase admin client: sb.from(...).select(...)...limit(n) awaits to { data, error }.
++function fakeSb(data, error = null) {
++  const q = {
++    select() { return q; },
++    eq() { return q; },
++    order() { return q; },
++    limit() { return q; },
++    then: (res, rej) => Promise.resolve({ data, error }).then(res, rej),
++  };
++  return { from: () => q };
++}
++
++function fakeFetch(status, json) {
++  return async () => ({ ok: status >= 200 && status < 300, status, json: async () => json });
++}
++
++test('extractByPath: resolves dot paths and trims strings', () => {
++  const v = { hub: '  Dhaka  ', data: { currentHub: 'Chattogram', nested: { hub: 'ISD' } }, count: 42 };
++  assert.equal(extractByPath(v, 'hub'), 'Dhaka');
++  assert.equal(extractByPath(v, 'data.currentHub'), 'Chattogram');
++  assert.equal(extractByPath(v, 'data.nested.hub'), 'ISD');
++  assert.equal(extractByPath(v, 'count'), '42'); // numbers become strings
++});
++
++test('extractByPath: returns null for missing paths, empty path, and non-scalar terminals', () => {
++  assert.equal(extractByPath({ hub: 'X' }, 'data.hub'), null);
++  assert.equal(extractByPath({ hub: 'X' }, ''), null);
++  assert.equal(extractByPath(null, 'hub'), null);
++  assert.equal(extractByPath({ data: { more: {} } }, 'data.more'), null);
++  assert.equal(extractByPath({ hub: null }, 'hub'), null);
++});
++
++test('buildHiveRequest: GET by default, {id} replaced, key as Bearer token', () => {
++  const req = buildHiveRequest({ HIVE_API_URL: 'https://hive.example/track/{id}', HIVE_API_KEY: 'k-1' }, 'CB-2026110899');
++  assert.deepEqual(req, {
++    url: 'https://hive.example/track/CB-2026110899',
++    method: 'GET',
++    headers: { authorization: 'Bearer k-1' },
++    body: undefined,
++  });
++});
++
++test('buildHiveRequest: POST sends the ID in a JSON body', () => {
++  const req = buildHiveRequest({ HIVE_API_URL: 'https://hive.example/lookup', HIVE_LOOKUP_METHOD: 'post' }, '10948271');
++  assert.equal(req.method, 'POST');
++  assert.equal(req.headers['content-type'], 'application/json');
++  assert.equal(req.body, JSON.stringify({ consignment_id: '10948271' }));
++  assert.equal(req.headers.authorization, undefined);
++});
++
++test('historyHubFromRows: first non-empty hub wins, newest first', () => {
++  const rows = [
++    { concern_hub: '', submitted_at: '2026-11-10T00:00:00Z' },
++    { concern_hub: '  Chattogram  ', submitted_at: '2026-11-09T00:00:00Z' },
++    { concern_hub: 'Dhaka', submitted_at: '2026-11-01T00:00:00Z' },
++  ];
++  assert.deepEqual(historyHubFromRows(rows), { hub: 'Chattogram', at: '2026-11-09T00:00:00Z' });
++});
++
++test('historyHubFromRows: empty, null, non-array and hub-less rows give null', () => {
++  assert.equal(historyHubFromRows([]), null);
++  assert.equal(historyHubFromRows(null), null);
++  assert.equal(historyHubFromRows('nope'), null);
++  assert.equal(historyHubFromRows([{ concern_hub: null }, { submitted_at: 'x' }]), null);
++});
++
++test('serverHubLookup: invalid Consignment ID is rejected', async () => {
++  const r = await serverHubLookup('bad id!', { sb: fakeSb([]) });
++  assert.equal(r.hub, null);
++  assert.equal(r.error, 'Enter a valid Consignment ID first.');
++});
++
++test('serverHubLookup: no Hive configured uses tracker history only', async () => {
++  const rows = [{ concern_hub: 'Dhaka', submitted_at: '2026-11-08T06:00:00Z' }];
++  const r = await serverHubLookup('CB-1', { sb: fakeSb(rows), env: {}, fetchImpl: fakeFetch(200, {}) });
++  assert.deepEqual(r, { hub: 'Dhaka', source: 'history', history_at: '2026-11-08T06:00:00Z', hive_configured: false, error: null });
++});
++
++test('serverHubLookup: nothing found and no error when history is empty (client offers manual selection)', async () => {
++  const r = await serverHubLookup('CB-2', { sb: fakeSb([]), env: {}, fetchImpl: fakeFetch(200, {}) });
++  assert.deepEqual(r, { hub: null, source: null, history_at: null, hive_configured: false, error: null });
++});
++
++test('serverHubLookup: configured Hive is tried and its hub wins', async () => {
++  const env = { HIVE_API_URL: 'https://hive.example/track/{id}', HIVE_API_KEY: 'k', HIVE_HUB_JSON_PATH: 'data.currentHub' };
++  const rows = [{ concern_hub: 'Dhaka', submitted_at: '2026-11-08T06:00:00Z' }];
++  const r = await serverHubLookup('CB-3', { sb: fakeSb(rows), env, fetchImpl: fakeFetch(200, { data: { currentHub: 'Chattogram' } }) });
++  assert.equal(r.hub, 'Chattogram');
++  assert.equal(r.source, 'hive');
++  assert.equal(r.hive_configured, true);
++  assert.equal(r.error, null);
++  // The history is still reported so the UI can say where the last escalation came from.
++  assert.equal(r.history_at, '2026-11-08T06:00:00Z');
++});
++
++test('serverHubLookup: Hive HTTP failure falls back to history without an error', async () => {
++  const env = { HIVE_API_URL: 'https://hive.example/track/{id}' };
++  const rows = [{ concern_hub: 'Khulna', submitted_at: '2026-11-05T06:00:00Z' }];
++  const r = await serverHubLookup('CB-4', { sb: fakeSb(rows), env, fetchImpl: fakeFetch(503, null) });
++  assert.equal(r.hub, 'Khulna');
++  assert.equal(r.source, 'history');
++  assert.equal(r.error, null);
++});
++
++test('serverHubLookup: Hive network failure with no history reports the error', async () => {
++  const env = { HIVE_API_URL: 'https://hive.example/track/{id}' };
++  const r = await serverHubLookup('CB-5', {
++    sb: fakeSb([]), env,
++    fetchImpl: async () => { throw new Error('network down'); },
++  });
++  assert.equal(r.hub, null);
++  assert.equal(r.source, null);
++  assert.equal(r.error, 'network down');
++});
++
++test('serverHubLookup: Hive ok but no hub in the JSON, and no history, reports the missing hub', async () => {
++  const env = { HIVE_API_URL: 'https://hive.example/track/{id}' };
++  const r = await serverHubLookup('CB-6', { sb: fakeSb([]), env, fetchImpl: fakeFetch(200, { something: 'else' }) });
++  assert.equal(r.hub, null);
++  assert.equal(r.error, 'Hive returned no hub for this Consignment ID.');
++});
++
++test('serverHubLookup: history query failure surfaces when nothing else worked', async () => {
++  const r = await serverHubLookup('CB-7', { sb: fakeSb(null, { message: 'relation does not exist' }), env: {}, fetchImpl: fakeFetch(200, {}) });
++  assert.equal(r.hub, null);
++  assert.equal(r.error, 'relation does not exist');
++});
++
++test('serverHubLookup: invalid JSON from Hive does not throw', async () => {
++  const env = { HIVE_API_URL: 'https://hive.example/track/{id}' };
++  const r = await serverHubLookup('CB-8', {
++    sb: fakeSb([{ concern_hub: 'Sylhet', submitted_at: '2026-11-02T06:00:00Z' }]), env,
++    fetchImpl: async () => ({ ok: true, status: 200, json: async () => { throw new Error('bad json'); } }),
++  });
++  assert.equal(r.hub, 'Sylhet');
++  assert.equal(r.source, 'history');
++  assert.equal(r.error, null); // the history saved the lookup: no error
++});

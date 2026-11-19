@@ -1,0 +1,3 @@
+Phone solution: server-side hub lookup (no extension) for iPhone and Android.
+Base: GitHub main 2fcc3bc (the commit this branch was cut from).
+Files: .env.example components/EscalationForm.js lib/hubLookup.mjs lib/hubLookupServer.mjs (new) app/api/hub-lookup/route.js (new) tests/hubLookup.test.mjs tests/hubLookupServer.test.mjs (new) MOBILE-SETUP.md (new)
