@@ -527,7 +527,7 @@ export default function Tracker() {
                 const stCls = s.text === 'Resolved' ? 'p-res' : s.state === 'br' ? 'p-breach' : s.state === 'risk' ? 'p-wait' : 'p-ok';
                 const open = () => setOpenId(e.issue_id);
                 const stop = (ev) => ev.stopPropagation();
-                const who = initials(e.cm_assigned);
+                const who = initials(e.email); // raiser: initials of the person who raised the issue
                 const pl = pickLine(e);
                 const fb = fbText(e);
                 return (
@@ -587,7 +587,7 @@ export default function Tracker() {
                       <div onClick={stop} onKeyDown={(ev) => ev.stopPropagation()}>
                         <HiveStatus consignmentId={e.consignment_id} />
                       </div>
-                      <span className="avatar" title="Owner" aria-label={`Owner ${who}`}>{who}</span>
+                      <span className="avatar" title="Raised by" aria-label={`Raised by ${who}`}>{who}</span>
                       <span className="btn primary" style={{ height: 32, fontSize: 12.5 }}>Open</span>
                     </div>
                   </div>
