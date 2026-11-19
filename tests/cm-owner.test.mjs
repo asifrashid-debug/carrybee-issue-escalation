@@ -83,3 +83,26 @@ test('bell for a new CM issue goes to the assigned member only', () => {
   const users = [{ email: TANZIM, role: 'cm_member' }, { email: NAHID, role: 'cm_member' }, { email: 'asif@x', role: 'cm_lead' }];
   assert.deepEqual(cmNoticeRows({ issue_id: 'CB-7', cm_assigned: true, cm_owner_email: NAHID }, users).map((r) => r.recipient_email), [NAHID]);
 });
+
+// Email case: the session lowercases emails, so stored owners and pool emails must match in any case.
+import { sameEmail, normEmail } from '../lib/cmAssign.js';
+
+test('email case: pool emails in mixed case still give a lowercase owner', () => {
+  assert.equal(nextCmOwner(['Tanzim@X', 'nahid@x'], null), 'nahid@x');
+  assert.equal(nextCmOwner(['Tanzim@X', 'nahid@x'], 'NAHID@x'), 'tanzim@x');
+});
+
+test('email case: sameEmail ignores case and whitespace, and never matches blanks', () => {
+  assert.equal(sameEmail(' Tanzim@X ', 'tanzim@x'), true);
+  assert.equal(sameEmail('', ''), false);
+  assert.equal(sameEmail(null, 'tanzim@x'), false);
+  assert.equal(normEmail(' A@B '), 'a@b');
+});
+
+test('email case: assigned member can press CM picked when the stored owner is mixed case', () => {
+  const owner = 'Tanzim@X';
+  assert.equal(canPick({ email: 'tanzim@x', role: 'cm_member' }, issue(owner)), true);
+  assert.equal(cmPickBlock({ email: 'tanzim@x', role: 'cm_member' }, issue(owner)), null);
+  assert.equal(canPick({ email: 'nahid@x', role: 'cm_member' }, issue(owner)), false);
+  assert.notEqual(cmPickBlock({ email: 'nahid@x', role: 'cm_member' }, issue(owner)), null);
+});
