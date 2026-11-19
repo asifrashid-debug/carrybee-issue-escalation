@@ -2,7 +2,11 @@
 import { getMe } from './cw/meClient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import SearchSelect from './SearchSelect';
-import { isValidParcelId, matchActiveHub, requestHubLookup, COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE, MISSING_EXTENSION_MESSAGE } from '../lib/hubLookup.mjs';
+import {
+  isValidParcelId, matchActiveHub, requestHubLookup, serverHubLookupClient, isMobileAgent,
+  COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE,
+  MOBILE_NO_AUTO_HUB_MESSAGE, DESKTOP_NO_AUTO_HUB_MESSAGE,
+} from '../lib/hubLookup.mjs';
 import { priorityForIssueType } from '../lib/priority';
 import { formatDhaka } from '../lib/time';
 
@@ -19,7 +23,7 @@ export default function EscalationForm({ channel }) {
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
-  // "Find current hub in Hive". state: idle | loading | manual | missing | error
+  // "Find current hub in Hive". state: idle | loading | found | manual | error
   const [hubLookup, setHubLookup] = useState({ state: 'idle', message: '' });
   const [hubAuto, setHubAuto] = useState(null);      // { hub_name } filled from Hive; cleared if the Consignment ID changes
   const hubReq = useRef(null);                        // the only lookup allowed to update the form
@@ -67,29 +71,49 @@ export default function EscalationForm({ channel }) {
   const kamShown = !isKam && merchantQ ? (bizNow ? (bizNow.found ? bizNow.kam_name : CM) : 'Checking…') : CM;
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Looks up the hub for one Consignment ID in Hive and preselects it. Nothing is submitted here.
+  // Short note shown when a hub was filled automatically.
+  function hubFoundNote(source, historyAt) {
+    if (source === 'hive') return 'Hub filled from Hive.';
+    if (source === 'history' && historyAt) return `Hub filled from the last escalation for this Consignment ID on ${formatDhaka(historyAt)}.`;
+    return 'Hub filled automatically.';
+  }
+
+  // Looks up the hub for one Consignment ID and preselects it. Nothing is submitted here.
+  // 1. The CarryBee Hive helper extension (laptops, no change).
+  // 2. The tracker server (/api/hub-lookup): Hive when configured, otherwise the last escalation
+  //    for the same Consignment ID. This is what makes auto hub-fill work on iPhone and Android.
   async function findHub(parcel) {
     const token = {};
     hubReq.current = token;
     lastLookup.current = parcel;
     setHubLookup({ state: 'loading', message: 'Finding hub…' });
-    const r = await requestHubLookup(parcel, { win: window, origin: window.location.origin });
+    let r = await requestHubLookup(parcel, { win: window, origin: window.location.origin });
     if (hubReq.current !== token) return; // a newer lookup replaced this one
     if (consRef.current !== parcel) { setHubLookup({ state: 'idle', message: '' }); return; } // the ID changed while waiting
+    if (r.kind !== 'hub') {
+      // Extension is not there (phone) or failed: ask the tracker server.
+      const s = await serverHubLookupClient(parcel);
+      if (hubReq.current !== token) return;
+      if (consRef.current !== parcel) { setHubLookup({ state: 'idle', message: '' }); return; }
+      if (s.kind === 'hub') r = s;
+      else if (s.kind === 'error' && (r.kind === 'missing' || r.kind === 'timeout')) r = s;
+    }
     if (r.kind === 'hub') {
-      // The Hive text is only compared with the active list. It is never written into the form.
+      // The hub text (Hive, history or server) is only compared with the active list. It is never written into the form as-is.
       const m = matchActiveHub(r.hub, masters.hubs);
       if (m.status === 'unique') {
         set('concern_hub', m.hub.hub_name);
         setHubAuto({ hub_name: m.hub.hub_name });
-        setHubLookup({ state: 'idle', message: '' });
+        setHubLookup({ state: 'found', message: hubFoundNote(r.source, r.history_at) });
       } else {
         setHubLookup({ state: 'manual', message: NO_UNIQUE_MATCH_MESSAGE });
       }
     } else if (r.kind === 'timeout') {
       setHubLookup({ state: 'manual', message: TIMEOUT_MESSAGE });
     } else if (r.kind === 'missing') {
-      setHubLookup({ state: 'missing', message: MISSING_EXTENSION_MESSAGE });
+      // No extension and the server found nothing: phones cannot run the extension, so the message differs by device.
+      const message = isMobileAgent(navigator.userAgent) ? MOBILE_NO_AUTO_HUB_MESSAGE : DESKTOP_NO_AUTO_HUB_MESSAGE;
+      setHubLookup({ state: 'manual', message });
     } else {
       setHubLookup({ state: 'error', message: r.message });
     }
@@ -213,6 +237,7 @@ export default function EscalationForm({ channel }) {
             {hub && <div className="full" style={{ fontSize: 12, color: 'var(--mut)', fontWeight: 600 }}>Regional lead <b style={{ color: 'var(--ink)' }}>{hub.regional_lead || '—'}</b> · Cluster lead <b style={{ color: 'var(--ink)' }}>{hub.cluster_lead || '—'}</b> · Division <b style={{ color: 'var(--ink)' }}>{hub.division || '—'}</b></div>}
             <div className="full" aria-live="polite">
               {hubLookup.state === 'loading' && <div className="hint">Finding hub…</div>}
+              {hubLookup.state === 'found' && <div className="box box-ok" role="status">{hubLookup.message}</div>}
               {['manual', 'missing', 'error'].includes(hubLookup.state) && <div className="box box-warn" role="alert">{hubLookup.message}</div>}
             </div>
 

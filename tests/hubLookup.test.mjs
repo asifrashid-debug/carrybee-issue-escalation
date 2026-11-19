@@ -2,8 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  isValidParcelId, isAcceptedMessage, matchActiveHub, requestHubLookup, pingExtension,
+  isValidParcelId, isAcceptedMessage, matchActiveHub, requestHubLookup, pingExtension, serverHubLookupClient, isMobileAgent,
   TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE,
+  MOBILE_NO_AUTO_HUB_MESSAGE, DESKTOP_NO_AUTO_HUB_MESSAGE,
 } from '../lib/hubLookup.mjs';
 
 const ORIGIN = 'https://carrybee-escalation-tracker.vercel.app';
@@ -188,4 +189,68 @@ test('pingExtension: false when nothing answers', async () => {
 
 test('unique and no-match messages match the spec wording', () => {
   assert.equal(NO_UNIQUE_MATCH_MESSAGE, "Couldn't match this hub uniquely. Select manually.");
+});
+
+test('isMobileAgent: phones are mobile, laptops are not', () => {
+  assert.equal(isMobileAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'), true);
+  assert.equal(isMobileAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36 Chrome/120.0'), true);
+  assert.equal(isMobileAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'), false);
+  assert.equal(isMobileAgent(''), false);
+  assert.equal(isMobileAgent(undefined), false);
+});
+
+test('no-auto messages differ by device: phones never mention the extension', () => {
+  assert.ok(!/extension/i.test(MOBILE_NO_AUTO_HUB_MESSAGE));
+  assert.ok(/extension/i.test(DESKTOP_NO_AUTO_HUB_MESSAGE));
+});
+
+// Stub the global fetch the way the browser provides it, and restore it afterwards.
+function stubFetch(impl) {
+  const real = globalThis.fetch;
+  globalThis.fetch = impl;
+  return () => { globalThis.fetch = real; };
+}
+
+test('serverHubLookupClient: valid ID posts to /api/hub-lookup and returns the hub with its source', async () => {
+  const calls = [];
+  const stop = stubFetch(async (url, opts) => {
+    calls.push({ url, opts });
+    return { ok: true, json: async () => ({ ok: true, hub: '  Dhaka ', source: 'history', history_at: '2026-11-08T06:00:00Z' }) };
+  });
+  try {
+    const r = await serverHubLookupClient('CB-2026110899');
+    assert.deepEqual(r, { kind: 'hub', hub: 'Dhaka', source: 'history', history_at: '2026-11-08T06:00:00Z' });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, '/api/hub-lookup');
+    assert.equal(calls[0].opts.method, 'POST');
+    assert.equal(calls[0].opts.body, JSON.stringify({ consignment_id: 'CB-2026110899' }));
+  } finally { stop(); }
+});
+
+test('serverHubLookupClient: no hub in the response is kind none', async () => {
+  const stop = stubFetch(async () => ({ ok: true, json: async () => ({ ok: true, hub: null, source: null }) }));
+  try {
+    assert.deepEqual(await serverHubLookupClient('CB-1'), { kind: 'none' });
+  } finally { stop(); }
+});
+
+test('serverHubLookupClient: server error and failed request become kind error, never a rejection', async () => {
+  let stop = stubFetch(async () => ({ ok: false, json: async () => ({ error: 'boom' }) }));
+  try {
+    assert.deepEqual(await serverHubLookupClient('CB-2'), { kind: 'error', message: 'boom' });
+  } finally { stop(); }
+  stop = stubFetch(async () => { throw new Error('offline'); });
+  try {
+    assert.deepEqual(await serverHubLookupClient('CB-3'), { kind: 'error', message: 'Hub lookup failed.' });
+  } finally { stop(); }
+});
+
+test('serverHubLookupClient: invalid ID is rejected before any network call', async () => {
+  let called = false;
+  const stop = stubFetch(async () => { called = true; return { ok: true, json: async () => ({}) }; });
+  try {
+    const r = await serverHubLookupClient('bad id!');
+    assert.equal(r.kind, 'error');
+    assert.equal(called, false);
+  } finally { stop(); }
 });
