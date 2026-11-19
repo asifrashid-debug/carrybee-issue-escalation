@@ -75,11 +75,14 @@ test('CM members see all MX-channel issues and issues named CM, plus their own i
 // CM picked (server check): CM-assigned only, CM roles or admin, set once.
 import { cmPickBlock } from '../lib/pickSla.js';
 test('cmPickBlock: CM members pick CM-assigned issues once; others and normal issues are refused', () => {
-  const open = { cm_assigned: true, business_pick_time: null };
-  assert.equal(cmPickBlock({ role: 'cm_member' }, open), null);
+  // Only the assigned CM member may pick a CM member's issue. The fixture names the owner.
+  const open = { cm_assigned: true, business_pick_time: null, cm_owner_email: 'cm@x' };
+  assert.equal(cmPickBlock({ role: 'cm_member', email: 'cm@x' }, open), null);
+  assert.equal(cmPickBlock({ role: 'cm_member', email: 'other@x' }, open).status, 403);
+  assert.equal(cmPickBlock({ role: 'cm_member' }, open).status, 403);
   assert.equal(cmPickBlock({ role: 'cm_lead' }, open), null);
   assert.equal(cmPickBlock({ role: 'admin' }, open), null);
   assert.equal(cmPickBlock({ role: 'mx' }, open).status, 403);
-  assert.equal(cmPickBlock({ role: 'cm_member' }, { cm_assigned: false, business_pick_time: null }).status, 409);
-  assert.equal(cmPickBlock({ role: 'cm_member' }, { ...open, business_pick_time: '2026-11-18T09:00:00Z' }).status, 400);
+  assert.equal(cmPickBlock({ role: 'cm_member', email: 'cm@x' }, { cm_assigned: false, business_pick_time: null }).status, 409);
+  assert.equal(cmPickBlock({ role: 'cm_member', email: 'cm@x' }, { ...open, business_pick_time: '2026-11-18T09:00:00Z' }).status, 400);
 });
