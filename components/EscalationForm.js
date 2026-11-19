@@ -3,9 +3,9 @@ import { getMe } from './cw/meClient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import SearchSelect from './SearchSelect';
 import {
-  isValidParcelId, matchActiveHub, requestHubLookup, serverHubLookupClient, isMobileAgent,
-  COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE,
-  MOBILE_NO_AUTO_HUB_MESSAGE, DESKTOP_NO_AUTO_HUB_MESSAGE,
+  isValidParcelId, matchActiveHub, requestHubLookup, serverHubLookupClient, isIOSDevice, isMobileAgent,
+  COOLDOWN_MS, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE, NO_HUB_SUGGESTION_MESSAGE,
+  DESKTOP_NO_HUB_SUGGESTION_MESSAGE,
 } from '../lib/hubLookup.mjs';
 import { priorityForIssueType } from '../lib/priority';
 import { formatDhaka } from '../lib/time';
@@ -87,11 +87,15 @@ export default function EscalationForm({ channel }) {
     hubReq.current = token;
     lastLookup.current = parcel;
     setHubLookup({ state: 'loading', message: 'Finding hub…' });
-    let r = await requestHubLookup(parcel, { win: window, origin: window.location.origin });
+    // iPhones and iPads cannot run the Chrome extension, so skip its ping (1.5 s) and go straight
+    // to the server. Everywhere else (laptop, Android Chrome) the extension is asked first.
+    let r = isIOSDevice(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
+      ? { kind: 'missing' }
+      : await requestHubLookup(parcel, { win: window, origin: window.location.origin });
     if (hubReq.current !== token) return; // a newer lookup replaced this one
     if (consRef.current !== parcel) { setHubLookup({ state: 'idle', message: '' }); return; } // the ID changed while waiting
     if (r.kind !== 'hub') {
-      // Extension is not there (phone) or failed: ask the tracker server.
+      // Extension is not there (iPhone) or failed: ask the tracker server.
       const s = await serverHubLookupClient(parcel);
       if (hubReq.current !== token) return;
       if (consRef.current !== parcel) { setHubLookup({ state: 'idle', message: '' }); return; }
@@ -108,12 +112,13 @@ export default function EscalationForm({ channel }) {
       } else {
         setHubLookup({ state: 'manual', message: NO_UNIQUE_MATCH_MESSAGE });
       }
+    } else if (r.kind === 'missing') {
+      // No extension answer and the server found no hub for this ID: nothing to suggest yet.
+      const mobile = isMobileAgent(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+      const message = mobile ? NO_HUB_SUGGESTION_MESSAGE : DESKTOP_NO_HUB_SUGGESTION_MESSAGE;
+      setHubLookup({ state: 'manual', message });
     } else if (r.kind === 'timeout') {
       setHubLookup({ state: 'manual', message: TIMEOUT_MESSAGE });
-    } else if (r.kind === 'missing') {
-      // No extension and the server found nothing: phones cannot run the extension, so the message differs by device.
-      const message = isMobileAgent(navigator.userAgent) ? MOBILE_NO_AUTO_HUB_MESSAGE : DESKTOP_NO_AUTO_HUB_MESSAGE;
-      setHubLookup({ state: 'manual', message });
     } else {
       setHubLookup({ state: 'error', message: r.message });
     }

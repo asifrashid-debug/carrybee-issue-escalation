@@ -2,9 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  isValidParcelId, isAcceptedMessage, matchActiveHub, requestHubLookup, pingExtension, serverHubLookupClient, isMobileAgent,
-  TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE,
-  MOBILE_NO_AUTO_HUB_MESSAGE, DESKTOP_NO_AUTO_HUB_MESSAGE,
+  isValidParcelId, isAcceptedMessage, matchActiveHub, requestHubLookup, pingExtension, serverHubLookupClient,
+  isIOSDevice, isMobileAgent, TIMEOUT_MESSAGE, NO_UNIQUE_MATCH_MESSAGE,
+  NO_HUB_SUGGESTION_MESSAGE, DESKTOP_NO_HUB_SUGGESTION_MESSAGE,
 } from '../lib/hubLookup.mjs';
 
 const ORIGIN = 'https://carrybee-escalation-tracker.vercel.app';
@@ -191,17 +191,30 @@ test('unique and no-match messages match the spec wording', () => {
   assert.equal(NO_UNIQUE_MATCH_MESSAGE, "Couldn't match this hub uniquely. Select manually.");
 });
 
-test('isMobileAgent: phones are mobile, laptops are not', () => {
-  assert.equal(isMobileAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'), true);
-  assert.equal(isMobileAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36 Chrome/120.0'), true);
-  assert.equal(isMobileAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'), false);
-  assert.equal(isMobileAgent(''), false);
-  assert.equal(isMobileAgent(undefined), false);
+test('isIOSDevice: only iPhone/iPad/iPod UAs (Android and laptops keep the extension path)', () => {
+  assert.equal(isIOSDevice('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'), true);
+  assert.equal(isIOSDevice('Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'), true);
+  assert.equal(isIOSDevice('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15', 'MacIntel', 5), true);
+  assert.equal(isIOSDevice('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15', 'MacIntel', 1), false);
+  assert.equal(isIOSDevice('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36 Chrome/120.0'), false);
+  assert.equal(isIOSDevice('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'), false);
+  assert.equal(isIOSDevice(''), false);
+  assert.equal(isIOSDevice(undefined), false);
 });
 
-test('no-auto messages differ by device: phones never mention the extension', () => {
-  assert.ok(!/extension/i.test(MOBILE_NO_AUTO_HUB_MESSAGE));
-  assert.ok(/extension/i.test(DESKTOP_NO_AUTO_HUB_MESSAGE));
+test('isMobileAgent: phones are mobile and desktop browsers are not', () => {
+  assert.equal(isMobileAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) Mobile/15E148'), true);
+  assert.equal(isMobileAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile Safari/537.36'), true);
+  assert.equal(isMobileAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)', 'MacIntel', 5), true);
+  assert.equal(isMobileAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0'), false);
+});
+
+test('no-hub messages are accurate, and desktop still offers the Chrome extension', () => {
+  assert.ok(!/device/i.test(NO_HUB_SUGGESTION_MESSAGE));
+  assert.ok(/no hub suggestion found/i.test(NO_HUB_SUGGESTION_MESSAGE));
+  assert.ok(/check the id/i.test(NO_HUB_SUGGESTION_MESSAGE));
+  assert.ok(/select the concern hub/i.test(NO_HUB_SUGGESTION_MESSAGE));
+  assert.ok(/extension/i.test(DESKTOP_NO_HUB_SUGGESTION_MESSAGE));
 });
 
 // Stub the global fetch the way the browser provides it, and restore it afterwards.

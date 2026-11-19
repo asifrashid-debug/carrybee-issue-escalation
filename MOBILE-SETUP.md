@@ -26,11 +26,15 @@ on your home screen and the app opens full screen, like a normal app.
 5. Choose **Issue Category → Sub Category** (priority is set automatically), write **Issue Details**
    (at least 20 characters), and press **Submit**.
 
-If no hub could be found automatically (for example a brand-new Consignment ID that was never
-escalated before, while Hive is not connected yet), the form shows:
-*"Auto hub lookup is not available on this device. Select the Concern Hub from the list (type to
-search)."* — just type the first letters in the **Concern Hub** box and pick from the 225 master
-hubs. Nothing breaks; the rest of the form works the same on a phone as on a laptop.
+If no hub could be found automatically, the form shows:
+*"No hub suggestion found for this Consignment ID. Check the ID or select the Concern Hub from
+the list (type to search)."* — this can mean the ID has no previous escalation, was mistyped, or
+Hive is not connected to the server. It does not by itself mean the phone is broken. Check the ID,
+then type the first letters in the **Concern Hub** box and pick from the 225 master hubs.
+
+If the same Consignment ID auto-fills on Android but not iPhone, compare whether Android is using
+a Hive browser extension. The iPhone form uses the tracker server (Hive when configured, otherwise
+prior tracker history). On iPhone/iPad it skips the extension check and goes straight to the server.
 
 ## 3. What changed (technical)
 
