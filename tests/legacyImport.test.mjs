@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mapLegacyRow, LEGACY_ID_RE } from '../lib/legacyImport.js';
+import { mapLegacyRow, LEGACY_ID_RE, planLayerFill } from '../lib/legacyImport.js';
 import { lastFilledRow, findIssueRow, planAppend } from '../lib/sheetRows.js';
 
 const HUBS = new Set(['CTG-Patiya', 'Sylhet-Sadar', 'B.Baria-Nabinagar', 'Barguna-Sadar']);
@@ -111,4 +111,10 @@ test('planAppend puts new issues after the last filled row, contiguously, and up
 test('findIssueRow returns the 1-based row or null', () => {
   assert.equal(findIssueRow(colA('CB-1', 'CB-2'), 'CB-2'), 3);
   assert.equal(findIssueRow(colA('CB-1'), 'CB-9'), null);
+});
+
+test('planLayerFill fills only empty layers and never overwrites hub values', () => {
+  assert.deepEqual(planLayerFill({ layer1_response: null, layer2_response: null }, { layer1: 'A', layer2: 'B' }), { layer1_response: 'A', layer2_response: 'B' });
+  assert.deepEqual(planLayerFill({ layer1_response: 'hub said', layer2_response: null }, { layer1: 'old', layer2: 'B' }), { layer2_response: 'B' });
+  assert.deepEqual(planLayerFill({ layer1_response: null, layer2_response: '  ' }, { layer1: '#N/A', layer2: '' }), {});
 });
