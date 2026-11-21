@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import { notifyHubResponse } from '../../../../lib/notify';
 import { pushFields } from '../../../../lib/sheets';
+import { completionBlock, clearBlock } from '../../../../lib/finalResponse';
 // Sheet edits that change the derived AF-AH cells: Ops Status (Overall Validation, Issue Resolution),
 // Issue Pick Time and ISSUE STATUS (Issue Pick). Only the derived cells and the row version are written back.
 const DERIVED_TRIGGERS = ['ops_status', 'issue_pick_time', 'ops_issue_status'];
 export const dynamic = 'force-dynamic';
 const LAYER_FIELDS = ['layer1_response','layer2_response','layer3_response'];
+// final_response is a hub-sheet field (Final Response column). Its rules are in lib/finalResponse.js.
 // Apps Script on-edit trigger posts { issue_id, field, new_value, editor_email, edit_time, secret }
 export async function POST(req) {
   const sb = supabaseAdmin();
@@ -22,6 +24,17 @@ export async function POST(req) {
     await sb.from('audit_log').insert({ issue_id, field_name: field, old_value: cur[field]?String(cur[field]):null, new_value: String(new_value??''), actor_email: editor_email||'sheet', source: 'sheet' });
     await sb.from('sync_log').insert({ direction:'sheet_to_db', issue_id, status:'failed', error_message:`Rejected protected field ${field} (DB wins)` });
     return NextResponse.json({ ok: false, error: 'Protected field — DB wins, edit reverted' });
+  }
+  // Final Response rules: no Completed without a Final Response; no clearing it while Completed.
+  const finalBlock = (field === 'ops_status' ? completionBlock(cur, new_value) : null) || clearBlock(cur, field, new_value);
+  if (finalBlock) {
+    await sb.from('audit_log').insert({ issue_id, field_name: field, old_value: cur[field]?String(cur[field]):null, new_value: `REJECTED: ${String(new_value??'')}`, actor_email: editor_email||'sheet', source: 'sheet' });
+    await sb.from('sync_log').insert({ direction:'sheet_to_db', issue_id, status:'failed', error_message: finalBlock.error.slice(0, 300) });
+    // Put the sheet cell back to the stored value so the sheet matches the database. A failure is logged only.
+    try { await pushFields(cur, [field]); } catch (err) {
+      await sb.from('sync_log').insert({ direction:'db_to_sheet', issue_id, status:'failed', error_message: `Revert of ${field} failed: ${String(err.message || err).slice(0, 250)}` });
+    }
+    return NextResponse.json({ ok: false, error: finalBlock.error });
   }
   const patch = { [field]: new_value, row_version: (cur.row_version||1)+1 };
   // Completed At drives the Issue Resolution SLA column; keep the first completion time.

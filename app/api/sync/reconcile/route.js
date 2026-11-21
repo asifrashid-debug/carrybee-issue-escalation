@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
-import { pushToSheet, readSheetOps, withDerived } from '../../../../lib/sheets';
+import { pushToSheet, readSheetOps, withDerived, COLS } from '../../../../lib/sheets';
 import { requireUser, requireRole } from '../../../../lib/session';
 export const dynamic = 'force-dynamic';
+const ROW_VERSION_IDX = COLS.indexOf('row_version');
+const DERIVED_IDX = [COLS.length - 3, COLS.length - 2, COLS.length - 1]; // Issue Pick, Issue Resolution, Overall Validation
 // Reconciliation: compare sheet Ops block with DB; repair drift by field ownership; re-append missing rows.
 export async function POST(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
@@ -25,11 +27,11 @@ export async function POST(req) {
     if (!s) { try { await pushToSheet(e); reappended++; } catch {} continue; }
     // Compare Ops block (cols Q-AA indices 16-26) — if drift, DB wins for requester, last-write for ops (here: push DB to sheet)
     // Simplified: re-push if row_version mismatch
-    const sheetVer = parseInt(s.vals[28]||'0'); // AC Row Version (COLS index 28)
+    const sheetVer = parseInt(s.vals[ROW_VERSION_IDX]||'0'); // Row Version, found by name in COLS
     // Also repair when the derived AF-AH cells (Issue Pick, Issue Resolution, Overall Validation) differ from
     // what the DB gives now. Ops edits in the sheet update the DB without re-pushing these cells.
     const derived = (await withDerived(e))._derived;
-    const sheetDerived = [31, 32, 33].map((i) => String(s.vals[i] ?? '').trim());
+    const sheetDerived = DERIVED_IDX.map((i) => String(s.vals[i] ?? '').trim());
     const derivedDrift = derived.some((v, i) => v !== sheetDerived[i]);
     if (sheetVer !== e.row_version || derivedDrift) {
       if (derivedDrift && sheetVer === e.row_version) derivedFixed++;

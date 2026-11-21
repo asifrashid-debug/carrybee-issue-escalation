@@ -20,9 +20,9 @@ const SHEET_NAME = 'Active';
 const HEADER_ROW = 1;
 const ISSUE_ID_COL = 1; // Column A: Issue ID (DB-owned)
 const MAX_ATTEMPTS = 3;
-const RESPONSE_HEADER = 'Issue Response Date & Time'; // Column X
-const OPS_STATUS_HEADER = 'Ops Status';               // Column Z
-const COMPLETED_HEADER = 'Completed At';              // Column AE
+const RESPONSE_HEADER = 'Issue Response Date & Time'; // Column Y (was X before Final Response was added)
+const OPS_STATUS_HEADER = 'Ops Status';               // Column AA
+const COMPLETED_HEADER = 'Completed At';              // Column AF
 const LAYER_HEADERS = [
   'Layer 1 Response (HUB Incharge)',
   'Layer 2 Response (Cluster Lead)',
@@ -35,6 +35,7 @@ const FIELD_MAP = {
   'Layer 1 Response (HUB Incharge)': 'layer1_response',
   'Layer 2 Response (Cluster Lead)': 'layer2_response',
   'Layer 3 Response (Regional Lead)': 'layer3_response',
+  'Final Response': 'final_response',
   'Issue Pick Time': 'issue_pick_time',
   'ISSUE STATUS': 'ops_issue_status',
   'Remarks': 'remarks',

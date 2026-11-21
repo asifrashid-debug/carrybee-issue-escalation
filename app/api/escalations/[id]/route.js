@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import { pushToSheet, pushFields } from '../../../../lib/sheets';
 import { isHubRole, HUB_BLOCKED_MESSAGE, LAYER_BLOCKED_MESSAGE } from '../../../../lib/hubPolicy';
+import { completionBlock } from '../../../../lib/finalResponse';
 import { requireUser } from '../../../../lib/session';
 import { loadScope, isVisible } from '../../../../lib/visibility';
 import { priorityForIssueType } from '../../../../lib/priority';
@@ -26,6 +27,8 @@ export async function PATCH(req, ctx) {
   if (!isVisible(await loadScope(sb, session), cur)) return NextResponse.json({ error: 'Not found' }, { status: 404 }); // not visible to this viewer
   // Hub layer responses come only from the hub response sheet (webhook), for every role.
   if (LAYER_FIELDS.some((f) => body[f] !== undefined)) return NextResponse.json({ error: LAYER_BLOCKED_MESSAGE }, { status: 403 });
+  // Final Response comes only from the hub response sheet, like the layer responses.
+  if (body.final_response !== undefined) return NextResponse.json({ error: 'Final Response is entered in the hub response sheet only.' }, { status: 403 });
   const touchesOps = OPS_FIELDS.some((f) => body[f] !== undefined) || body.ops_issue_status === 'Picked';
   if (touchesOps && isHubRole(session.role)) return NextResponse.json({ error: HUB_BLOCKED_MESSAGE }, { status: 403 });
   const patch = {};
@@ -39,6 +42,11 @@ export async function PATCH(req, ctx) {
     if (blockedPick) return NextResponse.json({ error: blockedPick.error }, { status: blockedPick.status });
     patch.issue_pick_time = nowIso;
     if (cur.cm_assigned) patch.pick_missed = new Date(nowIso) > new Date(cur.pick_due_at);
+  }
+  // Ops Status cannot become Completed without a Final Response on the issue.
+  if (body.ops_status !== undefined) {
+    const doneBlock = completionBlock(cur, body.ops_status);
+    if (doneBlock) return NextResponse.json({ error: doneBlock.error }, { status: 400 });
   }
   const nextOpsStatus = body.ops_issue_status ?? cur.ops_issue_status;
   const nextRemarks = body.remarks ?? cur.remarks;
