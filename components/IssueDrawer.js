@@ -10,6 +10,20 @@ const LAYERS = [
   { key: 'layer3_response', label: 'Layer 3 · Regional Lead', hours: 6 },
 ];
 const FB_OUTCOMES = ['Resolved', 'Not Resolved', 'Improper Remarks'];
+// Readable names for hub-sheet fields in the Activity log. Unknown fields keep their raw name.
+const FIELD_LABEL = {
+  layer1_response: 'Layer 1 response',
+  layer2_response: 'Layer 2 response',
+  layer3_response: 'Layer 3 response',
+  final_response: 'Final Response',
+  remarks: 'Remarks',
+  ops_issue_status: 'ISSUE STATUS',
+  ops_status: 'Ops Status',
+  issue_pick_time: 'Issue Pick Time',
+  validation: 'Validation',
+  regional_lead: 'Regional Lead',
+  division: 'Division',
+};
 const FU_LABEL = { done: 'Done', due: 'Due now', overdue: 'Overdue', waiting: 'Waiting', locked: 'Locked', hidden: 'Hidden' };
 const FU_STATE = { done: 'done', due: 'due', overdue: 'late', waiting: 'wait', locked: 'locked', hidden: 'hidden' };
 const STATE_LABEL = { done: 'Done', due: 'Due now', late: 'Late', wait: 'Waiting', locked: 'Locked', hidden: 'Not needed' };
@@ -275,6 +289,17 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                       );
                     })}
 
+                    {/* Final Response: entered in the hub response sheet, read-only here */}
+                    {(() => {
+                      const frFilled = !!(e.final_response || '').trim();
+                      return (
+                        <TL key="final_response" state={frFilled ? 'done' : 'wait'} title="Final Response"
+                          meta={frFilled ? 'Recorded' : 'Awaiting Final Response in hub response sheet'}>
+                          {frFilled && <p className="tl-body">{e.final_response}</p>}
+                        </TL>
+                      );
+                    })()}
+
                     {/* KAM feedback: 24h window, justification reopens it */}
                     {fb && (
                       <TL
@@ -358,7 +383,7 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
                   {audit.length === 0 && <div className="muted" style={{ fontSize: 13 }}>No changes yet.</div>}
                   {audit.slice().reverse().map((a, i) => (
                     <div className="entry" key={i}>
-                      <div className="t"><span className="evt">{a.field_name}</span><span className="mono" style={{ color: 'var(--mut)' }}>{a.source || 'TRACKER'}</span></div>
+                      <div className="t"><span className="evt">{FIELD_LABEL[a.field_name] || a.field_name}</span><span className="mono" style={{ color: 'var(--mut)' }}>{a.source || 'TRACKER'}</span></div>
                       <div style={{ fontWeight: 700, color: 'var(--good)' }}>{a.new_value || '—'}</div>
                       <div style={{ fontSize: 12, color: 'var(--mut)' }}>By <b style={{ color: 'var(--ink2)' }}>{a.actor_email || '—'}</b></div>
                       <div className="mono" style={{ color: 'var(--mut)', textAlign: 'right' }}>{formatDhaka(a.created_at)}</div>
