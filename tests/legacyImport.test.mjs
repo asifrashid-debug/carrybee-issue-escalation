@@ -37,6 +37,15 @@ test('valid row maps to an OLD escalation with consignment, MX channel, P2 and C
   assert.equal(e.feedback_due_at, '2026-11-04T04:08:02.000Z');
 });
 
+test('Comments 1 maps to Layer 1 and Comments 2 maps to Layer 2; blanks become null', () => {
+  const full = mapLegacyRow(good({ layer1: 'Hub infored', layer2: '  Cluster reply  ' }), HUBS, 'OSD').esc;
+  assert.equal(full.layer1_response, 'Hub infored');
+  assert.equal(full.layer2_response, 'Cluster reply');
+  const blank = mapLegacyRow(good({ layer1: '', layer2: '#N/A' }), HUBS, 'OSD').esc;
+  assert.equal(blank.layer1_response, null);
+  assert.equal(blank.layer2_response, null);
+});
+
 test('a merchant name is stored as merchant, not consignment', () => {
   const m = mapLegacyRow(good({ requester: 'Swiftcart BD', id: 'OLD-OSD-0000000001' }), HUBS, 'OSD');
   assert.equal(m.ok, true);
