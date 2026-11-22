@@ -6,7 +6,7 @@ import { visibleOpsIssues, canEditKamFeedback } from '../../../lib/opsIssues.mjs
 import { fetchAll } from '../../../lib/opsIssueSync';
 export const dynamic = 'force-dynamic';
 
-const COLS = 'issue_id,consignment_id,merchant_name,issue_category,issue_sub_category,hub_feedback,kam_name,issue_status,validation,kam_feedback,updated_at,raised_at,pick_due_at,picked_at,picked_by,in_progress_at,resolve_due_at,closed_at,closed_by,validated_at,validated_by';
+const COLS = 'issue_id,consignment_id,merchant_name,issue_category,issue_sub_category,hub_feedback,hub_name,kam_name,issue_status,validation,kam_feedback,updated_at,raised_at,pick_due_at,picked_at,picked_by,in_progress_at,resolve_due_at,closed_at,closed_by,validated_at,validated_by';
 
 // The KAM's own Ops Issues: rows whose kam_name matches the viewer's display name or kam_aliases. Admin sees all, read-only.
 export async function GET() {

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  OPS_HEADERS, OPS_FIELDS, COL, KAM_FEEDBACK_MAX, colLetter,
+  OPS_HEADERS, OPS_FIELDS, COL, L, OPS_LAST_COL, KAM_FEEDBACK_MAX, colLetter,
   buildKamIndex, lookupKam, parseOpsRow, planOpsRow, toDbRecord,
   visibleOpsIssues, canEditKamFeedback, cleanKamFeedback,
 } from '../lib/opsIssues.mjs';
@@ -18,16 +18,28 @@ const master = [
 ];
 const index = buildKamIndex(master);
 
-test('sheet layout: 10 headers A to J, in the order the user gave', () => {
-  assert.equal(OPS_HEADERS.length, 10);
+test('sheet layout: 11 headers A to K; HUB Name sits right after HUB Feedback', () => {
+  assert.equal(OPS_HEADERS.length, 11);
   assert.equal(OPS_HEADERS[0], 'Issue ID');
-  assert.equal(OPS_HEADERS[6], 'KAM Name');
-  assert.equal(OPS_HEADERS[9], 'KAM Feedback');
-  assert.equal(OPS_FIELDS.length, 10);
-  assert.equal(COL.kam_feedback, 9);
+  assert.equal(OPS_HEADERS[5], 'HUB Feedback');
+  assert.equal(OPS_HEADERS[6], 'HUB Name');
+  assert.equal(OPS_HEADERS[7], 'KAM Name');
+  assert.equal(OPS_HEADERS[8], 'Issue Status');
+  assert.equal(OPS_HEADERS[9], 'Validation');
+  assert.equal(OPS_HEADERS[10], 'KAM Feedback');
+  assert.equal(OPS_FIELDS.length, 11);
+  assert.equal(COL.hub_name, 6);
+  assert.equal(COL.kam_feedback, 10);
   assert.equal(colLetter(0), 'A');
-  assert.equal(colLetter(6), 'G');
-  assert.equal(colLetter(9), 'J');
+  assert.equal(OPS_LAST_COL, 'K');
+});
+
+test('field letters follow the headers: G HUB Name, H KAM Name, I Status, J Validation, K KAM Feedback', () => {
+  assert.equal(L.hub_name, 'G');
+  assert.equal(L.kam_name, 'H');
+  assert.equal(L.issue_status, 'I');
+  assert.equal(L.validation, 'J');
+  assert.equal(L.kam_feedback, 'K');
 });
 
 test('buildKamIndex skips inactive rows and rows with no KAM', () => {
@@ -57,11 +69,12 @@ test('lookupKam returns matched, ambiguous, not_found or no_merchant', () => {
 });
 
 test('parseOpsRow reads cells by column and treats missing cells as blank', () => {
-  const o = parseOpsRow(['CB-1', '', '  Daraz  Fashion ', 'Cat', '', 'hub note']);
+  const o = parseOpsRow(['CB-1', '', '  Daraz  Fashion ', 'Cat', '', 'hub note', ' Comilla-Sadar ']);
   assert.equal(o.issue_id, 'CB-1');
   assert.equal(o.consignment_id, '');
   assert.equal(o.merchant_name, 'Daraz Fashion');
   assert.equal(o.hub_feedback, 'hub note');
+  assert.equal(o.hub_name, 'Comilla-Sadar');
   assert.equal(o.kam_feedback, '');
 });
 
@@ -78,23 +91,27 @@ test('planOpsRow asks for an Issue ID when the A cell is blank', () => {
 });
 
 test('planOpsRow fills KAM Name on a Merchant Name match only when it differs', () => {
-  assert.equal(planOpsRow(parseOpsRow(['CB-1', '', 'Pathao', '', '', '', '']), index).actions.kam_name, 'Sadia Noor');
-  assert.equal(planOpsRow(parseOpsRow(['CB-1', '', 'Pathao', '', '', '', 'sadia noor']), index).actions.kam_name, undefined);
+  assert.equal(planOpsRow(parseOpsRow(['CB-1', '', 'Pathao', '', '', '', '', '']), index).actions.kam_name, 'Sadia Noor');
+  assert.equal(planOpsRow(parseOpsRow(['CB-1', '', 'Pathao', '', '', '', '', 'sadia noor']), index).actions.kam_name, undefined);
 });
 
 test('planOpsRow never fills KAM Name when the merchant is unknown or ambiguous', () => {
-  const unknown = planOpsRow(parseOpsRow(['CB-1', '', 'Unknown Co', '', '', '', '']), index);
+  const unknown = planOpsRow(parseOpsRow(['CB-1', '', 'Unknown Co', '', '', '', '', '']), index);
   assert.equal(unknown.kamStatus, 'not_found');
   assert.equal(unknown.actions.kam_name, undefined);
-  const amb = planOpsRow(parseOpsRow(['CB-2', '', 'Shared Shop', '', '', '', 'Typed Name']), index);
+  const amb = planOpsRow(parseOpsRow(['CB-2', '', 'Shared Shop', '', '', '', '', 'Typed Name']), index);
   assert.equal(amb.kamStatus, 'ambiguous');
   assert.equal(amb.actions.kam_name, undefined);
 });
 
 test('toDbRecord: a filled sheet KAM Feedback wins, a blank one keeps the DB value', () => {
-  const sheetWins = toDbRecord(parseOpsRow(['CB-1', '', 'X', '', '', '', '', '', '', 'from sheet']),
+  const sheetWins = toDbRecord(parseOpsRow(['CB-1', '', 'X', '', '', '', '', '', '', '', 'from sheet']),
     { issueId: 'CB-1', kamName: 'K', dbFeedback: 'old', sid: 's', rowNumber: 5 });
   assert.equal(sheetWins.kam_feedback, 'from sheet');
+  assert.equal(sheetWins.hub_name, null);
+  const withHub = toDbRecord(parseOpsRow(['CB-1', '', 'X', '', '', '', 'Dhaka Hub']),
+    { issueId: 'CB-1', kamName: 'K', dbFeedback: null, sid: 's', rowNumber: 5 });
+  assert.equal(withHub.hub_name, 'Dhaka Hub');
   const keeps = toDbRecord(parseOpsRow(['CB-1', '', 'X']),
     { issueId: 'CB-1', kamName: 'K', dbFeedback: 'old', sid: 's', rowNumber: 5 });
   assert.equal(keeps.kam_feedback, 'old');
