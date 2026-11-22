@@ -136,7 +136,7 @@ export default function NotificationBell() {
           <ul>
             {items.map((n) => (
               <li key={n.id} className={n.read_at ? '' : 'new'}>
-                <a href={`/?open=${encodeURIComponent(n.issue_id)}`} onClick={() => { if (!n.read_at) markRead({ ids: [n.id] }); setOpen(false); }}>
+                <a href={n.kind === 'ops_issue_raised' ? '/kam/issues' : `/?open=${encodeURIComponent(n.issue_id)}`} onClick={() => { if (!n.read_at) markRead({ ids: [n.id] }); setOpen(false); }}>
                   <span className="bell-title">{n.title}</span>
                   {n.body && <span className="bell-body">{n.body}</span>}
                   <span className="bell-time">{formatDhaka(n.created_at)}</span>
