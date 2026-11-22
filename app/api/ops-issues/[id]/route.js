@@ -16,7 +16,9 @@ const fail = (status, error) => NextResponse.json({ error }, { status });
 //   { validation: 'Valid' | 'Invalid' | 'Duplicate' | 'No proper info' }
 //   { kam_feedback: '...' }  free text
 // Only the KAM the issue is named to can write. Admin is read-only.
-export async function PATCH(req, { params }) {
+// Next 15+ route params are a Promise: read them with await (as the escalation routes do).
+export async function PATCH(req, ctx) {
+  const { id } = await ctx.params;
   const { user, response } = await requireUser();
   if (response) return response;
   if (!canOpenTab(user.role, 'kam_issues')) return fail(403, 'Your role cannot open this tab');
@@ -26,7 +28,7 @@ export async function PATCH(req, { params }) {
   if (kinds.length !== 1) return fail(400, 'Send exactly one of: action, validation, kam_feedback');
 
   const { data: issue, error } = await supabaseAdmin().from('ops_issues')
-    .select(ISSUE_COLS).eq('issue_id', params.id).maybeSingle();
+    .select(ISSUE_COLS).eq('issue_id', id).maybeSingle();
   if (error) return fail(500, error.message);
   if (!issue) return fail(404, 'Issue not found');
   if (!canEditKamFeedback(user, issue)) return fail(403, 'This issue is not named to you');
