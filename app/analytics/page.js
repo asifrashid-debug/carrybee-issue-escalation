@@ -7,6 +7,7 @@ import { wave, bars, hbars, donut, gauge, legend, kpiStrip } from '../../compone
 import Fit from '../../components/cw/Fit';
 import { fmtN, fmtH, fmtPct } from '../../components/cw/format';
 import { formatDhaka } from '../../lib/time';
+import OpsKamAnalytics from '../../components/OpsKamAnalytics';
 
 const Html = ({ html }) => <div dangerouslySetInnerHTML={{ __html: html }} />;
 const ZONE_COLOR = { ISD: '#FFCC00', OSD: '#37A9FF', CTG: '#A78BFA' };
@@ -182,6 +183,8 @@ export default function Analytics() {
         </div>
         <p className="note">Breach rule: an open issue with no first comment more than 2 hours after being raised. Median first comment: {fmtH(k.medianResponseHours)}.</p>
       </div>
+
+      <OpsKamAnalytics data={data.opsKam} rangeText={rangePhrase(range)} />
     </div>
   );
 }

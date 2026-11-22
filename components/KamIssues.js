@@ -259,8 +259,8 @@ export default function KamIssues() {
     <div id="kam-issues">
       <div className="ph">
         <div>
-          <div className="kicker">KAM feedback · Ops Issues · pick within 30 min · close within 24 h</div>
-          <h1>KAM Feedback</h1>
+          <div className="kicker">Ops-KAM · Ops Issues · pick within 30 min · close within 24 h</div>
+          <h1>Ops-KAM</h1>
           <p className="sub">Ops Issues named to you. Pick each one, move it through to closed, validate it, and add your feedback.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>

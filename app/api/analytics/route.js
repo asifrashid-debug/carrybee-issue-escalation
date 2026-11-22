@@ -6,8 +6,14 @@ import { requireUser } from '../../../lib/session';
 import { loadScope, isVisible } from '../../../lib/visibility';
 import { resolveRange, rangeBounds, rangeDays } from '../../../lib/dateRange';
 import { fetchAllEscalations } from '../../../lib/escalationsPaging';
+import { fetchAll } from '../../../lib/opsIssueSync';
+import { computeOpsKam, forViewer } from '../../../lib/opsKamAnalytics.mjs';
 
 export const dynamic = 'force-dynamic';
+
+// Ops-KAM (Ops Issues) columns for the Ops-KAM section. The lifecycle columns need migration 021.
+const OPS_KAM_VIEWERS = ['admin', 'cm_lead'];
+const OPS_COLS = 'issue_id,kam_name,issue_category,issue_status,validation,validated_at,raised_at,pick_due_at,picked_at,resolve_due_at,closed_at,sheet_spreadsheet_id';
 
 const COLS = 'issue_id,cm_assigned,submitted_at,email,channel,zone,concern_hub,division,regional_lead,issue_status,kam_feedback_status,issue_category,issue_sub_category,priority_scale,issue_pick_time,issue_response_datetime,ops_issue_status,is_archived,updated_at';
 
@@ -53,12 +59,25 @@ export async function GET(req) {
       return NextResponse.json({ mode: 'live', ...teamPerformanceView({ session, users: users || [], escalations: inRange, hubs: hubs || [], categories: cats || [], now: calcNow }) });
     }
     const result = computeAnalytics({ escalations: inRange, users: users || [], hubs: hubs || [], categories: cats || [], now: calcNow, days });
+    // Ops-KAM section. Its own try block: if the Ops Issues query fails, the escalation analytics still load.
+    // Access default (to confirm): admin and cm_lead only. Team leads can also be KAMs, so they do not get cross-KAM counts yet.
+    let opsKam;
+    if (!OPS_KAM_VIEWERS.includes(session.role)) {
+      opsKam = undefined;
+    } else try {
+      const issues = await fetchAll(() => sb.from('ops_issues').select(OPS_COLS).not('raised_at', 'is', null).order('issue_id'));
+      const inOpsRange = rb ? issues.filter((i) => { const t = Date.parse(i.raised_at); return (rb.start == null || t >= rb.start) && (rb.end == null || t < rb.end); }) : issues;
+      const sheetZone = new Map([[process.env.SHEET_ISD, 'ISD'], [process.env.SHEET_OSD, 'OSD'], [process.env.SHEET_CTG, 'CTG']].filter(([id]) => id));
+      opsKam = forViewer(computeOpsKam({ issues: inOpsRange, now: calcNow, days, zoneOf: (sid) => sheetZone.get(sid) || null }), session.role);
+    } catch (e) {
+      opsKam = { error: e.message };
+    }
     // Team leads and CM leads see only their own team(s) in Team Performance (members and admin keep the full list)
     if (['team_lead', 'cm_lead'].includes(session.role)) {
       const mine = new Set(session.teams || []);
       result.teams = result.teams.filter((t) => mine.has(t.team));
     }
-    return NextResponse.json({ mode: 'live', ...result });
+    return NextResponse.json({ mode: 'live', ...result, opsKam });
   } catch (e) {
     return NextResponse.json({ error: String(e.message || e) }, { status: 500 });
   }
