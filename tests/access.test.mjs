@@ -8,16 +8,16 @@ test('super admin sees every tab', () => {
   assert.deepEqual([...tabsFor('admin')].sort(), [...ALL].sort());
 });
 
-test('CM lead: Overview, Analytics, Tracker, HUB, Team Performance, KAM Form', () => {
-  assert.deepEqual([...tabsFor('cm_lead')].sort(), ['overview','analytics','tracker','hubs','teams','kam_form'].sort());
+test('CM lead: Overview, Analytics, Tracker, HUB, Team Performance, KAM Form, Ops-KAM', () => {
+  assert.deepEqual([...tabsFor('cm_lead')].sort(), ['overview','analytics','tracker','hubs','teams','kam_form','kam_issues'].sort());
 });
 
 test('team lead: the CM lead tabs plus KAM Feedback', () => {
   assert.deepEqual([...tabsFor('team_lead')].sort(), ['overview','analytics','tracker','hubs','teams','kam_form','kam_issues'].sort());
 });
 
-test('CM members: Tracker, Team Performance, KAM Form (no KAM Feedback)', () => {
-  assert.deepEqual([...tabsFor('cm_member')].sort(), ['kam_form','teams','tracker']);
+test('CM members: Tracker, Team Performance, KAM Form, Ops-KAM (no Analytics, no Overview)', () => {
+  assert.deepEqual([...tabsFor('cm_member')].sort(), ['kam_form','kam_issues','teams','tracker']);
 });
 
 test('KAM (requester): Tracker, Team Performance, KAM Form, KAM Feedback', () => {

@@ -22,10 +22,15 @@ test('team lead is notified only for their own KAM name, not for the team', () =
   assert.deepEqual(opsNoticeRecipients('Jaber Al Aunto', users), ['jaber.aunto@carrybee.com']);
 });
 
-test('admin, inactive users and CM are never notified', () => {
+test('admin and inactive users are never notified', () => {
   assert.deepEqual(opsNoticeRecipients('Rahim Uddin', users), []);
   assert.deepEqual(opsNoticeRecipients('Gone KAM', users), []);
-  assert.deepEqual(opsNoticeRecipients('CM', users), []);
+});
+
+test('the CM queue notifies every active CM member and CM lead, not requesters or team leads', () => {
+  assert.deepEqual(opsNoticeRecipients('CM', users), ['cm@carrybee.com']);
+  const withCmLead = [...users, { email: 'asif.rashid@carrybee.com', role: 'cm_lead', display_name: 'Ahmed Asif Rashid', is_active: true }];
+  assert.deepEqual(opsNoticeRecipients('CM', withCmLead), ['cm@carrybee.com', 'asif.rashid@carrybee.com']);
 });
 
 test('no KAM name means no notice; unknown name means no notice', () => {
