@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   OPS_HEADERS, OPS_FIELDS, COL, L, OPS_LAST_COL, KAM_FEEDBACK_MAX, colLetter,
   buildKamIndex, lookupKam, parseOpsRow, planOpsRow, toDbRecord,
-  visibleOpsIssues, canEditKamFeedback, cleanKamFeedback,
+  visibleOpsIssues, canEditKamFeedback, cleanKamFeedback, withHubZone,
 } from '../lib/opsIssues.mjs';
 
 const master = [
@@ -174,4 +174,16 @@ test('cleanKamFeedback: trims, empty clears to null, too long and non-text are r
   assert.ok(cleanKamFeedback('x'.repeat(KAM_FEEDBACK_MAX + 1)).error);
   assert.deepEqual(cleanKamFeedback('x'.repeat(KAM_FEEDBACK_MAX)).value.length, KAM_FEEDBACK_MAX);
   assert.ok(cleanKamFeedback(42).error);
+});
+
+test('withHubZone: zone comes from hub_master by hub name; no hub or unknown hub gives null', () => {
+  const hubs = [{ hub_name: 'Mohakhali', zone: 'ISD' }, { hub_name: 'Chandpur-Sadar', zone: 'CTG' }];
+  const out = withHubZone([
+    { issue_id: 'A', hub_name: '  mohakhali ' },
+    { issue_id: 'B', hub_name: 'Chandpur-Sadar' },
+    { issue_id: 'C', hub_name: 'Not A Hub' },
+    { issue_id: 'D', hub_name: null },
+  ], hubs);
+  assert.deepEqual(out.map((i) => [i.issue_id, i.zone]), [['A', 'ISD'], ['B', 'CTG'], ['C', null], ['D', null]]);
+  assert.equal(withHubZone(null, hubs).length, 0);
 });

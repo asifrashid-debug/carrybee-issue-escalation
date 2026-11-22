@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import { pushToSheet, readSheetOps, withDerived, COLS } from '../../../../lib/sheets';
 import { requireUser, requireRole } from '../../../../lib/session';
+import { readAllPages } from '../../../../lib/pagination.mjs';
 export const dynamic = 'force-dynamic';
 const ROW_VERSION_IDX = COLS.indexOf('row_version');
 const DERIVED_IDX = [COLS.length - 3, COLS.length - 2, COLS.length - 1]; // Issue Pick, Issue Resolution, Overall Validation
@@ -17,7 +18,14 @@ export async function POST(req) {
   if (!sid) return NextResponse.json({ error: 'zone ISD/OSD/CTG required' }, { status: 400 });
   let sheetRows = [];
   try { sheetRows = await readSheetOps(sid); } catch(e){ return NextResponse.json({ error: 'Sheet read failed: '+e.message }, { status: 500 }); }
-  const { data: dbRows } = await sb.from('escalations').select('*').eq('zone', zone).eq('is_archived', false);
+  // Every row of the zone, read in pages (a plain select stops at 1000 rows). A read error stops the run; it does not reconcile a partial list.
+  let dbRows;
+  try {
+    ({ rows: dbRows } = await readAllPages((from, to) =>
+      sb.from('escalations').select('*').eq('zone', zone).eq('is_archived', false).order('issue_id', { ascending: true }).range(from, to)));
+  } catch (e) {
+    return NextResponse.json({ error: 'DB read failed: ' + e.message }, { status: 500 });
+  }
   const sheetById = new Map();
   for (let i=1;i<sheetRows.length;i++) { const r = sheetRows[i]; if (r[0]) sheetById.set(r[0], { rowNum: i+1, vals: r }); }
   let repaired = 0, reappended = 0, checked = 0, derivedFixed = 0;

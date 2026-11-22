@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatDhaka } from '../lib/time';
 import { freshUnread, soundEnabled, setSoundEnabled, unlockAudio, playChime, osAlertState, requestOsAlerts, showOsAlert } from '../lib/notifySound';
+import { useVisibleInterval } from './cw/useVisibleInterval';
 
 // Bell in the header: unread notifications for the signed-in user (hub responses and new CM issues).
 // Polls every 30 seconds, including in background tabs, so OS alerts can fire while the tracker is not in front.
@@ -52,10 +53,7 @@ export default function NotificationBell() {
   }, [alertFor]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => {
-    const t = setInterval(load, 30000);
-    return () => clearInterval(t);
-  }, [load]);
+  useVisibleInterval(load, 30000);
 
   // Browsers only let audio start after a user gesture. The first tap or key press unlocks it.
   useEffect(() => {

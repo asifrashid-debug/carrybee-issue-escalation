@@ -4,6 +4,7 @@ import CopyButton from './CopyButton';
 import { fmtN } from './cw/format';
 import { formatDhaka } from '../lib/time';
 import { VALIDATIONS, CLOSED_STATUSES, dueState } from '../lib/opsLifecycle.mjs';
+import ErrorBoundary from './ErrorBoundary';
 
 // KAM Feedback tab. Lists only the Ops Issues named to the signed-in KAM (see lib/opsIssues.mjs).
 // Uses the tracker's classes (ph, kpis, chips, qi cards, drawer), so it looks like the rest of the app.
@@ -96,6 +97,8 @@ function DetailPanel({ issue, now, onClose, onChange }) {
   const fields = [
     ['Consignment ID', issue.consignment_id],
     ['Merchant Name', issue.merchant_name],
+    ['HUB Name', issue.hub_name || 'Not set'],
+    ['Zone', issue.zone],
     ['Issue Category', issue.issue_category || 'To be uploaded'],
     ['Issue Sub Category', issue.issue_sub_category],
     ['HUB Feedback', issue.hub_feedback || 'Awaiting HUB'],
@@ -332,6 +335,7 @@ export default function KamIssues() {
                     )}
                   </div>
                   <div className="meta">{i.issue_category || 'Category to be uploaded'} · {i.issue_sub_category || '—'}</div>
+                  <div className="muted small" style={{ marginTop: 4 }}>HUB name: <b>{i.hub_name || 'Not set'}</b> · Zone: <b>{i.zone || '—'}</b></div>
                   <div style={{ display: 'grid', gap: 3, fontSize: 12.5, marginTop: 6 }}>
                     {lines.map((l) => <div key={l.text} className={l.cls}>{l.text}</div>)}
                     <div className={fb.cls}>{fb.text}</div>
@@ -349,7 +353,7 @@ export default function KamIssues() {
       )}
 
       <aside className={`drawer${open ? ' on' : ''}`} aria-label="Issue details" aria-hidden={!open}>
-        {open && <DetailPanel key={open.issue_id} issue={open} now={now} onClose={() => setOpenId(null)} onChange={onChange} />}
+        {open && <ErrorBoundary><DetailPanel key={open.issue_id} issue={open} now={now} onClose={() => setOpenId(null)} onChange={onChange} /></ErrorBoundary>}
       </aside>
     </div>
   );

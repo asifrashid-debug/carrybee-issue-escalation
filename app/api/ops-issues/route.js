@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { requireUser } from '../../../lib/session';
 import { canOpenTab } from '../../../lib/access';
-import { visibleOpsIssues, canEditKamFeedback } from '../../../lib/opsIssues.mjs';
+import { visibleOpsIssues, canEditKamFeedback, withHubZone, opsKamPatterns } from '../../../lib/opsIssues.mjs';
 import { fetchAll } from '../../../lib/opsIssueSync';
 export const dynamic = 'force-dynamic';
 
@@ -14,12 +14,22 @@ export async function GET() {
   if (response) return response;
   if (!canOpenTab(user.role, 'kam_issues')) return NextResponse.json({ error: 'Your role cannot open this tab' }, { status: 403 });
   const sb = supabaseAdmin();
-  let rows;
+  let rows, hubs;
   try {
-    rows = await fetchAll(() => sb.from('ops_issues').select(COLS).not('kam_name', 'is', null).order('issue_id'));
+    // Only the viewer's own KAM names (and the CM queue for CM roles) are read. The database does this match;
+    // visibleOpsIssues below still applies the exact rule, so this can only narrow the rows read, never widen them.
+    const pats = opsKamPatterns(user);
+    if (pats && pats.length === 0) rows = [];
+    else rows = await fetchAll(() => {
+      let q = sb.from('ops_issues').select(COLS).not('kam_name', 'is', null);
+      if (pats) q = q.or(pats.map((p) => `kam_name.ilike.${p}`).join(','));
+      return q.order('issue_id');
+    });
+    // Zone comes from hub_master (not stored on ops_issues). Inactive hubs are included so older issues keep their zone.
+    hubs = await fetchAll(() => sb.from('hub_master').select('hub_name,zone').order('hub_name'));
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
-  const issues = visibleOpsIssues(user, rows).map((i) => ({ ...i, can_edit: canEditKamFeedback(user, i) }));
+  const issues = visibleOpsIssues(user, withHubZone(rows, hubs)).map((i) => ({ ...i, can_edit: canEditKamFeedback(user, i) }));
   return NextResponse.json({ issues });
 }

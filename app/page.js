@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useVisibleInterval } from '../components/cw/useVisibleInterval';
 import { getMe } from '../components/cw/meClient';
+import ErrorBoundary from '../components/ErrorBoundary';
 const IssueDrawer = dynamic(() => import('../components/IssueDrawer'), { ssr: false });
 import CopyButton from '../components/CopyButton';
 import HiveStatus from '../components/HiveStatus';
@@ -214,7 +215,6 @@ export default function Tracker() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useVisibleInterval(load, 30000);
   // Counts for the My and Feedback failures chips: count-only requests (pageSize 1), same 30s refresh.
   const loadCounts = useCallback(async () => {
     if (!ready) return;
@@ -229,7 +229,9 @@ export default function Tracker() {
     setViewCounts((c) => ({ ...c, ...out }));
   }, [canSeeFailures, ready, range.from, range.to]);
   useEffect(() => { loadCounts(); }, [loadCounts]);
-  useVisibleInterval(loadCounts, 30000);
+  // One timer for the list (or board) and the chip counts, every 60s while the tab is visible (it was two 30s timers).
+  // The tab coming back into view after a long gap still refreshes straight away.
+  useVisibleInterval(() => { load(); loadCounts(); }, 60000);
   useEffect(() => { setPage(1); }, [search, prio, channel, istat, ostat, zone, view]);
   useEffect(() => { setSelected(new Set()); setReview(null); }, [zone, view, page, search, prio, channel, istat, ostat]);
 
@@ -661,7 +663,7 @@ export default function Tracker() {
 
       <p className="note">Paged on the server, 20 per page, newest first. Click a card for the issue detail. Times are Asia/Dhaka. Exports include every row in the current view.</p>
 
-      {openId && <IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={() => { load(); analytics.reload(); }} onOpen={setOpenId} />}
+      {openId && <ErrorBoundary><IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={() => { load(); analytics.reload(); }} onOpen={setOpenId} /></ErrorBoundary>}
     </div>
   );
 }
