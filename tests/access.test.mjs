@@ -2,24 +2,30 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tabsFor, canOpenTab, tabForPath, navFor } from '../lib/access.js';
 
-const ALL = ['overview','analytics','tracker','hubs','teams','kam_form','mx_form','admin','sync'];
+const ALL = ['overview','analytics','tracker','hubs','teams','kam_form','kam_issues','mx_form','admin','sync'];
 
 test('super admin sees every tab', () => {
   assert.deepEqual([...tabsFor('admin')].sort(), [...ALL].sort());
 });
 
-test('team lead and CM lead: Overview, Analytics, Tracker, HUB, Team Performance, KAM Form', () => {
-  const want = ['overview','analytics','tracker','hubs','teams','kam_form'].sort();
-  assert.deepEqual([...tabsFor('team_lead')].sort(), want);
-  assert.deepEqual([...tabsFor('cm_lead')].sort(), want);
+test('CM lead: Overview, Analytics, Tracker, HUB, Team Performance, KAM Form', () => {
+  assert.deepEqual([...tabsFor('cm_lead')].sort(), ['overview','analytics','tracker','hubs','teams','kam_form'].sort());
 });
 
-test('KAM and CM members: Tracker, Team Performance, KAM Form', () => {
-  for (const r of ['requester', 'cm_member']) assert.deepEqual([...tabsFor(r)].sort(), ['kam_form','teams','tracker']);
+test('team lead: the CM lead tabs plus KAM Feedback', () => {
+  assert.deepEqual([...tabsFor('team_lead')].sort(), ['overview','analytics','tracker','hubs','teams','kam_form','kam_issues'].sort());
 });
 
-test('MX members: Tracker, Team Performance, MX Form', () => {
-  assert.deepEqual([...tabsFor('mx')].sort(), ['mx_form','teams','tracker']);
+test('CM members: Tracker, Team Performance, KAM Form (no KAM Feedback)', () => {
+  assert.deepEqual([...tabsFor('cm_member')].sort(), ['kam_form','teams','tracker']);
+});
+
+test('KAM (requester): Tracker, Team Performance, KAM Form, KAM Feedback', () => {
+  assert.deepEqual([...tabsFor('requester')].sort(), ['kam_form','kam_issues','teams','tracker']);
+});
+
+test('MX members: Tracker, Team Performance, MX Form, KAM Feedback', () => {
+  assert.deepEqual([...tabsFor('mx')].sort(), ['kam_issues','mx_form','teams','tracker']);
 });
 
 test('management, regional leads and hub ops have no tracker tabs (hub responses come from the hub response sheet)', () => {
@@ -41,6 +47,7 @@ test('page paths map to tabs', () => {
   assert.equal(tabForPath('/'), 'tracker');
   assert.equal(tabForPath('/dashboard'), 'overview');
   assert.equal(tabForPath('/kam/new'), 'kam_form');
+  assert.equal(tabForPath('/kam/issues'), 'kam_issues');
   assert.equal(tabForPath('/mx/new'), 'mx_form');
   assert.equal(tabForPath('/admin'), 'admin');
   assert.equal(tabForPath('/sync'), 'sync');
@@ -48,6 +55,6 @@ test('page paths map to tabs', () => {
 });
 
 test('nav is filtered by role', () => {
-  assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['mx_form','teams','tracker']);
-  assert.equal(navFor('admin').length, 9);
+  assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['kam_issues','mx_form','teams','tracker']);
+  assert.equal(navFor('admin').length, 10);
 });
