@@ -4,8 +4,9 @@ import { notifyHubResponse } from '../../../../lib/notify';
 import { pushFields } from '../../../../lib/sheets';
 import { completionBlock, clearBlock } from '../../../../lib/finalResponse';
 // Sheet edits that change the derived AF-AH cells: Ops Status (Overall Validation, Issue Resolution),
-// Issue Pick Time and ISSUE STATUS (Issue Pick). Only the derived cells and the row version are written back.
-const DERIVED_TRIGGERS = ['ops_status', 'issue_pick_time', 'ops_issue_status'];
+// Issue Pick Time and ISSUE STATUS (Issue Pick). Layer 1-3 responses also change Issue Pick (AG), which is timed
+// from the hub response (issue_response_datetime), so they are triggers too. Only the derived cells and the row version are written back.
+const DERIVED_TRIGGERS = ['ops_status', 'issue_pick_time', 'ops_issue_status', 'layer1_response', 'layer2_response', 'layer3_response'];
 export const dynamic = 'force-dynamic';
 const LAYER_FIELDS = ['layer1_response','layer2_response','layer3_response'];
 // final_response is a hub-sheet field (Final Response column). Its rules are in lib/finalResponse.js.
