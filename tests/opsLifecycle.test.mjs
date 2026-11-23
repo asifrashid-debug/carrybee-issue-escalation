@@ -49,7 +49,7 @@ test('the flow runs Raised -> Picked -> In Progress -> Resolved, and each step n
   assert.equal(p1.patch.issue_status, 'Picked');
   assert.equal(p1.patch.picked_at, at(5 * MIN).toISOString());
   assert.equal(p1.patch.picked_by, EMAIL);
-  assert.deepEqual(p1.cells, { I: 'Picked' });
+  assert.deepEqual(p1.cells, { J: 'Picked' });
   issue = { ...issue, ...p1.patch };
 
   const p2 = applyAction(issue, 'start', EMAIL, at(10 * MIN));
@@ -61,7 +61,7 @@ test('the flow runs Raised -> Picked -> In Progress -> Resolved, and each step n
   assert.equal(p3.patch.issue_status, 'Resolved');
   assert.equal(p3.patch.closed_at, at(3 * HOUR).toISOString());
   assert.equal(p3.patch.closed_by, EMAIL);
-  assert.deepEqual(p3.cells, { I: 'Resolved' });
+  assert.deepEqual(p3.cells, { J: 'Resolved' });
 });
 
 test('Not Resolved is also reached from In Progress', () => {
@@ -69,7 +69,7 @@ test('Not Resolved is also reached from In Progress', () => {
   const p = applyAction(issue, 'not_resolved', EMAIL, at(HOUR));
   assert.equal(p.patch.issue_status, 'Not Resolved');
   assert.equal(p.patch.closed_by, EMAIL);
-  assert.deepEqual(p.cells, { I: 'Not Resolved' });
+  assert.deepEqual(p.cells, { J: 'Not Resolved' });
 });
 
 test('a status can only move on from the status before it (409 otherwise)', () => {
@@ -105,7 +105,7 @@ test('KAM validation: one of the four values, any time, recorded with who and wh
   assert.equal(v.patch.validation, 'Valid');
   assert.equal(v.patch.validated_at, at(HOUR).toISOString());
   assert.equal(v.patch.validated_by, EMAIL);
-  assert.deepEqual(v.cells, { J: 'Valid' });
+  assert.deepEqual(v.cells, { K: 'Valid' });
   assert.equal(applyValidation(raised(), '  Duplicate ', EMAIL, T0).patch.validation, 'Duplicate');
 });
 
@@ -156,7 +156,7 @@ test('sync: a new row starts at Raised whatever the sheet says, and the sheet ce
   const p = planSyncLifecycle({ dbRow: null, sheet: { issue_status: 'Resolved', validation: '' }, now: T0 });
   assert.equal(p.isNew, true);
   assert.equal(p.insert.issue_status, 'Raised');
-  assert.deepEqual(p.sheetCells, { I: 'Raised' });
+  assert.deepEqual(p.sheetCells, { J: 'Raised' });
 });
 
 test('sync: a new row already showing Raised needs no sheet write', () => {
@@ -173,7 +173,7 @@ test('sync: for an existing row the DB status wins; a changed sheet cell is rewr
   assert.equal(p.isNew, false);
   assert.equal(p.status, 'Picked');
   assert.equal(p.validation, 'Valid');
-  assert.deepEqual(p.sheetCells, { I: 'Picked', J: 'Valid' });
+  assert.deepEqual(p.sheetCells, { J: 'Picked', K: 'Valid' });
   assert.equal(p.backfill, null);
 });
 
