@@ -11,7 +11,7 @@ import { useOpsBadge } from './useOpsBadge';
 import { useTrackerBadge } from './useTrackerBadge';
 
 // Folder icon per tab (demo FOLDER_ICON map). Unknown tabs fall back to the escalation icon.
-const FOLDER_ICON = { overview: 'zone', analytics: 'trend', tracker: 'escalation', hubs: 'hub', teams: 'team', kam_form: 'kam', mx_form: 'mx', admin: 'layers', sync: 'sync' };
+const FOLDER_ICON = { overview: 'zone', analytics: 'trend', tracker: 'escalation', hubs: 'hub', teams: 'team', kam_form: 'kam', mx_form: 'mx', admin: 'layers', sync: 'sync', ir_issues: 'ir' };
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
