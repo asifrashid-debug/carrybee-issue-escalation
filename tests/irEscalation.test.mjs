@@ -70,14 +70,25 @@ test('targets come from the environment and stay null when unset', () => {
   assert.deepEqual(irTargetsFromEnv({ IR_PICK_SLA_HOURS: '2', IR_RESOLVE_SLA_HOURS: '48' }), { pickHours: 2, resolveHours: 48 });
 });
 
-test('picked stamp is set once; resolved stamp is set on Resolved and cleared otherwise', () => {
+test('only Picked stamps the pick time, and only the first time', () => {
   const now = '2026-11-14T09:00:00Z';
   assert.deepEqual(irStatusStamps({}, 'Open', now), { ir_resolved_at: null });
   assert.deepEqual(irStatusStamps({}, 'Picked', now), { ir_picked_at: now, ir_resolved_at: null });
-  assert.deepEqual(irStatusStamps({ ir_picked_at: '2026-11-14T08:00:00Z' }, 'In Progress', now), { ir_resolved_at: null });
+  assert.deepEqual(irStatusStamps({ ir_picked_at: '2026-11-14T08:00:00Z' }, 'Picked', now), { ir_resolved_at: null });
+  assert.deepEqual(irStatusStamps({}, 'In Progress', now), { ir_resolved_at: null });
+  assert.deepEqual(irStatusStamps({}, 'Resolved', now), { ir_resolved_at: now });
+});
+
+test('Resolved stamps the resolve time, keeps the first one, and clears it when the status moves away', () => {
+  const now = '2026-11-14T09:00:00Z';
   assert.deepEqual(irStatusStamps({ ir_picked_at: 'p' }, 'Resolved', now), { ir_resolved_at: now });
   assert.deepEqual(irStatusStamps({ ir_picked_at: 'p', ir_resolved_at: 'r' }, 'Resolved', now), { ir_resolved_at: 'r' });
-  assert.deepEqual(irStatusStamps({ ir_resolved_at: 'r' }, 'In Progress', now), { ir_resolved_at: null, ir_picked_at: now });
+  assert.deepEqual(irStatusStamps({ ir_resolved_at: 'r' }, 'In Progress', now), { ir_resolved_at: null });
+});
+
+test('skipping Picked leaves the pick SLA Pending', () => {
+  const e = { submitted_at: '2026-11-14T06:00:00Z', ir_picked_at: null, ir_resolved_at: '2026-11-14T08:00:00Z' };
+  assert.deepEqual(irSlaCells(e, { IR_PICK_SLA_HOURS: '2', IR_RESOLVE_SLA_HOURS: '24' }), { pick: 'Pending', resolve: 'Within SLA' });
 });
 
 test('IR row has 18 values in header order, with the form fields in 1-10', () => {
