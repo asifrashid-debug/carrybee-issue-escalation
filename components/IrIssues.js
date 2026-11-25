@@ -103,6 +103,21 @@ function IrDrawer({ issue: d, onClose, onSaved }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
+  const [mail, setMail] = useState({ state: 'loading', messages: [], note: null, error: null });
+
+  // Mails with this issue's subject line, from the mailbox (read-only).
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/ir/${encodeURIComponent(d.issue_id)}/mail`, { cache: 'no-store' })
+      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
+      .then(({ ok, j }) => {
+        if (cancelled) return;
+        if (!ok) setMail({ state: 'error', messages: [], note: null, error: j.error || 'Could not load the mail.' });
+        else setMail({ state: 'done', messages: j.messages || [], note: j.note || null, error: null });
+      })
+      .catch(() => { if (!cancelled) setMail({ state: 'error', messages: [], note: null, error: 'Could not load the mail.' }); });
+    return () => { cancelled = true; };
+  }, [d.issue_id]);
 
   async function save() {
     setErr(null); setMsg(null);
@@ -144,6 +159,38 @@ function IrDrawer({ issue: d, onClose, onSaved }) {
         <Field label="Feedback from IR lead">{d.ir_lead_feedback}</Field>
         <Field label="IR Pick SLA">{d.ir_pick_sla}</Field>
         <Field label="IR Resolve SLA">{d.ir_resolve_sla}</Field>
+
+        <div style={sectionTitle}>Mail</div>
+        {!d.mail_subject && <div className="hint">No mail subject line was entered for this issue.</div>}
+        {d.mail_subject && (
+          <div className="hint" style={{ marginBottom: 8 }}>Subject: <b>{d.mail_subject}</b></div>
+        )}
+        {mail.state === 'loading' && d.mail_subject && <div className="hint">Loading mail…</div>}
+        {mail.error && <div className="err on" role="alert">{mail.error}</div>}
+        {mail.note && mail.state === 'done' && <div className="hint">{mail.note}</div>}
+        {mail.messages.map((m) => (
+          <div key={m.id} style={{ border: '1px solid var(--line, #e5e5e5)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: 'var(--mut)' }}>{m.date ? formatDhaka(m.date) : ''}</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}><b>From:</b> {m.from || '—'}</div>
+            <div style={{ fontSize: 13 }}><b>To:</b> {m.to || '—'}</div>
+            {m.cc && <div style={{ fontSize: 13 }}><b>Cc:</b> {m.cc}</div>}
+            <div style={{ fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 8, maxHeight: 260, overflowY: 'auto' }}>
+              {m.body || '(no text body)'}
+            </div>
+            {m.body_truncated && <div className="hint">Shown in part. The full mail is in Gmail.</div>}
+            {m.attachments.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 12, color: 'var(--mut)', marginBottom: 4 }}>Attachments</div>
+                {m.attachments.map((a) => (
+                  <div key={a.attachmentId} style={{ fontSize: 13, marginBottom: 2 }}>
+                    <a href={`/api/ir/${encodeURIComponent(d.issue_id)}/mail/attachment?message=${encodeURIComponent(m.id)}&attachment=${encodeURIComponent(a.attachmentId)}`} download>{a.filename}</a>
+                    {a.size ? <span className="hint"> · {Math.round(a.size / 1024)} KB</span> : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
 
         <div style={sectionTitle}>KAM feedback</div>
         <label htmlFor="ir-kam-status" style={{ display: 'block', fontSize: 12, color: 'var(--mut)', marginBottom: 4 }}>KAM Status</label>
