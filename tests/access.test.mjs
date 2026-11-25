@@ -67,3 +67,11 @@ test('/admin/ir-folder belongs to the admin tab (super admin only)', () => {
   assert.equal(canOpenTab('team_lead', 'admin'), false);
   assert.equal(canOpenTab('cm_lead', 'admin'), false);
 });
+
+// IR sheet setup page lives under /admin too.
+test('/admin/ir-sheet belongs to the admin tab (super admin only)', () => {
+  assert.equal(tabForPath('/admin/ir-sheet'), 'admin');
+  assert.equal(canOpenTab('admin', 'admin'), true);
+  assert.equal(canOpenTab('team_lead', 'admin'), false);
+  assert.equal(canOpenTab('cm_lead', 'admin'), false);
+});
