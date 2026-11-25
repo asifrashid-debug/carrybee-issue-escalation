@@ -12,7 +12,7 @@ import { pickDeadline, pickJustifyDueFrom, pickPhase } from '../../../lib/pickSl
 import { indexCategories, resolutionCheck } from '../../../lib/categorySla';
 import { notifyNewCmIssue } from '../../../lib/notify';
 import { nextCmOwner } from '../../../lib/cmAssign';
-import { routesFromBody, routeError, attachmentError, cleanMailSubject, irSlaCells } from '../../../lib/irEscalation.mjs';
+import { routesFromBody, routeError, attachmentError, cleanMailSubject, irSlaCells, routeListFilter } from '../../../lib/irEscalation.mjs';
 import { pushIrRow, irSheetId } from '../../../lib/irSheet';
 import { uploadIrAttachments } from '../../../lib/irAttachments';
 
@@ -79,7 +79,9 @@ export async function GET(req) {
   eq('issue_category','issue_category'); eq('issue_sub_category','issue_sub_category');
   // IR tab: only escalations ticked for IR, with the IR pick and resolve SLA cells added to each row
   const isIr = searchParams.get('route') === 'ir';
-  if (isIr) q = q.eq('route_ir', true);
+  // Tracker (no route): HUB-ticked issues only. IR-only issues are not shown there.
+  const listRoute = routeListFilter(searchParams.get('route'));
+  q = q.eq(listRoute.column, listRoute.value);
   // Date range (Dhaka days, by submitted date). Empty = all time.
   const rb = rangeBounds(resolveRange({ key: 'custom', from: searchParams.get('from'), to: searchParams.get('to') }));
   if (rb?.start != null) q = q.gte('submitted_at', new Date(rb.start).toISOString());
@@ -111,6 +113,7 @@ export async function GET(req) {
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
   let rwq = sb.from('escalations').select('issue_id', { count: 'exact', head: true }).eq('ops_issue_status', 'Resolved').gte('updated_at', weekAgo.toISOString());
   if (searchParams.get('zone')) rwq = rwq.eq('zone', searchParams.get('zone'));
+  rwq = rwq.eq(listRoute.column, listRoute.value);
   if (!scope.all) rwq = rwq.or(scopeFilter(scope));
   // Run the list, the resolved count and the category lookup together (one database round trip instead of three)
   const [{ data, error, count }, rw, { data: cats }] = await Promise.all([
