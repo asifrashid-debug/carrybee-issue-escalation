@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatDhaka } from '../lib/time';
 import { IR_KAM_STATUSES } from '../lib/irKamStatus.mjs';
+import IrAnalytics from './IrAnalytics';
 
 // IR Issues tab: every escalation the KAM ticked for IR (route_ir), with the IR pick and resolve SLA.
 // Click a row to open the drawer. The KAM (raiser), their team lead or an admin sets the KAM Status there.
@@ -49,6 +50,7 @@ export default function IrIssues() {
         <button type="button" className="ibtn" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
       </div>
       {err && <div className="err on" role="alert" style={{ margin: '12px 24px' }}>{err}</div>}
+      <IrAnalytics />
       <div style={{ padding: '12px 24px', overflowX: 'auto' }}>
         <div className="hint" style={{ marginBottom: 8 }}>{count} IR issue{count === 1 ? '' : 's'}</div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
