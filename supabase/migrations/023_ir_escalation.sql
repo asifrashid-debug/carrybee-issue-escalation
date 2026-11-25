@@ -1,7 +1,7 @@
 -- IR Issue Escalation: KAM routing checkboxes (HUB / IR / Sort-TNL), IR mail subject and attachment,
 -- and the IR sheet columns 11-16 (Drive Link, Status From KAM, Assigned IR Member, Feedback from IR,
 -- Feedback from IR Lead, IR Status). IR Pick SLA and IR Resolve SLA are calculated in the app from
--- submitted_at, ir_picked_at and ir_resolved_at. NOT APPLIED YET: apply only after the user approves.
+-- submitted_at, ir_picked_at and ir_resolved_at. Applied to the production project (kssypfibhlmoxucabhdu) with the Supabase connector.
 
 alter table public.escalations
   add column if not exists route_hub boolean not null default true,
