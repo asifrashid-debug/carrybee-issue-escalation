@@ -2,26 +2,26 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tabsFor, canOpenTab, tabForPath, navFor } from '../lib/access.js';
 
-const ALL = ['overview','analytics','tracker','hubs','teams','kam_form','kam_issues','mx_form','admin','sync'];
+const ALL = ['overview','analytics','tracker','ir_issues','hubs','teams','kam_form','kam_issues','mx_form','admin','sync'];
 
 test('super admin sees every tab', () => {
   assert.deepEqual([...tabsFor('admin')].sort(), [...ALL].sort());
 });
 
 test('CM lead: Overview, Analytics, Tracker, HUB, Team Performance, KAM Form, Ops-KAM', () => {
-  assert.deepEqual([...tabsFor('cm_lead')].sort(), ['overview','analytics','tracker','hubs','teams','kam_form','kam_issues'].sort());
+  assert.deepEqual([...tabsFor('cm_lead')].sort(), ['overview','analytics','tracker','ir_issues','hubs','teams','kam_form','kam_issues'].sort());
 });
 
 test('team lead: the CM lead tabs plus KAM Feedback', () => {
-  assert.deepEqual([...tabsFor('team_lead')].sort(), ['overview','analytics','tracker','hubs','teams','kam_form','kam_issues'].sort());
+  assert.deepEqual([...tabsFor('team_lead')].sort(), ['overview','analytics','tracker','ir_issues','hubs','teams','kam_form','kam_issues'].sort());
 });
 
 test('CM members: Tracker, Team Performance, KAM Form, Ops-KAM (no Analytics, no Overview)', () => {
-  assert.deepEqual([...tabsFor('cm_member')].sort(), ['kam_form','kam_issues','teams','tracker']);
+  assert.deepEqual([...tabsFor('cm_member')].sort(), ['ir_issues','kam_form','kam_issues','teams','tracker']);
 });
 
 test('KAM (requester): Tracker, Team Performance, KAM Form, KAM Feedback', () => {
-  assert.deepEqual([...tabsFor('requester')].sort(), ['kam_form','kam_issues','teams','tracker']);
+  assert.deepEqual([...tabsFor('requester')].sort(), ['ir_issues','kam_form','kam_issues','teams','tracker']);
 });
 
 test('MX members: Tracker, Team Performance, MX Form, KAM Feedback', () => {
@@ -48,6 +48,7 @@ test('page paths map to tabs', () => {
   assert.equal(tabForPath('/dashboard'), 'overview');
   assert.equal(tabForPath('/kam/new'), 'kam_form');
   assert.equal(tabForPath('/kam/issues'), 'kam_issues');
+  assert.equal(tabForPath('/ir'), 'ir_issues');
   assert.equal(tabForPath('/mx/new'), 'mx_form');
   assert.equal(tabForPath('/admin'), 'admin');
   assert.equal(tabForPath('/sync'), 'sync');
@@ -56,5 +57,5 @@ test('page paths map to tabs', () => {
 
 test('nav is filtered by role', () => {
   assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['kam_issues','mx_form','teams','tracker']);
-  assert.equal(navFor('admin').length, 10);
+  assert.equal(navFor('admin').length, 11);
 });

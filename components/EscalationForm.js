@@ -20,6 +20,10 @@ export default function EscalationForm({ channel }) {
   const [me, setMe] = useState(null);
   const [form, setForm] = useState({ email: '', consignment_id: '', merchant_name: '', concern_hub: '', issue_category: '', issue_sub_category: '', issue_details: '', kam_name: '' });
   const [biz, setBiz] = useState(null); // { q, found, business_name, kam_name, input_type } for the merchant box
+  const [routes, setRoutes] = useState({ hub: false, ir: false, sort_tnl: false }); // KAM: where the issue goes (HUB / IR / Sort-TNL)
+  const [mailSubject, setMailSubject] = useState(''); // KAM IR: optional mail subject line
+  const [files, setFiles] = useState([]);             // KAM IR: attachments, zipped on the server
+  const [fileKey, setFileKey] = useState(0);          // changes after a submit, so the file picker clears
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -156,6 +160,10 @@ export default function EscalationForm({ channel }) {
 
   async function submit(e) {
     e.preventDefault(); setErr(null); setMsg(null);
+    if (isKam && !routes.hub && !routes.ir && !routes.sort_tnl) { setErr('Tick at least one box: HUB, IR or Sort/TNL.'); return; }
+    if (isKam && files.length && !routes.ir) { setErr('Attachments are only accepted when the IR box is ticked.'); return; }
+    if (isKam && files.length > 10) { setErr('Attach at most 10 files.'); return; }
+    if (isKam && files.reduce((n, f) => n + f.size, 0) > 20 * 1024 * 1024) { setErr('Attachments are larger than 20 MB in total.'); return; }
     if (!hub) { setErr('Select a Concern Hub from the list.'); return; }
     if (!form.issue_category || !form.issue_sub_category) { setErr('Select an Issue Category and Sub Category.'); return; }
     if (isKam && !form.consignment_id.trim()) { setErr('Consignment ID is required.'); return; }
@@ -164,8 +172,15 @@ export default function EscalationForm({ channel }) {
     // Zone and KAM are set by the server. The KAM name comes from the signed-in account; MX form sends the merchant only.
     const body = { channel, email: form.email, consignment_id: form.consignment_id, concern_hub: form.concern_hub, issue_category: form.issue_category, issue_sub_category: form.issue_sub_category, issue_details: form.issue_details };
     if (!isKam) body.merchant_name = form.merchant_name;
+    if (isKam) { body.route_hub = routes.hub; body.route_ir = routes.ir; body.route_sort_tnl = routes.sort_tnl; if (routes.ir) body.mail_subject = mailSubject; }
     setBusy(true);
-    const res = await fetch('/api/escalations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    let res;
+    if (files.length) {
+      const fd = new FormData(); fd.append('payload', JSON.stringify(body)); files.forEach((f) => fd.append('attachments', f, f.name));
+      res = await fetch('/api/escalations', { method: 'POST', body: fd });
+    } else {
+      res = await fetch('/api/escalations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    }
     const j = await res.json().catch(() => ({})); setBusy(false);
     if (!res.ok) { setErr(j.error || 'Submit failed'); return; }
     setMsg({ id: j.data.issue_id, warn: j.duplicate_warning, kam: j.data.kam_name, zone: j.data.zone, at: j.data.submitted_at });
@@ -173,6 +188,7 @@ export default function EscalationForm({ channel }) {
     setBiz(null);
     setHubAuto(null); setHubLookup({ state: 'idle', message: '' });
     lastLookup.current = '';
+    setRoutes({ hub: false, ir: false, sort_tnl: false }); setMailSubject(''); setFiles([]); setFileKey((k) => k + 1);
   }
 
   const idBlock = (
@@ -233,6 +249,33 @@ export default function EscalationForm({ channel }) {
                 )}
               </div>
             </div>
+
+            {isKam && (
+              <div className="full" style={{ display: 'grid', gap: 10 }}>
+                <label className="flabel">Send this issue to * <small>(tick one or more)</small></label>
+                <div role="group" aria-label="Where to send this issue" style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+                  {[['hub', 'HUB'], ['ir', 'IR'], ['sort_tnl', 'Sort/TNL']].map(([k, label]) => (
+                    <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                      <input type="checkbox" checked={routes[k]} onChange={(e) => setRoutes((r) => ({ ...r, [k]: e.target.checked }))} /> {label}
+                    </label>
+                  ))}
+                </div>
+                {routes.sort_tnl && <div className="hint">Sort/TNL routing is not set up yet. The issue is saved to the database only.</div>}
+                {routes.ir && (
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    <div>
+                      <label className="flabel" htmlFor="ir-mail-subject">Mail Subject Line <small>(optional)</small></label>
+                      <div className="fctl"><input id="ir-mail-subject" value={mailSubject} maxLength={200} onChange={(e) => setMailSubject(e.target.value)} placeholder="Subject for the IR mail" /></div>
+                    </div>
+                    <div>
+                      <label className="flabel" htmlFor="ir-attachments">Attachments <small>(optional. Zipped on save. Up to 10 files, 20 MB total)</small></label>
+                      <input key={fileKey} id="ir-attachments" type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files || []))} />
+                      {files.length > 0 && <div className="hint">{files.length} file{files.length === 1 ? '' : 's'} will be zipped on save.</div>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <SearchSelect label="Concern Hub (225 master hubs, no free text)" value={form.concern_hub} onChange={(v) => { set('concern_hub', v); setHubAuto(null); setHubLookup({ state: 'idle', message: '' }); }} options={hubOptions} placeholder="Type to search hub…" required emptyText="No hub matches. Try another spelling." />
             <div>

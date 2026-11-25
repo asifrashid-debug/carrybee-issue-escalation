@@ -12,6 +12,9 @@ import { pickDeadline, pickJustifyDueFrom, pickPhase } from '../../../lib/pickSl
 import { indexCategories, resolutionCheck } from '../../../lib/categorySla';
 import { notifyNewCmIssue } from '../../../lib/notify';
 import { nextCmOwner } from '../../../lib/cmAssign';
+import { routesFromBody, routeError, attachmentError, cleanMailSubject, irSlaCells } from '../../../lib/irEscalation.mjs';
+import { pushIrRow, irSheetId } from '../../../lib/irSheet';
+import { uploadIrAttachments } from '../../../lib/irAttachments';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +51,19 @@ async function queueSync(sb, esc, direction='db_to_sheet') {
   }
 }
 
+// IR sheet write for an IR-routed escalation. Same logging as queueSync, to the IR sheet.
+async function queueIrSync(sb, esc) {
+  const { data, error } = await sb.from('sync_log').insert({ direction: 'db_to_sheet', issue_id: esc.issue_id, spreadsheet_id: irSheetId(), status: 'queued', payload: { target: 'ir' } }).select().single();
+  if (error) return;
+  try {
+    const r = await pushIrRow(esc);
+    await sb.from('sync_log').update({ status: 'success', updated_at: new Date().toISOString() }).eq('id', data.id);
+    await sb.from('escalations').update({ last_synced_at: new Date().toISOString(), ir_sheet_row: r.row }).eq('issue_id', esc.issue_id);
+  } catch (e) {
+    await sb.from('sync_log').update({ status: 'failed', error_message: String(e.message || e), retries: 1, updated_at: new Date().toISOString() }).eq('id', data.id);
+  }
+}
+
 export async function GET(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const sb = supabaseAdmin();
@@ -61,6 +77,9 @@ export async function GET(req) {
   eq('ops_status','ops_status'); eq('validation','validation'); eq('priority_scale','priority_scale'); eq('week','week');
   eq('concern_hub','concern_hub'); eq('regional_lead','regional_lead'); eq('division','division');
   eq('issue_category','issue_category'); eq('issue_sub_category','issue_sub_category');
+  // IR tab: only escalations ticked for IR, with the IR pick and resolve SLA cells added to each row
+  const isIr = searchParams.get('route') === 'ir';
+  if (isIr) q = q.eq('route_ir', true);
   // Date range (Dhaka days, by submitted date). Empty = all time.
   const rb = rangeBounds(resolveRange({ key: 'custom', from: searchParams.get('from'), to: searchParams.get('to') }));
   if (rb?.start != null) q = q.gte('submitted_at', new Date(rb.start).toISOString());
@@ -105,7 +124,8 @@ export async function GET(req) {
   const catIndex = indexCategories(cats || []);
   const rows = (data || []).map((e) => {
     const r = resolutionCheck(e, catIndex, now.getTime());
-    return { ...e, feedback_phase: feedbackPhase(e, now), pick_phase: pickPhase(e, now), resolution_days: r.days, resolution_due_at: r.dueAt, resolution_breach: r.breach };
+    const ir = isIr ? (() => { const c = irSlaCells(e); return { ir_pick_sla: c.pick, ir_resolve_sla: c.resolve }; })() : {};
+    return { ...e, feedback_phase: feedbackPhase(e, now), pick_phase: pickPhase(e, now), resolution_days: r.days, resolution_due_at: r.dueAt, resolution_breach: r.breach, ...ir };
   });
   await stampEscalations(sb, rows, now);
   await stampPickFailures(sb, rows, now);
@@ -115,7 +135,15 @@ export async function GET(req) {
 export async function POST(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const sb = supabaseAdmin();
-  const body = await req.json();
+  // JSON for every request without files. The KAM IR box can send files as multipart: field "payload" (JSON) and "attachments" (files).
+  let body, files = [];
+  if ((req.headers.get('content-type') || '').includes('multipart/form-data')) {
+    const fd = await req.formData();
+    try { body = JSON.parse(String(fd.get('payload') || '{}')); } catch { return NextResponse.json({ error: 'Form payload is not valid.' }, { status: 400 }); }
+    files = fd.getAll('attachments').filter((f) => f && typeof f !== 'string' && f.size > 0);
+  } else {
+    body = await req.json();
+  }
   if (body.channel !== 'KAM' && body.channel !== 'MX') {
     return NextResponse.json({ error: 'Channel must be KAM or MX.' }, { status: 400 });
   }
@@ -130,6 +158,10 @@ export async function POST(req) {
   if (!body.issue_details || body.issue_details.trim().length < 20) {
     return NextResponse.json({ error: 'Issue Details must be at least 20 characters.' }, { status: 400 });
   }
+  // Routing: HUB / IR / Sort-TNL boxes (KAM). At least one box. Attachments only with IR.
+  const routes = routesFromBody(body, body.channel);
+  const routeErr = routeError(routes) || attachmentError(routes, files);
+  if (routeErr) return NextResponse.json({ error: routeErr }, { status: 400 });
   // Consignment regex (configurable)
   const { data: cfg } = await sb.from('app_config').select('value').eq('key','validation').single();
   const re = cfg?.value?.consignment_id_regex;
@@ -169,6 +201,12 @@ export async function POST(req) {
   }
   const { data: idRow, error: idErr } = await sb.rpc('next_issue_id');
   if (idErr) return NextResponse.json({ error: idErr.message }, { status: 500 });
+  // IR attachments: zipped and uploaded to Drive before the row is saved, so a failed upload saves nothing.
+  let attach = { drive_link: null, attachment_name: null };
+  if (files.length) {
+    try { attach = await uploadIrAttachments(idRow, files); }
+    catch (e) { return NextResponse.json({ error: `Attachment upload failed. Nothing was saved. ${e.message}` }, { status: 500 }); }
+  }
   const now = new Date().toISOString();
   const row = {
     issue_id: idRow, submitted_at: now, email: session.email, consignment_id: body.consignment_id?.trim()||null, merchant_name,
@@ -178,7 +216,10 @@ export async function POST(req) {
     kam_feedback_status: FEEDBACK_PENDING, feedback_due_at: windowEndFrom(now), feedback_justifications: 0, ops_issue_status: 'New', ops_status: 'Pending',
     cm_assigned: body.channel === 'MX' && String(kam_name || '').trim().toUpperCase() === 'CM',
     pick_due_at: null, pick_missed: false, pick_justifications: 0, pick_justify_due_at: null,
-    regional_lead: hub.regional_lead, division: hub.division, duplicate_of, row_version: 1
+    regional_lead: hub.regional_lead, division: hub.division, duplicate_of, row_version: 1,
+    route_hub: routes.hub, route_ir: routes.ir, route_sort_tnl: routes.sort_tnl,
+    mail_subject: routes.ir ? cleanMailSubject(body.mail_subject) : null,
+    drive_link: attach.drive_link, attachment_name: attach.attachment_name,
   };
   // Business Pick timing: a normal issue is picked automatically at raise. A CM-assigned issue waits for "CM picked".
   row.business_pick_time = row.cm_assigned ? null : now;
@@ -193,7 +234,8 @@ export async function POST(req) {
   const { data, error } = await sb.from('escalations').insert(row).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   await audit(sb, data.issue_id, 'create', null, data.issue_id, session.email, 'form');
-  await queueSync(sb, data);
+  if (data.route_hub) await queueSync(sb, data);
+  if (data.route_ir) await queueIrSync(sb, data);
   // Bell + sound for CM members and CM leads when the issue is CM-assigned. Never blocks the response.
   await notifyNewCmIssue(sb, data);
   return NextResponse.json({ data, duplicate_warning }, { status: 201 });

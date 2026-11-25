@@ -22,7 +22,7 @@ export async function POST(req) {
   let dbRows;
   try {
     ({ rows: dbRows } = await readAllPages((from, to) =>
-      sb.from('escalations').select('*').eq('zone', zone).eq('is_archived', false).order('issue_id', { ascending: true }).range(from, to)));
+      sb.from('escalations').select('*').eq('zone', zone).eq('is_archived', false).neq('route_hub', false).order('issue_id', { ascending: true }).range(from, to)));
   } catch (e) {
     return NextResponse.json({ error: 'DB read failed: ' + e.message }, { status: 500 });
   }
