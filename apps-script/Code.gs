@@ -36,7 +36,6 @@ const FIELD_MAP = {
   'Layer 2 Response (Cluster Lead)': 'layer2_response',
   'Layer 3 Response (Regional Lead)': 'layer3_response',
   'Final Response': 'final_response',
-  'Issue Pick Time': 'issue_pick_time',
   'ISSUE STATUS': 'ops_issue_status',
   'Remarks': 'remarks',
   'Regional Lead': 'regional_lead',
