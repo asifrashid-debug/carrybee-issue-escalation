@@ -5,6 +5,7 @@ import { fmtN } from './cw/format';
 import { formatDhaka } from '../lib/time';
 import { VALIDATIONS, CLOSED_STATUSES, dueState } from '../lib/opsLifecycle.mjs';
 import ErrorBoundary from './ErrorBoundary';
+import { markOpsIssuesSeen } from './useOpsBadge';
 
 // KAM Feedback tab. Lists only the Ops Issues named to the signed-in KAM (see lib/opsIssues.mjs).
 // Uses the tracker's classes (ph, kpis, chips, qi cards, drawer), so it looks like the rest of the app.
@@ -223,6 +224,8 @@ export default function KamIssues() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Load failed (${r.status})`);
       setIssues(d.issues || []);
+      // Opening the tab marks the current Raised issues as seen, which clears the header badge.
+      markOpsIssuesSeen(d.viewer, d.issues || []);
     } catch (e) {
       setError(e.message);
     } finally {

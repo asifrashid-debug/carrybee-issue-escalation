@@ -7,6 +7,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { navFor } from '../lib/access';
 import NotificationBell from './NotificationBell';
 import { getMe } from './cw/meClient';
+import { useOpsBadge } from './useOpsBadge';
 
 // Folder icon per tab (demo FOLDER_ICON map). Unknown tabs fall back to the escalation icon.
 const FOLDER_ICON = { overview: 'zone', analytics: 'trend', tracker: 'escalation', hubs: 'hub', teams: 'team', kam_form: 'kam', mx_form: 'mx', admin: 'layers', sync: 'sync' };
@@ -24,6 +25,9 @@ export default function AppHeader() {
   const [theme, setTheme] = useState('light');
   const [me, setMe] = useState(null);
   const [now, setNow] = useState('');
+  // New Ops Issues for this viewer (Raised and not yet seen). Only for users who can open the Ops-KAM tab.
+  const opsEnabled = !!me && navFor(me.role).some((l) => l.tab === 'kam_issues');
+  const opsCount = useOpsBadge(opsEnabled);
 
   useEffect(() => {
     if (path === '/login') return undefined; // signed-out page: no /api/me call (it would return 401)
@@ -92,12 +96,17 @@ export default function AppHeader() {
 
       {links.length > 0 && (
         <nav className="folders" aria-label="Pages">
-          {links.map((n) => (
-            <Link key={n.href} href={n.href} className={`folder${activeTab === n.tab ? ' on' : ''}`} aria-current={activeTab === n.tab ? 'page' : undefined}>
-              <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><use href={`#i-${FOLDER_ICON[n.tab] || 'escalation'}`} /></svg>
-              {n.label}
-            </Link>
-          ))}
+          {links.map((n) => {
+            // Tracker and Ops-KAM both show the new Ops Issue count. Ops-KAM hides it while open, because opening the tab marks them seen.
+            const showOps = opsCount > 0 && (n.tab === 'tracker' || (n.tab === 'kam_issues' && activeTab !== 'kam_issues'));
+            return (
+              <Link key={n.href} href={n.href} className={`folder${activeTab === n.tab ? ' on' : ''}`} aria-current={activeTab === n.tab ? 'page' : undefined}>
+                <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><use href={`#i-${FOLDER_ICON[n.tab] || 'escalation'}`} /></svg>
+                {n.label}
+                {showOps && <span className="tab-badge" aria-label={`${opsCount} new Ops Issue${opsCount === 1 ? '' : 's'}`}>{opsCount > 99 ? '99+' : opsCount}</span>}
+              </Link>
+            );
+          })}
         </nav>
       )}
     </>

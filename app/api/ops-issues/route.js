@@ -31,5 +31,6 @@ export async function GET() {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
   const issues = visibleOpsIssues(user, withHubZone(rows, hubs)).map((i) => ({ ...i, can_edit: canEditKamFeedback(user, i) }));
-  return NextResponse.json({ issues });
+  // viewer: the signed-in email. The Ops-KAM badge uses it as the key for the "seen" list.
+  return NextResponse.json({ issues, viewer: user.email });
 }

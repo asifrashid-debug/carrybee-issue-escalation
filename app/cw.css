@@ -529,3 +529,7 @@ html[data-theme=dark] [style*="background:#0A7A56"]{background:#00E5A0!important
   .kpis.k5{grid-template-columns:1fr}
   .kpis.k5 .kpi{border-right:0;border-bottom:1px solid var(--line)}
 }
+
+/* New Ops Issue count on the Tracker and Ops-KAM folder tabs */
+.tab-badge{position:absolute;top:-8px;right:-6px;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#FF5470;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;line-height:1;box-shadow:0 0 0 2px var(--paper)}
+html[data-theme=dark] .tab-badge{box-shadow:0 0 0 2px #16171C}
