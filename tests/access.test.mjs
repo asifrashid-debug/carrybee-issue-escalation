@@ -59,3 +59,11 @@ test('nav is filtered by role', () => {
   assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['kam_issues','mx_form','teams','tracker']);
   assert.equal(navFor('admin').length, 11);
 });
+
+// IR folder setup page lives under /admin, so only the super admin can open it.
+test('/admin/ir-folder belongs to the admin tab (super admin only)', () => {
+  assert.equal(tabForPath('/admin/ir-folder'), 'admin');
+  assert.equal(canOpenTab('admin', 'admin'), true);
+  assert.equal(canOpenTab('team_lead', 'admin'), false);
+  assert.equal(canOpenTab('cm_lead', 'admin'), false);
+});
