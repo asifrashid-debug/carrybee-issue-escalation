@@ -12,7 +12,7 @@ import { pickDeadline, pickJustifyDueFrom, pickPhase } from '../../../lib/pickSl
 import { indexCategories, resolutionCheck } from '../../../lib/categorySla';
 import { notifyNewCmIssue } from '../../../lib/notify';
 import { nextCmOwner } from '../../../lib/cmAssign';
-import { routesFromBody, routeError, attachmentError, cleanMailSubject, irSlaCells, routeListFilter } from '../../../lib/irEscalation.mjs';
+import { routesFromBody, routeError, attachmentError, cleanMailSubject, irSlaCells, routeListFilter, isIrOnlyRoute } from '../../../lib/irEscalation.mjs';
 import { pushIrRow, irSheetId } from '../../../lib/irSheet';
 import { uploadIrAttachments } from '../../../lib/irAttachments';
 
@@ -175,8 +175,18 @@ export async function POST(req) {
   const { data: hub } = await sb.from('hub_master').select('*').eq('hub_name', body.concern_hub).single();
   if (!hub) return NextResponse.json({ error: 'Concern Hub must be selected from Hub Master (no free text).' }, { status: 400 });
   // Category and sub category must be an exact active pair from the requester list
-  const { data: pair } = await sb.from('category_master').select('issue_type').eq('side', 'requester').eq('is_active', true)
-    .eq('category', body.issue_category || '').eq('sub_category', body.issue_sub_category || '').maybeSingle();
+  // IR only (IR ticked, HUB not): the IR category list (ir_category_master). Otherwise the requester list.
+  const irOnly = isIrOnlyRoute(routes); // routesFromBody sets ir=false for MX
+  let pair = null, ir_resolve_sla_days = null;
+  if (irOnly) {
+    const { data: irPair } = await sb.from('ir_category_master').select('issue_type, sla_days').eq('is_active', true)
+      .eq('category', body.issue_category || '').eq('sub_category', body.issue_sub_category || '').maybeSingle();
+    pair = irPair; ir_resolve_sla_days = irPair?.sla_days ?? null;
+  } else {
+    const { data: reqPair } = await sb.from('category_master').select('issue_type').eq('side', 'requester').eq('is_active', true)
+      .eq('category', body.issue_category || '').eq('sub_category', body.issue_sub_category || '').maybeSingle();
+    pair = reqPair;
+  }
   if (!pair) return NextResponse.json({ error: 'Choose a category and sub category from the list.' }, { status: 400 });
   // Priority is set by the sub category's issue type (Critical P1, Urgent P2, Regular P3). Client value is ignored.
   const priority_scale = priorityForIssueType(pair.issue_type);
@@ -223,6 +233,7 @@ export async function POST(req) {
     route_hub: routes.hub, route_ir: routes.ir, route_sort_tnl: routes.sort_tnl,
     mail_subject: routes.ir ? cleanMailSubject(body.mail_subject) : null,
     drive_link: attach.drive_link, attachment_name: attach.attachment_name,
+    ir_resolve_sla_days: irOnly ? ir_resolve_sla_days : null,
   };
   // Business Pick timing: a normal issue is picked automatically at raise. A CM-assigned issue waits for "CM picked".
   row.business_pick_time = row.cm_assigned ? null : now;

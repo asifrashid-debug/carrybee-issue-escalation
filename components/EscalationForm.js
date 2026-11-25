@@ -9,6 +9,7 @@ import {
 } from '../lib/hubLookup.mjs';
 import { priorityForIssueType } from '../lib/priority';
 import { formatDhaka } from '../lib/time';
+import { isIrOnlyRoute } from '../lib/irEscalation.mjs';
 
 const CM = 'CM';
 
@@ -16,7 +17,7 @@ const CM = 'CM';
 // Priority comes from the sub category, so requesters never choose it. Server stamps time, email and week.
 export default function EscalationForm({ channel }) {
   const isKam = channel === 'KAM';
-  const [masters, setMasters] = useState({ hubs: [], categories: [] });
+  const [masters, setMasters] = useState({ hubs: [], categories: [], ir_categories: [] });
   const [me, setMe] = useState(null);
   const [form, setForm] = useState({ email: '', consignment_id: '', merchant_name: '', concern_hub: '', issue_category: '', issue_sub_category: '', issue_details: '', kam_name: '' });
   const [biz, setBiz] = useState(null); // { q, found, business_name, kam_name, input_type } for the merchant box
@@ -64,16 +65,27 @@ export default function EscalationForm({ channel }) {
     return () => { cancelled = true; clearTimeout(t); };
   }, [merchantQ, isKam]);
 
+  // IR box ticked alone: the IR category list. Otherwise the requester list (HUB, or HUB + IR).
+  const irOnly = isKam && isIrOnlyRoute(routes);
   const reqCats = masters.categories.filter((c) => c.side === 'requester');
-  const categoryOptions = useMemo(() => [...new Set(reqCats.map((c) => c.category))].sort().map((c) => ({ value: c, label: c })), [masters.categories]); // eslint-disable-line react-hooks/exhaustive-deps
-  const subOptions = useMemo(() => reqCats.filter((c) => c.category === form.issue_category).map((c) => ({ value: c.sub_category, label: c.sub_category, hint: c.issue_type || '' })), [masters.categories, form.issue_category]); // eslint-disable-line react-hooks/exhaustive-deps
-  const subRow = reqCats.find((c) => c.category === form.issue_category && c.sub_category === form.issue_sub_category);
+  const catRows = irOnly ? (masters.ir_categories || []) : reqCats;
+  const categoryOptions = useMemo(() => [...new Set(catRows.map((c) => c.category))].sort().map((c) => ({ value: c, label: c })), [masters.categories, masters.ir_categories, irOnly]); // eslint-disable-line react-hooks/exhaustive-deps
+  const subOptions = useMemo(() => catRows.filter((c) => c.category === form.issue_category).map((c) => ({ value: c.sub_category, label: c.sub_category, hint: c.issue_type || '' })), [masters.categories, masters.ir_categories, irOnly, form.issue_category]); // eslint-disable-line react-hooks/exhaustive-deps
+  const subRow = catRows.find((c) => c.category === form.issue_category && c.sub_category === form.issue_sub_category);
   const priority = subRow ? priorityForIssueType(subRow.issue_type) : null;
   const hubOptions = useMemo(() => masters.hubs.map((h) => ({ value: h.hub_name, label: h.hub_name, hint: `${h.zone} · ${h.division || '—'}` })), [masters.hubs]);
   const hub = masters.hubs.find((h) => h.hub_name === form.concern_hub);
   const bizNow = biz && biz.q === merchantQ ? biz : null;
   const kamShown = !isKam && merchantQ ? (bizNow ? (bizNow.found ? bizNow.kam_name : CM) : 'Checking…') : CM;
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Ticking or unticking a box. Moving between the IR list and the requester list clears the category, so a
+  // category from the wrong list cannot be submitted.
+  function toggleRoute(k, checked) {
+    const next = { ...routes, [k]: checked };
+    if (isIrOnlyRoute(routes) !== isIrOnlyRoute(next)) setForm((f) => ({ ...f, issue_category: '', issue_sub_category: '' }));
+    setRoutes(next);
+  }
 
   // Short note shown when a hub was filled automatically.
   function hubFoundNote(source, historyAt) {
@@ -256,11 +268,12 @@ export default function EscalationForm({ channel }) {
                 <div role="group" aria-label="Where to send this issue" style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
                   {[['hub', 'HUB'], ['ir', 'IR'], ['sort_tnl', 'Sort/TNL']].map(([k, label]) => (
                     <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-                      <input type="checkbox" checked={routes[k]} onChange={(e) => setRoutes((r) => ({ ...r, [k]: e.target.checked }))} /> {label}
+                      <input type="checkbox" checked={routes[k]} onChange={(e) => toggleRoute(k, e.target.checked)} /> {label}
                     </label>
                   ))}
                 </div>
                 {routes.sort_tnl && <div className="hint">Sort/TNL routing is not set up yet. The issue is saved to the database only.</div>}
+                {irOnly && <div className="hint">IR categories are shown because only the IR box is ticked.</div>}
                 {routes.ir && (
                   <div style={{ display: 'grid', gap: 10 }}>
                     <div>

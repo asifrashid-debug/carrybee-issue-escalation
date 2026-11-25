@@ -9,13 +9,15 @@ export async function GET() {
   // Hubs and categories are needed by the KAM and MX forms, so every signed-in role gets them.
   // The user list and app settings are admin-only, so they are not queried for other roles.
   const isAdmin = session.role === 'admin';
-  const [hubRes, catRes, userRes, cfgRes] = await Promise.all([
+  const [hubRes, catRes, irCatRes, userRes, cfgRes] = await Promise.all([
     sb.from('hub_master').select('*').eq('is_active', true).order('hub_name'),
     sb.from('category_master').select('*').eq('is_active', true).order('category'),
+    // IR category list, shown on the KAM form when only the IR box is ticked
+    sb.from('ir_category_master').select('category, sub_category, issue_type, sla_days').eq('is_active', true).order('category'),
     isAdmin ? sb.from('users_roles').select('*').eq('is_active', true).order('email') : Promise.resolve({ data: [] }),
     isAdmin ? sb.from('app_config').select('*') : Promise.resolve({ data: [] }),
   ]);
-  return NextResponse.json({ hubs: hubRes.data||[], categories: catRes.data||[], users: userRes.data||[], config: cfgRes.data||[] });
+  return NextResponse.json({ hubs: hubRes.data||[], categories: catRes.data||[], ir_categories: irCatRes.data||[], users: userRes.data||[], config: cfgRes.data||[] });
 }
 
 // Super admin adds one row to a master, then writes an audit entry. Body: { entity, data }.

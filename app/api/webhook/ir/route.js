@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import { pushIrRow } from '../../../../lib/irSheet';
-import { IR_EDITABLE_FIELDS, IR_STATUSES, irStatusStamps } from '../../../../lib/irEscalation.mjs';
+import { IR_EDITABLE_FIELDS, IR_STATUSES, IR_MEMBERS, irStatusStamps } from '../../../../lib/irEscalation.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +27,13 @@ export async function POST(req) {
     await sb.from('sync_log').insert({ direction: 'sheet_to_db', issue_id, status: 'failed', error_message: `IR Status "${value}" is not in the list` });
     try { await pushIrRow(cur); } catch (err) { await sb.from('sync_log').insert({ direction: 'db_to_sheet', issue_id, status: 'failed', error_message: `IR revert failed: ${String(err.message || err).slice(0, 250)}` }); }
     return NextResponse.json({ ok: false, error: `IR Status must be one of: ${IR_STATUSES.join(', ')}` });
+  }
+  // Assigned IR Member: only the listed names (the sheet dropdown is strict, this is the server check). Invalid values are reverted.
+  if (field === 'ir_assigned_member' && value && !IR_MEMBERS.includes(value)) {
+    await sb.from('audit_log').insert({ issue_id, field_name: field, old_value: cur[field] ? String(cur[field]) : null, new_value: `REJECTED: ${value}`, actor_email: editor_email || 'sheet', source: 'sheet' });
+    await sb.from('sync_log').insert({ direction: 'sheet_to_db', issue_id, status: 'failed', error_message: `Assigned IR Member \"${value}\" is not in the list` });
+    try { await pushIrRow(cur); } catch (err) { await sb.from('sync_log').insert({ direction: 'db_to_sheet', issue_id, status: 'failed', error_message: `IR revert failed: ${String(err.message || err).slice(0, 250)}` }); }
+    return NextResponse.json({ ok: false, error: `Assigned IR Member must be one of: ${IR_MEMBERS.join(', ')}` });
   }
   const now = new Date().toISOString();
   const patch = { [field]: value || null, row_version: (cur.row_version || 1) + 1 };

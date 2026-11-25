@@ -13,6 +13,7 @@
  *
  * Only the IR columns are sent (IR Status, Status From KAM, Assigned IR Member, Feedback from IR,
  * Feedback from IR Lead). Drive Link, the form columns and the SLA columns are written by the tracker.
+ * Run applyIrMemberDropdown() once to add the Assigned IR Member dropdown (column M).
  * Do NOT rename handleIrSheetEdit to onEdit (the trigger would fire twice).
  */
 
@@ -30,6 +31,19 @@ const IR_FIELD_MAP = {
   'Feedback from IR Lead': 'ir_lead_feedback',
   'IR Status': 'ir_status'
 };
+
+// IR team members for the Assigned IR Member dropdown (column M). Keep in step with IR_MEMBERS in lib/irEscalation.mjs.
+const IR_MEMBERS = ['Md Saidul Islam Siam', 'Parves Moshraf', 'Juman Nokrak', 'Fuad Hassan', 'Md Al Abid'];
+const IR_MEMBER_COL = 13; // Column M: Assigned IR Member
+
+/** Run once on the IR sheet. Sets the Assigned IR Member dropdown on M2:M1000 (strict: only the listed names). */
+function applyIrMemberDropdown() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(IR_SHEET_NAME);
+  if (!sheet) throw new Error(`Sheet "${IR_SHEET_NAME}" not found`);
+  const rule = SpreadsheetApp.newDataValidation().requireValueInList(IR_MEMBERS, true).setAllowInvalid(false).build();
+  sheet.getRange(IR_HEADER_ROW + 1, IR_MEMBER_COL, 1000 - IR_HEADER_ROW, 1).setDataValidation(rule);
+  Logger.log('Assigned IR Member dropdown set on M2:M1000.');
+}
 
 /** Installable edit trigger. Runs for user edits only (the tracker's own writes do not fire it). */
 function handleIrSheetEdit(e) {

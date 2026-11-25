@@ -65,8 +65,8 @@ test('SLA cells: within or breached against the target hours (clock hours)', () 
   assert.equal(irSlaCell(raised, '2026-11-15T06:00:00Z', 24), 'Within SLA');
 });
 
-test('targets come from the environment and stay null when unset', () => {
-  assert.deepEqual(irTargetsFromEnv({}), { pickHours: null, resolveHours: null });
+test('pick target is 24 hours by default; resolve target stays null when unset', () => {
+  assert.deepEqual(irTargetsFromEnv({}), { pickHours: 24, resolveHours: null });
   assert.deepEqual(irTargetsFromEnv({ IR_PICK_SLA_HOURS: '2', IR_RESOLVE_SLA_HOURS: '48' }), { pickHours: 2, resolveHours: 48 });
 });
 
@@ -112,6 +112,6 @@ test('IR row has 18 values in header order, with the form fields in 1-10', () =>
 
 test('irSlaCells reads targets from the given environment', () => {
   const e = { submitted_at: '2026-11-14T06:00:00Z', ir_picked_at: '2026-11-14T06:30:00Z', ir_resolved_at: null };
-  assert.deepEqual(irSlaCells(e, {}), { pick: 'No SLA set', resolve: 'Pending' });
+  assert.deepEqual(irSlaCells(e, {}), { pick: 'Within SLA', resolve: 'Pending' });
   assert.deepEqual(irSlaCells(e, { IR_PICK_SLA_HOURS: '1', IR_RESOLVE_SLA_HOURS: '24' }), { pick: 'Within SLA', resolve: 'Pending' });
 });
