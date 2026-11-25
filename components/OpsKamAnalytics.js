@@ -31,7 +31,7 @@ export default function OpsKamAnalytics({ data, rangeText }) {
         <div>
           <div className="kicker">{`Ops-KAM · Ops Issues · ${rangeText}`}</div>
           <h2 style={{ margin: 0 }}>Ops-KAM analytics</h2>
-          <p className="sub">Raised, picked, closed and validated Ops Issues. Pick within {data.pickWindowMin} min, close within {data.closeWindowH} h, both from Raised.</p>
+          <p className="sub">Raised, picked, closed and validated Ops Issues. Pick within {data.pickWindowOfficeH} office hour, close within {data.closeWindowH} h. Pick counts from the Active-tab clock start (office hours 10:00 to 20:00); close counts from Raised.</p>
         </div>
       </div>
 

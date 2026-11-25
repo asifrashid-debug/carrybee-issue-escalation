@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RAISED, STATUSES, CLOSED_STATUSES, VALIDATIONS, PICK_WINDOW_MIN, RESOLVE_WINDOW_H, ACTIONS,
-  windowsFrom, newIssueLifecycle, applyAction, applyValidation, dueState, planSyncLifecycle,
+  RAISED, STATUSES, CLOSED_STATUSES, VALIDATIONS, PICK_WINDOW_OFFICE_H, KAM_FEEDBACK_OFFICE_H, TEAM_LEAD_OFFICE_H, RESOLVE_WINDOW_H, ACTIONS,
+  windowsFrom, opsDeadlines, teamLeadState, deadlineLabel, responseWithinOps,
+  newIssueLifecycle, applyAction, applyValidation, dueState, planSyncLifecycle,
 } from '../lib/opsLifecycle.mjs';
+import { sheetSerial } from '../lib/opsIssues.mjs';
 
 const MIN = 60e3;
 const HOUR = 3600e3;
@@ -27,11 +29,12 @@ test('validation values match the existing dropdown set', () => {
   assert.deepEqual(VALIDATIONS, ['Valid', 'Invalid', 'Duplicate', 'No proper info']);
 });
 
-test('windows: pick 30 minutes and close 24 hours from raise', () => {
-  assert.equal(PICK_WINDOW_MIN, 30);
+test('windows: pick 1 office hour from the clock start, close 24 hours from raise', () => {
+  assert.equal(PICK_WINDOW_OFFICE_H, 1);
   assert.equal(RESOLVE_WINDOW_H, 24);
   const w = windowsFrom(T0);
-  assert.equal(new Date(w.pick_due_at).getTime() - T0.getTime(), 30 * MIN);
+  // T0 is 16:00 Dhaka, inside the 12:00-19:59 band, so the clock starts at once and pick is due at 17:00 Dhaka (11:00 UTC).
+  assert.equal(new Date(w.pick_due_at).getTime() - T0.getTime(), 60 * MIN);
   assert.equal(new Date(w.resolve_due_at).getTime() - T0.getTime(), 24 * HOUR);
 });
 
@@ -49,7 +52,7 @@ test('the flow runs Raised -> Picked -> In Progress -> Resolved, and each step n
   assert.equal(p1.patch.issue_status, 'Picked');
   assert.equal(p1.patch.picked_at, at(5 * MIN).toISOString());
   assert.equal(p1.patch.picked_by, EMAIL);
-  assert.deepEqual(p1.cells, { J: 'Picked' });
+  assert.deepEqual(p1.cells, { J: 'Picked', Q: sheetSerial(at(5 * MIN)) });
   issue = { ...issue, ...p1.patch };
 
   const p2 = applyAction(issue, 'start', EMAIL, at(10 * MIN));
@@ -61,7 +64,7 @@ test('the flow runs Raised -> Picked -> In Progress -> Resolved, and each step n
   assert.equal(p3.patch.issue_status, 'Resolved');
   assert.equal(p3.patch.closed_at, at(3 * HOUR).toISOString());
   assert.equal(p3.patch.closed_by, EMAIL);
-  assert.deepEqual(p3.cells, { J: 'Resolved' });
+  assert.deepEqual(p3.cells, { J: 'Resolved', R: sheetSerial(at(3 * HOUR)) });
 });
 
 test('Not Resolved is also reached from In Progress', () => {
@@ -69,7 +72,7 @@ test('Not Resolved is also reached from In Progress', () => {
   const p = applyAction(issue, 'not_resolved', EMAIL, at(HOUR));
   assert.equal(p.patch.issue_status, 'Not Resolved');
   assert.equal(p.patch.closed_by, EMAIL);
-  assert.deepEqual(p.cells, { J: 'Not Resolved' });
+  assert.deepEqual(p.cells, { J: 'Not Resolved', R: sheetSerial(at(HOUR)) });
 });
 
 test('a status can only move on from the status before it (409 otherwise)', () => {
@@ -120,11 +123,11 @@ test('validation rollback restores the previous value', () => {
   assert.deepEqual(v.rollback, { validation: 'Invalid', validated_at: '2026-11-22T09:00:00Z', validated_by: 'x@y' });
 });
 
-test('pick clock: pending, then overdue after 30 minutes, then picked on time or late', () => {
-  assert.equal(dueState(raised(), at(29 * MIN)).pick, 'pick_due');
-  assert.equal(dueState(raised(), at(31 * MIN)).pick, 'pick_overdue');
-  assert.equal(dueState(raised({ issue_status: 'Picked', picked_at: at(20 * MIN).toISOString() }), at(40 * MIN)).pick, 'picked_on_time');
-  assert.equal(dueState(raised({ issue_status: 'Picked', picked_at: at(31 * MIN).toISOString() }), at(40 * MIN)).pick, 'picked_late');
+test('pick clock: pending, then overdue after 1 office hour, then picked on time or late', () => {
+  assert.equal(dueState(raised(), at(59 * MIN)).pick, 'pick_due');
+  assert.equal(dueState(raised(), at(61 * MIN)).pick, 'pick_overdue');
+  assert.equal(dueState(raised({ issue_status: 'Picked', picked_at: at(50 * MIN).toISOString() }), at(70 * MIN)).pick, 'picked_on_time');
+  assert.equal(dueState(raised({ issue_status: 'Picked', picked_at: at(61 * MIN).toISOString() }), at(70 * MIN)).pick, 'picked_late');
 });
 
 test('close clock: due, overdue after 24 hours, then closed on time or late', () => {
@@ -135,14 +138,14 @@ test('close clock: due, overdue after 24 hours, then closed on time or late', ()
 });
 
 test('overdue flag: only for open issues past a window; a closed issue is never overdue', () => {
-  assert.equal(dueState(raised(), at(31 * MIN)).overdue, true);
+  assert.equal(dueState(raised(), at(61 * MIN)).overdue, true);
   assert.equal(dueState(raised({ issue_status: 'Resolved', picked_at: at(MIN).toISOString(), closed_at: at(HOUR).toISOString() }), at(30 * HOUR)).overdue, false);
   assert.equal(dueState(raised({ issue_status: 'In Progress', picked_at: at(MIN).toISOString() }), at(25 * HOUR)).overdue, true);
 });
 
 test('minutes to pick count down and go negative once overdue', () => {
-  assert.equal(dueState(raised(), at(10 * MIN)).minutesToPick, 20);
-  assert.equal(dueState(raised(), at(40 * MIN)).minutesToPick, -10);
+  assert.equal(dueState(raised(), at(10 * MIN)).minutesToPick, 50);
+  assert.equal(dueState(raised(), at(70 * MIN)).minutesToPick, -10);
 });
 
 test('an issue with no raise time has no windows', () => {
@@ -196,4 +199,79 @@ test('sync: an old row with no status is backfilled with windows from its create
   assert.equal(p.backfill.raised_at, T0.toISOString());
   assert.equal(p.backfill.pick_due_at, windowsFrom(T0).pick_due_at);
   assert.equal(p.status, 'Raised');
+});
+
+// Team Lead Feedback (Ops Issues). Clock start follows the Active-tab rule; office hours 10:00-20:00 Dhaka.
+const iso = (h, m = 0) => new Date(Date.UTC(2026, 10, 22, h - 6, m)).toISOString(); // Dhaka wall clock on 22 Nov
+test('deadlines: raised 10:00 Dhaka starts 12:00, so pick 13:00, KAM 14:00, Team Lead 16:00 Dhaka', () => {
+  const d = opsDeadlines(iso(10));
+  assert.equal(d.start, iso(12));
+  assert.equal(d.pick_due_at, iso(13));
+  assert.equal(d.kam_due_at, iso(14));
+  assert.equal(d.tl_due_at, iso(16));
+});
+
+test('deadlines: 00:00-11:59 starts 12:00 the same day; 20:00+ starts 12:00 next day', () => {
+  assert.equal(opsDeadlines(iso(8)).pick_due_at, iso(13));
+  const late = opsDeadlines(iso(21));
+  assert.equal(late.start, new Date(Date.UTC(2026, 10, 23, 6, 0)).toISOString());
+  assert.equal(late.pick_due_at, new Date(Date.UTC(2026, 10, 23, 7, 0)).toISOString());
+});
+
+test('deadlines: an invalid raise time gives no deadlines', () => {
+  assert.equal(opsDeadlines(null).pick_due_at, null);
+  assert.equal(opsDeadlines('not a date').kam_due_at, null);
+});
+
+test('Team Lead activates only when the pick AND the KAM feedback deadlines are both missed', () => {
+  const base = { issue_status: 'Raised', raised_at: iso(10), picked_at: null, kam_feedback: '' };
+  // pick missed (past 13:00), KAM feedback not yet due (14:00): not active
+  assert.equal(teamLeadState(base, new Date(iso(13, 30))).active, false);
+  // pick missed and KAM deadline passed without feedback: active
+  assert.equal(teamLeadState(base, new Date(iso(14, 30))).active, true);
+  // picked on time (12:30), KAM deadline passed without feedback: not active
+  const picked = { ...base, issue_status: 'Picked', picked_at: iso(12, 30) };
+  assert.equal(teamLeadState(picked, new Date(iso(14, 30))).active, false);
+  // pick missed but KAM feedback entered: not active
+  assert.equal(teamLeadState({ ...base, kam_feedback: 'done' }, new Date(iso(14, 30))).active, false);
+});
+
+test('Response Within text: KAM window, then Team Lead window, then Overdue; Responded once feedback is entered', () => {
+  const issue = { issue_status: 'Raised', raised_at: iso(10), picked_at: null, kam_feedback: '', team_lead_feedback: '' };
+  assert.equal(responseWithinOps(issue, new Date(iso(12, 30))), 'KAM needs to provide feedback by 2:00 PM');
+  assert.equal(responseWithinOps(issue, new Date(iso(14, 30))), 'Team Lead feedback by 4:00 PM');
+  assert.equal(responseWithinOps(issue, new Date(iso(16, 30))), 'Overdue');
+  assert.equal(responseWithinOps({ ...issue, kam_feedback: 'done' }, new Date(iso(16, 30))), 'Responded');
+  assert.equal(responseWithinOps({ ...issue, team_lead_feedback: 'done' }, new Date(iso(14, 30))), 'Responded');
+});
+
+test('Response Within text: picked on time with no KAM feedback after the KAM deadline reads "KAM feedback overdue"', () => {
+  const issue = { issue_status: 'Picked', raised_at: iso(10), picked_at: iso(12, 30), kam_feedback: '', team_lead_feedback: '' };
+  assert.equal(responseWithinOps(issue, new Date(iso(14, 30))), 'KAM feedback overdue');
+});
+
+test('deadline label: same Dhaka day as the raise shows time only; another day shows date and time', () => {
+  assert.equal(deadlineLabel(iso(12), iso(10)), '12:00 PM');
+  assert.equal(deadlineLabel(new Date(Date.UTC(2026, 10, 23, 6, 0)).toISOString(), iso(21)), '23 Nov 12:00 PM');
+});
+
+test('sheet serial: a Dhaka wall clock time as an Excel serial (1 Jan 2026 00:00 Dhaka = 46023)', () => {
+  assert.equal(sheetSerial('2025-12-31T18:00:00Z'), 46023);
+  assert.ok(Math.abs(sheetSerial('2026-11-25T06:43:47Z') - (46351 + (12 * 60 + 43) / 1440 + 47 / 86400)) < 1e-9);
+  assert.equal(sheetSerial('not a date'), null);
+});
+
+test('helper stamps: a pick writes Q, a close writes R; the other helper is not touched', () => {
+  const pick = applyAction(raised(), 'pick', EMAIL, at(5 * MIN));
+  assert.ok(pick.cells.Q && !('R' in pick.cells));
+  const close = applyAction(raised({ issue_status: 'In Progress' }), 'resolve', EMAIL, at(HOUR));
+  assert.ok(close.cells.R && !('Q' in close.cells));
+});
+
+test('sync: a blank helper cell is filled from the DB time; a filled helper cell is left alone', () => {
+  const dbRow = { issue_status: 'Resolved', validation: 'Valid', created_at: T0.toISOString(), picked_at: at(5 * MIN).toISOString(), closed_at: at(HOUR).toISOString() };
+  const blank = planSyncLifecycle({ dbRow, sheet: { issue_status: 'Resolved', validation: 'Valid', pick_done: '', resolved: '' }, now: at(2 * HOUR) });
+  assert.deepEqual(blank.sheetCells, { Q: sheetSerial(at(5 * MIN)), R: sheetSerial(at(HOUR)) });
+  const filled = planSyncLifecycle({ dbRow, sheet: { issue_status: 'Resolved', validation: 'Valid', pick_done: '46000.5', resolved: '46000.6' }, now: at(2 * HOUR) });
+  assert.deepEqual(filled.sheetCells, {});
 });

@@ -18,8 +18,8 @@ const master = [
 ];
 const index = buildKamIndex(master);
 
-test('sheet layout: 12 headers A to L; Issue Raise Time sits in B; HUB Name sits right after HUB Feedback', () => {
-  assert.equal(OPS_HEADERS.length, 12);
+test('sheet layout: 13 headers A to M; Issue Raise Time sits in B; HUB Name sits right after HUB Feedback; Team Lead Feedback sits in M', () => {
+  assert.equal(OPS_HEADERS.length, 13);
   assert.equal(OPS_HEADERS[0], 'Issue ID');
   assert.equal(OPS_HEADERS[1], 'Issue Raise Time');
   assert.equal(OPS_HEADERS[2], 'Consignment ID');
@@ -30,12 +30,14 @@ test('sheet layout: 12 headers A to L; Issue Raise Time sits in B; HUB Name sits
   assert.equal(OPS_HEADERS[9], 'Issue Status');
   assert.equal(OPS_HEADERS[10], 'Validation');
   assert.equal(OPS_HEADERS[11], 'KAM Feedback');
-  assert.equal(OPS_FIELDS.length, 12);
+  assert.equal(OPS_HEADERS[12], 'Team Lead Feedback');
+  assert.equal(OPS_FIELDS.length, 13);
   assert.equal(COL.raise_time, 1);
   assert.equal(COL.hub_name, 7);
   assert.equal(COL.kam_feedback, 11);
+  assert.equal(COL.team_lead_feedback, 12);
   assert.equal(colLetter(0), 'A');
-  assert.equal(OPS_LAST_COL, 'L');
+  assert.equal(OPS_LAST_COL, 'M');
 });
 
 test('field letters follow the headers: B raise time, H HUB Name, I KAM Name, J Status, K Validation, L KAM Feedback', () => {
@@ -45,18 +47,19 @@ test('field letters follow the headers: B raise time, H HUB Name, I KAM Name, J 
   assert.equal(L.issue_status, 'J');
   assert.equal(L.validation, 'K');
   assert.equal(L.kam_feedback, 'L');
+  assert.equal(L.team_lead_feedback, 'M');
 });
 
 test('raise time is never content: a row with only a raise time is skipped, and it is parsed but not written back', () => {
-  const blank = Array(12).fill('');
+  const blank = Array(13).fill('');
   blank[1] = '23-Nov-2026 10:48 AM';
   assert.equal(planOpsRow(parseOpsRow(blank), index).skip, true);
   assert.equal(parseOpsRow(blank).raise_time, '23-Nov-2026 10:48 AM');
 });
 
 test('the sheet read covers the new columns and the sync write-back letters are unchanged in meaning', () => {
-  // Read A1:L, so a row's cells line up with OPS_FIELDS by index.
-  const row = Array(12).fill('');
+  // Read A1:M, so a row's cells line up with OPS_FIELDS by index.
+  const row = Array(13).fill('');
   row[0] = 'CB-1'; row[2] = 'C1'; row[3] = 'Daraz Fashion'; row[7] = 'Hub A'; row[9] = 'Raised'; row[10] = 'Valid'; row[11] = 'ok';
   const o = parseOpsRow(row);
   assert.equal(o.issue_id, 'CB-1');

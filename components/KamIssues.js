@@ -3,14 +3,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import CopyButton from './CopyButton';
 import { fmtN } from './cw/format';
 import { formatDhaka } from '../lib/time';
-import { VALIDATIONS, CLOSED_STATUSES, dueState } from '../lib/opsLifecycle.mjs';
+import { VALIDATIONS, CLOSED_STATUSES, dueState, responseWithinOps } from '../lib/opsLifecycle.mjs';
 import ErrorBoundary from './ErrorBoundary';
 import { markOpsIssuesSeen } from './useOpsBadge';
 
 // KAM Feedback tab. Lists only the Ops Issues named to the signed-in KAM (see lib/opsIssues.mjs).
 // Uses the tracker's classes (ph, kpis, chips, qi cards, drawer), so it looks like the rest of the app.
 // Lifecycle: Raised (automatic) -> Picked -> In Progress -> Resolved or Not Resolved.
-// Pick within 30 minutes of Raised. Close (Resolved or Not Resolved) within 24 hours of Raised. Late is flagged, not blocked.
+// Pick within 1 office hour of the clock start (Active-tab rule; office hours 10:00-20:00 Dhaka).
+// KAM Feedback within 2 office hours of the clock start. Team Lead Feedback (read-only here) runs 2 office hours after
+// the KAM deadline, only when the KAM missed both the pick and the KAM Feedback deadlines.
+// Close (Resolved or Not Resolved) within 24 hours of Raised. Late is flagged, not blocked.
 // Validation (Valid, Invalid, Duplicate, No proper info) and KAM Feedback (free text) can be set by the named KAM.
 
 const STATUS_PILL = { Raised: 'p-urg', Picked: 'p-wait', 'In Progress': 'p-wait', Resolved: 'p-ok', 'Not Resolved': 'p-crit' };
@@ -46,6 +49,11 @@ function dueLines(i, now) {
   if (!now) return [];
   const d = dueState(i, now);
   const out = [];
+  const rw = responseWithinOps(i, now);
+  if (rw) {
+    const cls = rw === 'Responded' ? 'sla-ok' : /^(Team Lead feedback by|Overdue|KAM feedback overdue)/.test(rw) ? 'sla-bad' : 'muted small';
+    out.push({ cls, text: `Response Within: ${rw}` });
+  }
   if (d.pick === 'pick_due') out.push({ cls: 'muted small', text: `Pick by ${formatDhaka(i.pick_due_at)} · ${d.minutesToPick} min left` });
   if (d.pick === 'pick_overdue') out.push({ cls: 'sla-bad', text: `Pick overdue by ${-d.minutesToPick} min (was due ${formatDhaka(i.pick_due_at)})` });
   if (d.pick === 'picked_on_time') out.push({ cls: 'sla-ok', text: 'Picked on time' });
@@ -192,6 +200,11 @@ function DetailPanel({ issue, now, onClose, onChange }) {
           ) : (
             <p style={{ margin: '6px 0 0', fontSize: 13.5 }}>{issue.kam_feedback || '—'}</p>
           )}
+        </div>
+
+        <div style={{ marginTop: 22 }}>
+          <span className="muted small" style={{ display: 'block', fontWeight: 600, fontSize: 13 }}>Team Lead Feedback</span>
+          <p style={{ margin: '6px 0 0', fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{issue.team_lead_feedback || '—'}</p>
         </div>
 
         {msg && <div role="status" className="small" style={{ marginTop: 16 }}>{msg}</div>}
