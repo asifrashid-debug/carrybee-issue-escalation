@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { formatDhaka, hoursSince } from '../lib/time';
 import { PriPill, SlaPill, StatusPill, Zc } from './demo';
 import { canPick } from '../lib/roles';
+import { getMe } from './cw/meClient';
+import { markTrackerSeen } from './useTrackerBadge';
 
 const LAYERS = [
   { key: 'layer1_response', label: 'Layer 1 · HUB Incharge', hours: 2 },
@@ -77,6 +79,8 @@ export default function IssueDrawer({ issueId, user, onClose, onChanged, onOpen 
       if (!a.ok) { setErr(ja.error || 'Could not load this issue'); setD(null); return; }
       setErr(null);
       setD({ data: ja.data, audit: ja.audit || [], feedback: ja.feedback || null, pick: ja.pick || null });
+      // Opening the issue clears its Tracker badge for this viewer (per issue, per browser).
+      getMe().then((me) => markTrackerSeen(me?.email, ja.data)).catch(() => {});
       setPlan(b.ok ? jb.plan : null);
     } catch (e) {
       setErr(String(e.message || e));
