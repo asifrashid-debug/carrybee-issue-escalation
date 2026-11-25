@@ -55,8 +55,10 @@ test('COLS and HEADERS line up, with Final Response right after Layer 3', () => 
 });
 
 test('sheet ranges use the new last column AI, and no fixed AH range is left', () => {
-  // 3 explicit row writes: pushToSheet update, pushToSheet append, appendLegacyRows batch.
-  assert.equal((sheets.match(/:AI\$\{/g) || []).length, 3);
+  // 3 explicit row writes (pushToSheet update, pushToSheet append, appendLegacyRows batch) go through rowRanges,
+  // which writes A:T and V:AI so column U (the sheet formula) is never overwritten. Definition + 3 uses = 4.
+  assert.equal((sheets.match(/rowRanges\(/g) || []).length, 5); // definition + 3 uses + 1 doc comment
+  assert.equal((sheets.match(/:AI\$\{/g) || []).length, 1);
   assert.equal((sheets.match(/Active!A1:AI5000/g) || []).length, 1);
   assert.equal(/:AH\$\{|AH5000/.test(sheets), false);
 });

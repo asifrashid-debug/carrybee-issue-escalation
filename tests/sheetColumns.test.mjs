@@ -47,12 +47,10 @@ test('cellPlan with no changed fields still bumps row_version and refreshes AG-A
   assert.deepEqual(plan.map(c => c.field).sort(), ['issue_pick_check', 'issue_resolution_check', 'last_synced_at', 'overall_validation', 'row_version']);
 });
 
-// Column U is "Response Within" (calculated from the raise time), not the pick time.
-import { formatResponseWithin } from '../lib/responseWithin.mjs';
-test('column U (index 20) is Response Within, calculated from submitted_at', () => {
+// Column U is "Response Within" (sheet formula), not the pick time.
+test('column U (index 20) is Response Within and is left to the sheet formula', () => {
   assert.equal(COLS[20], 'response_within');
   assert.equal(HEADERS[20], 'Response Within');
   const row = escToRow({ issue_id: 'CB-14-11-U', submitted_at: '2026-11-14T04:00:00Z', zone: 'ISD', channel: 'KAM', issue_details: 'x'.repeat(20), ops_status: 'Pending' });
-  assert.equal(row[20], formatResponseWithin('2026-11-14T04:00:00Z'));
-  assert.equal(row[20], 'Layer 1 - 1:00 PM | Layer 2 - 3:00 PM | Layer 3 - 5:00 PM');
+  assert.equal(row[20], ''); // the app never writes U; the sheet formula owns it
 });

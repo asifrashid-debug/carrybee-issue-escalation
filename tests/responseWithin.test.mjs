@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { layerClockStart, addOfficeHours, responseWithinDeadlines, formatResponseWithin } from '../lib/responseWithin.mjs';
+import { layerClockStart, addOfficeHours, responseWithinDeadlines, formatResponseWithin, responseWithinStatus } from '../lib/responseWithin.mjs';
 
 // Dhaka wall-clock -> ISO (Dhaka is UTC+6, no DST).
 const dh = (y, m, d, h, mi = 0) => new Date(Date.UTC(y, m - 1, d, h - 6, mi)).toISOString();
@@ -78,3 +78,44 @@ test('invalid input returns null, not a bad string', () => {
   assert.equal(formatResponseWithin(null), '');
 });
 
+
+// Active-layer status for column U. Raise 10:00 -> L1 13:00, L2 15:00, L3 17:00 (Dhaka).
+const raise10 = dh(2026, 11, 14, 10);
+const at = (h, m = 0) => new Date(dh(2026, 11, 14, h, m));
+test('status: Layer 1 active before its 1h deadline', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(12, 30)), 'Layer 1 - 1:00 PM');
+});
+test('status: Layer 1 missed (no response at 13:00) -> Layer 2 active', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(13, 1)), 'Layer 2 - 3:00 PM');
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(14, 59)), 'Layer 2 - 3:00 PM');
+});
+test('status: Layer 2 missed (no response at 15:00) -> Layer 3 active', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(15, 1)), 'Layer 3 - 5:00 PM');
+});
+test('status: all deadlines missed with no response -> Overdue', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(17, 1)), 'Overdue');
+});
+test('status: Layer 1 answered in time -> Responded', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10, layer1_response: 'done' }, at(12, 30)), 'Responded');
+});
+test('status: Layer 1 missed, Layer 2 answered -> Responded', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10, layer2_response: 'ok' }, at(14)), 'Responded');
+});
+test('status: Layer 2 missed, Layer 3 answered -> Responded', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10, layer3_response: 'ok' }, at(16)), 'Responded');
+});
+test('status: a blank or whitespace response does not count as answered', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10, layer1_response: '   ' }, at(12, 30)), 'Layer 1 - 1:00 PM');
+});
+test('status: boundaries are inclusive (now == deadline is still that layer)', () => {
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(13, 0)), 'Layer 1 - 1:00 PM');
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(15, 0)), 'Layer 2 - 3:00 PM');
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(17, 0)), 'Layer 3 - 5:00 PM');
+  assert.equal(responseWithinStatus({ submitted_at: raise10 }, at(17, 1)), 'Overdue');
+});
+test('status: raise 19:00 uses the next-day Layer 2 and Layer 3 deadlines', () => {
+  const e = { submitted_at: dh(2026, 11, 14, 19) };
+  assert.equal(responseWithinStatus(e, new Date(dh(2026, 11, 14, 19, 30))), 'Layer 1 - 8:00 PM');
+  assert.equal(responseWithinStatus(e, new Date(dh(2026, 11, 15, 11, 30))), 'Layer 2 - 15 Nov 12:00 PM');
+  assert.equal(responseWithinStatus(e, new Date(dh(2026, 11, 15, 12, 30))), 'Layer 3 - 15 Nov 2:00 PM');
+});
