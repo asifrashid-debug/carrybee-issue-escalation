@@ -25,6 +25,9 @@ export default function AppHeader() {
   const [theme, setTheme] = useState('light');
   const [me, setMe] = useState(null);
   const [now, setNow] = useState('');
+  // Drawer: collapsed to an icon rail on desktop (saved in localStorage 'cb-drawer'); overlay open on phones.
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   // New Ops Issues for this viewer (Raised and not yet seen). Only for users who can open the Ops-KAM tab.
   const opsEnabled = !!me && navFor(me.role).some((l) => l.tab === 'kam_issues');
   const opsCount = useOpsBadge(opsEnabled);
@@ -42,12 +45,33 @@ export default function AppHeader() {
   }, [path]);
 
   useEffect(() => {
+    try { setCollapsed(localStorage.getItem('cb-drawer') === 'closed'); } catch (e) { /* storage unavailable: open */ }
+  }, []);
+
+  // CSS reads these on <html>: data-drawer (desktop open or closed) and data-menu (phone overlay open or closed)
+  useEffect(() => {
+    document.documentElement.dataset.drawer = collapsed ? 'closed' : 'open';
+    document.documentElement.dataset.menu = mobileOpen ? 'open' : 'closed';
+  }, [collapsed, mobileOpen]);
+
+  useEffect(() => {
     setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
     const tick = () => setNow(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()));
     tick();
     const t = setInterval(tick, 30000);
     return () => clearInterval(t);
   }, []);
+
+  // On phones the button opens or closes the overlay; on desktop it collapses or opens the drawer.
+  function toggleMenu() {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches) {
+      setMobileOpen((v) => !v);
+      return;
+    }
+    const next = !collapsed;
+    setCollapsed(next);
+    try { localStorage.setItem('cb-drawer', next ? 'closed' : 'open'); } catch (e) { /* storage unavailable */ }
+  }
 
   function toggleTheme() {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -77,6 +101,9 @@ export default function AppHeader() {
     <>
       <header className="hdr">
         <div className="hdrbar">
+          <button type="button" className="ibtn hdr-menu" onClick={toggleMenu} aria-label="Open menu" title="Open menu">
+            <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
           <div className="brand">
             <Link href="/dashboard" aria-label="CarryBee home">
               <img className="logo" src={theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'} alt="CarryBee" />
@@ -88,12 +115,6 @@ export default function AppHeader() {
             <button type="button" className="ibtn" onClick={toggleTheme} aria-label={theme === 'light' ? 'Dark mode' : 'Light mode'} aria-pressed={theme === 'dark'} title={theme === 'light' ? 'Dark mode' : 'Light mode'}>
               <svg className="ic" viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: theme === 'light' ? '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>' : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' }} />
             </button>
-            {me && (
-              <button type="button" className="signout" onClick={signOut} aria-label={`Sign out, ${name}`} title="Sign out">
-                <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></svg>
-                <b className="who-name" aria-hidden="true">{initials(name)}</b>
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -103,6 +124,12 @@ export default function AppHeader() {
           groups={groups}
           activeTab={activeTab}
           counts={{ tracker: trackerCount, kam_issues: activeTab !== 'kam_issues' ? opsCount : 0 }}
+          user={me ? { name, email: me.email, initials: initials(name) } : null}
+          collapsed={collapsed}
+          mobileOpen={mobileOpen}
+          onToggle={toggleMenu}
+          onCloseMobile={() => setMobileOpen(false)}
+          onSignOut={signOut}
         />
       )}
     </>
