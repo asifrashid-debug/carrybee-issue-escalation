@@ -56,10 +56,10 @@ test('the sheet setup sets a strict dropdown on Assigned IR Member (column M, ro
 });
 
 test('IR-only routing: IR ticked and HUB not ticked', () => {
-  assert.equal(isIrOnlyRoute({ hub: false, ir: true, sort_tnl: false }), true);
-  assert.equal(isIrOnlyRoute({ hub: true, ir: true, sort_tnl: false }), false);
-  assert.equal(isIrOnlyRoute({ hub: true, ir: false, sort_tnl: false }), false);
-  assert.equal(isIrOnlyRoute({ hub: false, ir: false, sort_tnl: true }), false);
+  assert.equal(isIrOnlyRoute({ hub: false, ir: true, central_sort: false, tnl: false }), true);
+  assert.equal(isIrOnlyRoute({ hub: true, ir: true, central_sort: false, tnl: false }), false);
+  assert.equal(isIrOnlyRoute({ hub: true, ir: false, central_sort: false, tnl: false }), false);
+  assert.equal(isIrOnlyRoute({ hub: false, ir: false, central_sort: true, tnl: false }), false);
 });
 
 test('resolve target: category days x 24, else IR_RESOLVE_SLA_HOURS, else null', () => {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
-import { pushToSheet } from '../../../lib/sheets';
+import { pushToSheet, pushRouteToSheet } from '../../../lib/sheets';
+import { sortTnlSheetId } from '../../../lib/sortTnlRoutes.mjs';
 import { isoWeek } from '../../../lib/time';
 import { loadScope, scopeFilter } from '../../../lib/visibility';
 import { requireUser } from '../../../lib/session';
@@ -59,6 +60,20 @@ async function queueIrSync(sb, esc) {
     const r = await pushIrRow(esc);
     await sb.from('sync_log').update({ status: 'success', updated_at: new Date().toISOString() }).eq('id', data.id);
     await sb.from('escalations').update({ last_synced_at: new Date().toISOString(), ir_sheet_row: r.row }).eq('issue_id', esc.issue_id);
+  } catch (e) {
+    await sb.from('sync_log').update({ status: 'failed', error_message: String(e.message || e), retries: 1, updated_at: new Date().toISOString() }).eq('id', data.id);
+  }
+}
+
+// Central Sort / TNL sheet write for a routed escalation. Same logging as queueSync, to that route's sheet.
+const ROUTE_ROW_COL = { central_sort: 'central_sort_sheet_row', tnl: 'tnl_sheet_row' };
+async function queueRouteSync(sb, esc, route) {
+  const { data, error } = await sb.from('sync_log').insert({ direction: 'db_to_sheet', issue_id: esc.issue_id, spreadsheet_id: sortTnlSheetId(route), status: 'queued', payload: { target: route } }).select().single();
+  if (error) return;
+  try {
+    const r = await pushRouteToSheet(esc, route);
+    await sb.from('sync_log').update({ status: 'success', updated_at: new Date().toISOString() }).eq('id', data.id);
+    await sb.from('escalations').update({ last_synced_at: new Date().toISOString(), [ROUTE_ROW_COL[route]]: r.row }).eq('issue_id', esc.issue_id);
   } catch (e) {
     await sb.from('sync_log').update({ status: 'failed', error_message: String(e.message || e), retries: 1, updated_at: new Date().toISOString() }).eq('id', data.id);
   }
@@ -230,7 +245,7 @@ export async function POST(req) {
     cm_assigned: body.channel === 'MX' && String(kam_name || '').trim().toUpperCase() === 'CM',
     pick_due_at: null, pick_missed: false, pick_justifications: 0, pick_justify_due_at: null,
     regional_lead: hub.regional_lead, division: hub.division, duplicate_of, row_version: 1,
-    route_hub: routes.hub, route_ir: routes.ir, route_sort_tnl: routes.sort_tnl,
+    route_hub: routes.hub, route_ir: routes.ir, route_central_sort: routes.central_sort, route_tnl: routes.tnl,
     mail_subject: routes.ir ? cleanMailSubject(body.mail_subject) : null,
     drive_link: attach.drive_link, attachment_name: attach.attachment_name,
     ir_resolve_sla_days: irOnly ? ir_resolve_sla_days : null,
@@ -250,6 +265,8 @@ export async function POST(req) {
   await audit(sb, data.issue_id, 'create', null, data.issue_id, session.email, 'form');
   if (data.route_hub) await queueSync(sb, data);
   if (data.route_ir) await queueIrSync(sb, data);
+  if (data.route_central_sort) await queueRouteSync(sb, data, 'central_sort');
+  if (data.route_tnl) await queueRouteSync(sb, data, 'tnl');
   // Bell + sound for CM members and CM leads when the issue is CM-assigned. Never blocks the response.
   await notifyNewCmIssue(sb, data);
   return NextResponse.json({ data, duplicate_warning }, { status: 201 });

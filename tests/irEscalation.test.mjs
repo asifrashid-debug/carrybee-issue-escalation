@@ -20,24 +20,24 @@ test('IR status list has the four dropdown values', () => {
 });
 
 test('KAM routing comes from the three boxes; MX always goes to the hub sheet', () => {
-  assert.deepEqual(routesFromBody({ route_hub: true, route_ir: true }, 'KAM'), { hub: true, ir: true, sort_tnl: false });
-  assert.deepEqual(routesFromBody({}, 'KAM'), { hub: false, ir: false, sort_tnl: false });
-  assert.deepEqual(routesFromBody({ route_ir: false }, 'MX'), { hub: true, ir: false, sort_tnl: false });
+  assert.deepEqual(routesFromBody({ route_hub: true, route_ir: true }, 'KAM'), { hub: true, ir: true, central_sort: false, tnl: false });
+  assert.deepEqual(routesFromBody({}, 'KAM'), { hub: false, ir: false, central_sort: false, tnl: false });
+  assert.deepEqual(routesFromBody({ route_ir: false }, 'MX'), { hub: true, ir: false, central_sort: false, tnl: false });
 });
 
 test('at least one box must be ticked', () => {
-  assert.match(routeError({ hub: false, ir: false, sort_tnl: false }), /Tick at least one/);
-  assert.equal(routeError({ hub: false, ir: false, sort_tnl: true }), null);
-  assert.equal(routeError({ hub: true, ir: true, sort_tnl: false }), null);
+  assert.match(routeError({ hub: false, ir: false, central_sort: false, tnl: false }), /Tick at least one/);
+  assert.equal(routeError({ hub: false, ir: false, central_sort: true, tnl: false }), null);
+  assert.equal(routeError({ hub: true, ir: true, central_sort: false, tnl: false }), null);
 });
 
 test('attachments are only accepted for IR, with a file count and size cap', () => {
   const small = [{ size: 1000 }];
-  assert.equal(attachmentError({ hub: true, ir: false, sort_tnl: false }, []), null);
-  assert.match(attachmentError({ hub: true, ir: false, sort_tnl: false }, small), /only accepted when the IR box/);
-  assert.equal(attachmentError({ hub: false, ir: true, sort_tnl: false }, small), null);
-  assert.match(attachmentError({ hub: false, ir: true, sort_tnl: false }, Array(11).fill({ size: 1 })), /at most 10/);
-  assert.match(attachmentError({ hub: false, ir: true, sort_tnl: false }, [{ size: 21 * 1024 * 1024 }]), /20 MB/);
+  assert.equal(attachmentError({ hub: true, ir: false, central_sort: false, tnl: false }, []), null);
+  assert.match(attachmentError({ hub: true, ir: false, central_sort: false, tnl: false }, small), /only accepted when the IR box/);
+  assert.equal(attachmentError({ hub: false, ir: true, central_sort: false, tnl: false }, small), null);
+  assert.match(attachmentError({ hub: false, ir: true, central_sort: false, tnl: false }, Array(11).fill({ size: 1 })), /at most 10/);
+  assert.match(attachmentError({ hub: false, ir: true, central_sort: false, tnl: false }, [{ size: 21 * 1024 * 1024 }]), /20 MB/);
 });
 
 test('mail subject is optional, trimmed and capped at 200 characters', () => {
@@ -114,4 +114,10 @@ test('irSlaCells reads targets from the given environment', () => {
   const e = { submitted_at: '2026-11-14T06:00:00Z', ir_picked_at: '2026-11-14T06:30:00Z', ir_resolved_at: null };
   assert.deepEqual(irSlaCells(e, {}), { pick: 'Within SLA', resolve: 'Pending' });
   assert.deepEqual(irSlaCells(e, { IR_PICK_SLA_HOURS: '1', IR_RESOLVE_SLA_HOURS: '24' }), { pick: 'Within SLA', resolve: 'Pending' });
+});
+
+test('Central Sort and TNL tick boxes are independent of HUB and IR', () => {
+  assert.deepEqual(routesFromBody({ route_central_sort: true, route_tnl: true }, 'KAM'), { hub: false, ir: false, central_sort: true, tnl: true });
+  assert.equal(routeError({ hub: false, ir: false, central_sort: false, tnl: true }), null);
+  assert.match(routeError({ hub: false, ir: false, central_sort: false, tnl: false }), /Central Sort or TNL/);
 });

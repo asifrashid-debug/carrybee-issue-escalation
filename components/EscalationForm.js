@@ -21,7 +21,7 @@ export default function EscalationForm({ channel }) {
   const [me, setMe] = useState(null);
   const [form, setForm] = useState({ email: '', consignment_id: '', merchant_name: '', concern_hub: '', issue_category: '', issue_sub_category: '', issue_details: '', kam_name: '' });
   const [biz, setBiz] = useState(null); // { q, found, business_name, kam_name, input_type } for the merchant box
-  const [routes, setRoutes] = useState({ hub: false, ir: false, sort_tnl: false }); // KAM: where the issue goes (HUB / IR / Sort-TNL)
+  const [routes, setRoutes] = useState({ hub: false, ir: false, central_sort: false, tnl: false }); // KAM: where the issue goes (HUB / IR / Central Sort / TNL)
   const [mailSubject, setMailSubject] = useState(''); // KAM IR: optional mail subject line
   const [files, setFiles] = useState([]);             // KAM IR: attachments, zipped on the server
   const [fileKey, setFileKey] = useState(0);          // changes after a submit, so the file picker clears
@@ -172,7 +172,7 @@ export default function EscalationForm({ channel }) {
 
   async function submit(e) {
     e.preventDefault(); setErr(null); setMsg(null);
-    if (isKam && !routes.hub && !routes.ir && !routes.sort_tnl) { setErr('Tick at least one box: HUB, IR or Sort/TNL.'); return; }
+    if (isKam && !routes.hub && !routes.ir && !routes.central_sort && !routes.tnl) { setErr('Tick at least one box: HUB, IR, Central Sort or TNL.'); return; }
     if (isKam && files.length && !routes.ir) { setErr('Attachments are only accepted when the IR box is ticked.'); return; }
     if (isKam && files.length > 10) { setErr('Attach at most 10 files.'); return; }
     if (isKam && files.reduce((n, f) => n + f.size, 0) > 20 * 1024 * 1024) { setErr('Attachments are larger than 20 MB in total.'); return; }
@@ -184,7 +184,7 @@ export default function EscalationForm({ channel }) {
     // Zone and KAM are set by the server. The KAM name comes from the signed-in account; MX form sends the merchant only.
     const body = { channel, email: form.email, consignment_id: form.consignment_id, concern_hub: form.concern_hub, issue_category: form.issue_category, issue_sub_category: form.issue_sub_category, issue_details: form.issue_details };
     if (!isKam) body.merchant_name = form.merchant_name;
-    if (isKam) { body.route_hub = routes.hub; body.route_ir = routes.ir; body.route_sort_tnl = routes.sort_tnl; if (routes.ir) body.mail_subject = mailSubject; }
+    if (isKam) { body.route_hub = routes.hub; body.route_ir = routes.ir; body.route_central_sort = routes.central_sort; body.route_tnl = routes.tnl; if (routes.ir) body.mail_subject = mailSubject; }
     setBusy(true);
     let res;
     if (files.length) {
@@ -200,7 +200,7 @@ export default function EscalationForm({ channel }) {
     setBiz(null);
     setHubAuto(null); setHubLookup({ state: 'idle', message: '' });
     lastLookup.current = '';
-    setRoutes({ hub: false, ir: false, sort_tnl: false }); setMailSubject(''); setFiles([]); setFileKey((k) => k + 1);
+    setRoutes({ hub: false, ir: false, central_sort: false, tnl: false }); setMailSubject(''); setFiles([]); setFileKey((k) => k + 1);
   }
 
   const idBlock = (
@@ -266,13 +266,12 @@ export default function EscalationForm({ channel }) {
               <div className="full" style={{ display: 'grid', gap: 10 }}>
                 <label className="flabel">Send this issue to * <small>(tick one or more)</small></label>
                 <div role="group" aria-label="Where to send this issue" style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-                  {[['hub', 'HUB'], ['ir', 'IR'], ['sort_tnl', 'Sort/TNL']].map(([k, label]) => (
+                  {[['hub', 'HUB'], ['ir', 'IR'], ['central_sort', 'Central Sort'], ['tnl', 'TNL']].map(([k, label]) => (
                     <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
                       <input type="checkbox" checked={routes[k]} onChange={(e) => toggleRoute(k, e.target.checked)} /> {label}
                     </label>
                   ))}
                 </div>
-                {routes.sort_tnl && <div className="hint">Sort/TNL routing is not set up yet. The issue is saved to the database only.</div>}
                 {irOnly && <div className="hint">IR categories are shown because only the IR box is ticked.</div>}
                 {routes.ir && (
                   <div style={{ display: 'grid', gap: 10 }}>

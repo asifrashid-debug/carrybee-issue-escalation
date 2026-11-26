@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabase';
 import { notifyHubResponse } from '../../../../lib/notify';
 import { pushFields } from '../../../../lib/sheets';
+import { SORT_TNL_ROUTES } from '../../../../lib/sortTnlRoutes.mjs';
 import { completionBlock, clearBlock } from '../../../../lib/finalResponse';
 // Sheet edits that change the derived AF-AH cells: Ops Status (Overall Validation, Issue Resolution),
 // Issue Pick Time and ISSUE STATUS (Issue Pick). Layer 1-3 responses also change Issue Pick (AG), which is timed
@@ -17,6 +18,9 @@ export async function POST(req) {
   if (process.env.WEBHOOK_SECRET && body.secret !== process.env.WEBHOOK_SECRET) return NextResponse.json({ error: 'Bad secret' }, { status: 401 });
   const { issue_id, field, new_value, editor_email } = body;
   if (!issue_id || !field) return NextResponse.json({ error: 'issue_id + field required' }, { status: 400 });
+  // Central Sort / TNL sheet edits send sheet_route. Absent = the hub sheet, as before.
+  const route = body.sheet_route || null;
+  if (route && !SORT_TNL_ROUTES.includes(route)) return NextResponse.json({ error: 'Unknown sheet_route' }, { status: 400 });
   const { data: cur } = await sb.from('escalations').select('*').eq('issue_id', issue_id).single();
   if (!cur) return NextResponse.json({ error: 'Issue not found' }, { status: 404 });
   // Field ownership: Requester block -> DB wins (reject sheet edits)
@@ -32,7 +36,7 @@ export async function POST(req) {
     await sb.from('audit_log').insert({ issue_id, field_name: field, old_value: cur[field]?String(cur[field]):null, new_value: `REJECTED: ${String(new_value??'')}`, actor_email: editor_email||'sheet', source: 'sheet' });
     await sb.from('sync_log').insert({ direction:'sheet_to_db', issue_id, status:'failed', error_message: finalBlock.error.slice(0, 300) });
     // Put the sheet cell back to the stored value so the sheet matches the database. A failure is logged only.
-    try { await pushFields(cur, [field]); } catch (err) {
+    try { await pushFields(cur, [field], route); } catch (err) {
       await sb.from('sync_log').insert({ direction:'db_to_sheet', issue_id, status:'failed', error_message: `Revert of ${field} failed: ${String(err.message || err).slice(0, 250)}` });
     }
     return NextResponse.json({ ok: false, error: finalBlock.error });
@@ -61,7 +65,7 @@ export async function POST(req) {
   // A failure is logged and does not undo the DB update.
   if (DERIVED_TRIGGERS.includes(field)) {
     try {
-      const r = await pushFields(data, []);
+      const r = await pushFields(data, [], route);
       await sb.from('sync_log').insert({ direction:'db_to_sheet', issue_id, status:'success', payload: { derived: true, trigger: field, action: r.action, row: r.row } });
     } catch (err) {
       await sb.from('sync_log').insert({ direction:'db_to_sheet', issue_id, status:'failed', error_message: `AF-AH refresh after ${field} failed: ${String(err.message || err).slice(0, 300)}` });
