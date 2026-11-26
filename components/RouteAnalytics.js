@@ -1,145 +1,196 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { WaveChart, Donut, DLegend, HBars } from './charts';
-import { PRESETS } from '../lib/dateRange';
+import DateRangeFilter from './cw/DateRangeFilter';
+import Fit from './cw/Fit';
+import { wave, hbars, donut, gauge, legend, kpiStrip } from './cw/chartlib';
+import { fmtN, fmtPct } from './cw/format';
+import { useRangeAnalytics } from './cw/useRangeAnalytics';
+import { rangeLabel, rangePhrase } from '../lib/dateRange';
+import { formatDhaka } from '../lib/time';
 
-// Analytics block at the top of the Central Sort and TNL tabs. Same layout as the IR analytics.
-// Data: GET /api/route-analytics?route=... (same visibility and date rules as the list).
-// Counts are computed on the server over all matching issues, not just the rows shown in the table.
-const C = { open: '#D98E04', closed: '#0A7A56', picked: '#2F6FDB', progress: '#7A4FD6', hold: '#E67E22', bad: '#C0392B', good: '#0A7A56', mut: '#9AA0A6', ink: '#111216' };
-const OPS_COLOR = { New: C.open, Picked: C.picked, 'In Progress': C.progress, 'On Hold': C.hold, Resolved: C.closed, Unresolved: C.bad, 'Not set': C.mut };
-const VALIDATION_PALETTE = ['#2F6FDB', '#7A4FD6', '#0A7A56', '#D98E04', '#C0392B', '#37A9FF', '#A78BFA', '#9AA0A6'];
-const SLA_ROWS = [['pending', 'Open, inside target', C.picked], ['breached', 'Open, past target', C.bad], ['closed', 'Closed', C.closed]];
-const RANGE_OPTIONS = [{ key: 'all', label: 'All time' }, ...PRESETS];
-
-const fmtN = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US'));
+// Central Sort and TNL analytics, same layout as the Analytics page and the IR analytics.
+// Data: GET /api/route-analytics?route=... (same visibility and date rules as the list). Counts cover all matching issues.
+// Past resolution target uses the category resolution days (lib/categorySla.js), as in the list.
+const Html = ({ html }) => <div dangerouslySetInnerHTML={{ __html: html }} />;
+const OPS_COLOR = { New: '#A3A1A8', Picked: '#FFCC00', 'In Progress': '#FFB020', 'On Hold': '#9B9B9B', Resolved: '#00E5A0', Unresolved: '#FF5470', 'Not set': '#CFCBBE' };
+const VALIDATION_PALETTE = ['#37A9FF', '#A78BFA', '#00E5A0', '#FFCC00', '#FF5470', '#FF8A3D', '#CFCBBE'];
+const pctOf = (n, d) => (d ? Math.round((n / d) * 100) : null);
+const gaugeColor = (p) => (p != null && p >= 85 ? '#0A7A56' : '#FFCC00');
+const onTimeColor = (p) => (p == null ? '#A3A1A8' : p >= 90 ? '#00E5A0' : p >= 75 ? '#FFCC00' : '#FF5470');
 
 export default function RouteAnalytics({ route, label }) {
-  const [range, setRange] = useState('all');
-  const [data, setData] = useState(null);
-  const [err, setErr] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data, error, loading, range, reload } = useRangeAnalytics('/api/route-analytics', `route=${encodeURIComponent(route)}`);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/route-analytics?route=${encodeURIComponent(route)}&range=${encodeURIComponent(range)}`, { cache: 'no-store' })
-      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
-      .then(({ ok, j }) => {
-        if (cancelled) return;
-        if (!ok) throw new Error(j.error || 'Could not load the analytics');
-        setData(j); setErr(null);
-      })
-      .catch((e) => { if (!cancelled) setErr(e.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [route, range]);
+  const toolbar = (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div>
+        <div className="kicker">{`${label} analytics · ${rangeLabel(range)}`}</div>
+        <h2 style={{ margin: 0 }}>{label} issues</h2>
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <DateRangeFilter />
+        <button type="button" className="btn" onClick={reload} disabled={loading} aria-label={`Refresh ${label} analytics`}>{loading ? 'Refreshing…' : 'Refresh'}</button>
+        {data && <span className="chip"><span className="live" aria-hidden="true" />Live · synced {formatDhaka(data.generated_at)}</span>}
+      </div>
+    </div>
+  );
 
-  const card = { border: '1px solid var(--line, #e5e5e5)', borderRadius: 12, padding: 16, background: 'var(--card, #fff)', minWidth: 0 };
-  const h3 = { fontSize: 13, fontWeight: 700, margin: '0 0 10px' };
-  const td = { padding: '6px 8px', borderBottom: '1px solid var(--line, #f2f2f2)' };
-  const th = { padding: '6px 8px', color: 'var(--mut)', fontWeight: 500, borderBottom: '1px solid var(--line, #eee)' };
+  if (!data) {
+    return (
+      <section aria-label={`${label} analytics`} style={{ padding: '12px 24px 0' }}>
+        {toolbar}
+        {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
+      </section>
+    );
+  }
+
+  const opsVal = (name) => data.ops_status.find((s) => s.label === name)?.value || 0;
+  const valNotSet = data.validation.find((s) => s.label === 'Not set')?.value || 0;
+  const onTimePct = pctOf(data.total - data.late, data.total);
+  const closedPct = pctOf(data.closed, data.total);
+  const onSheetPct = pctOf(data.total - data.not_on_sheet, data.total);
+  const labels = data.trend.labels.map((l) => l.split('-').reverse().join(' '));
+  const every = labels.length > 30 ? 7 : labels.length > 14 ? 2 : 1;
+  const slaItems = [
+    { label: 'Open, inside target', value: data.sla.pending, color: '#37A9FF' },
+    { label: 'Open, past target', value: data.sla.breached, color: '#FF5470' },
+    { label: 'Closed', value: data.sla.closed, color: '#00E5A0' },
+  ];
+  const opsSegs = data.ops_status.filter((s) => s.value > 0).map((s) => ({ label: s.label, value: s.value, color: OPS_COLOR[s.label] || '#A3A1A8' }));
+  const valColor = (s, i) => (s.label === 'Not set' ? OPS_COLOR['Not set'] : VALIDATION_PALETTE[i % VALIDATION_PALETTE.length]);
+  const valSegs = data.validation.filter((s) => s.value > 0).map((s, i) => ({ label: s.label, value: s.value, color: valColor(s, i) }));
 
   return (
     <section aria-label={`${label} analytics`} style={{ padding: '12px 24px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>Analytics</div>
-        <label style={{ fontSize: 13, color: 'var(--mut)' }}>
-          Period{' '}
-          <select value={range} onChange={(e) => setRange(e.target.value)} style={{ padding: '6px 8px', fontSize: 13 }}>
-            {RANGE_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
-          </select>
-        </label>
-      </div>
-      {err && <div className="err on" role="alert">{err}</div>}
-      {loading && !data && <div className="hint">Loading analytics…</div>}
-      {data && (
-        <div style={{ opacity: loading ? 0.6 : 1 }}>
-          <div className="kpis" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-            <div className="kpi"><div className="lab">{label} issues</div><div className="num">{fmtN(data.total)}</div></div>
-            <div className="kpi"><div className="lab">Open</div><div className="num">{fmtN(data.open)}</div></div>
-            <div className="kpi"><div className="lab">Closed (resolved in Ops)</div><div className="num">{fmtN(data.closed)}</div></div>
-            <div className="kpi" style={{ borderRight: 0 }}><div className="lab">Past resolution target</div><div className="num" style={{ color: data.late ? C.bad : undefined }}>{fmtN(data.late)}</div></div>
-          </div>
-          <div className="kpis" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: 12 }}>
-            <div className="kpi"><div className="lab">Not on the {label} sheet yet</div><div className="num" style={{ fontSize: 26, color: data.not_on_sheet ? C.hold : undefined }}>{fmtN(data.not_on_sheet)}</div></div>
-            <div className="kpi"><div className="lab">Ops Status set</div><div className="num" style={{ fontSize: 26 }}>{fmtN(data.total - (data.ops_status.find((s) => s.label === 'Not set')?.value || 0))}</div></div>
-            <div className="kpi"><div className="lab">Validation set</div><div className="num" style={{ fontSize: 26 }}>{fmtN(data.total - (data.validation.find((s) => s.label === 'Not set')?.value || 0))}</div></div>
-            <div className="kpi" style={{ borderRight: 0 }}><div className="lab">Zones</div><div className="num" style={{ fontSize: 26 }}>{fmtN(data.zones.filter((z) => z.label !== 'Not set').length)}</div></div>
-          </div>
+      {toolbar}
+      {error && <div className="card" role="alert" style={{ marginBottom: 12 }}>Could not refresh: {error}</div>}
+      <div style={{ opacity: loading ? 0.6 : 1 }}>
+        <Html html={kpiStrip([
+          { label: `${label} issues`, value: fmtN(data.total), sub: `${fmtN(data.open)} open · ${fmtN(data.closed)} closed`, icon: 'truck' },
+          { label: 'Open backlog', value: fmtN(data.open), sub: `${fmtN(opsVal('New'))} new in Ops`, icon: 'escalation' },
+          { label: 'Past resolution target', value: fmtN(data.late), sub: 'Open past the category resolution days', icon: 'breach', good: false },
+          { label: `Not on the ${label} sheet yet`, value: fmtN(data.not_on_sheet), sub: 'Ops tracker sync-back pending', icon: 'sync' },
+        ])} />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12, marginTop: 12 }}>
-            <div style={card}>
-              <div style={h3}>Ops Status</div>
-              <Donut segments={data.ops_status.filter((s) => s.value > 0).map((s) => ({ value: s.value, color: OPS_COLOR[s.label] || C.mut, label: s.label }))} center={fmtN(data.total)} sub="issues" />
-              <DLegend items={data.ops_status.map((s) => ({ l: `${s.label} ${fmtN(s.value)}`, c: OPS_COLOR[s.label] || C.mut }))} />
-            </div>
-            <div style={card}>
-              <div style={h3}>Validation</div>
-              <Donut segments={data.validation.filter((s) => s.value > 0).map((s, i) => ({ value: s.value, color: s.label === 'Not set' ? C.mut : VALIDATION_PALETTE[i % VALIDATION_PALETTE.length], label: s.label }))} center={fmtN(data.total)} sub="issues" />
-              <DLegend items={data.validation.map((s, i) => ({ l: `${s.label} ${fmtN(s.value)}`, c: s.label === 'Not set' ? C.mut : VALIDATION_PALETTE[i % VALIDATION_PALETTE.length] }))} />
-            </div>
-            <div style={card}>
-              <div style={h3}>Resolution target (category days from raised)</div>
-              <HBars rows={SLA_ROWS.map(([k, text, color]) => ({ label: text, value: data.sla[k], color }))} color={C.ink} />
-            </div>
+        <div className="card mt">
+          <div className="card-h">
+            <div><h2>Issues raised per day</h2><small>{`${label} issues, ${rangePhrase(range)} (Dhaka)`}</small></div>
+            <Html html={legend([{ c: '#2F6FDB', l: 'Raised' }])} />
           </div>
+          <Fit render={(w) => wave({ w, labels, every, label: `${label} issues raised per day`, bg: '#FFFFFF', h: 240, series: [
+            { data: data.trend.values, color: '#2F6FDB', fillOpacity: 0.14 },
+          ] })} />
+        </div>
 
-          <div style={{ ...card, marginTop: 12 }}>
-            <div style={h3}>Issues raised per day (Dhaka)</div>
-            <WaveChart
-              labels={data.trend.labels}
-              every={data.trend.labels.length > 30 ? 7 : data.trend.labels.length > 14 ? 2 : 1}
-              series={[{ name: 'Raised', color: C.picked, data: data.trend.values }]}
-              label={`${label} issues raised per day`}
-            />
+        <div className="grid g2 mt">
+          <div className="card">
+            <div className="card-h"><div><h2>Ops Status</h2><small>Synced back from the Ops {label} tracker</small></div></div>
+            <DonutRows total={data.total} segs={opsSegs} rows={data.ops_status} colorOf={(s) => OPS_COLOR[s.label] || '#A3A1A8'} />
           </div>
+          <div className="card">
+            <div className="card-h"><div><h2>Validation</h2><small>Synced back from the Ops {label} tracker</small></div></div>
+            <DonutRows total={data.total} segs={valSegs} rows={data.validation} colorOf={(s) => valColor(s, data.validation.indexOf(s))} />
+          </div>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 12, marginTop: 12 }}>
-            <div style={{ ...card, overflowX: 'auto' }}>
-              <div style={h3}>By zone</div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead><tr>{['Zone', 'Issues', 'Open', 'Past target'].map((h) => <th key={h} style={{ ...th, textAlign: h === 'Zone' ? 'left' : 'right' }}>{h}</th>)}</tr></thead>
+        <div className="grid g2 mt">
+          <div className="card">
+            <div className="card-h"><div><h2>Resolution target</h2><small>Category days from raised</small></div></div>
+            <Html html={hbars(slaItems, '#111216')} />
+          </div>
+          <div className="card">
+            <div className="card-h"><div><h2>Top categories</h2><small>Share of {label} issues</small></div></div>
+            {data.categories.length === 0 ? <div className="empty">No categories yet</div> : (
+              <Html html={hbars(data.categories.map((c) => ({ label: c.label, value: c.total, color: '#2F6FDB' })), '#2F6FDB')} />
+            )}
+          </div>
+        </div>
+
+        <div className="grid g3 mt">
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div className="card-h" style={{ justifyContent: 'center' }}><div><h2>Within resolution target</h2><small>Not past the category days</small></div></div>
+            <Html html={gauge({ value: onTimePct ?? 0, color: onTimeColor(onTimePct), center: onTimePct == null ? '—' : `${onTimePct}%`, sub: `${fmtN(data.late)} past target`, w: 200 })} />
+          </div>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div className="card-h" style={{ justifyContent: 'center' }}><div><h2>Closed</h2><small>{`${fmtN(data.closed)} of ${fmtN(data.total)} issues`}</small></div></div>
+            <Html html={gauge({ value: closedPct ?? 0, color: gaugeColor(closedPct), center: closedPct == null ? '—' : `${closedPct}%`, sub: 'Closed in Ops', w: 200 })} />
+          </div>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div className="card-h" style={{ justifyContent: 'center' }}><div><h2>On the {label} sheet</h2><small>Issues with a sheet row</small></div></div>
+            <Html html={gauge({ value: onSheetPct ?? 0, color: gaugeColor(onSheetPct), center: onSheetPct == null ? '—' : `${onSheetPct}%`, sub: `${fmtN(data.not_on_sheet)} not on the sheet yet`, w: 200 })} />
+          </div>
+        </div>
+
+        <div className="grid g2 mt">
+          <div className="card" style={{ padding: '12px 8px 8px' }}>
+            <div className="card-h" style={{ padding: '0 12px' }}><div><h2>By zone</h2><small>Issues, open and past target</small></div></div>
+            {data.zones.length === 0 ? <div className="empty">No issues in this period</div> : (
+              <table>
+                <thead><tr><th>Zone</th><th>Issues</th><th>Open</th><th>Past target</th><th>On time</th></tr></thead>
                 <tbody>
                   {data.zones.map((z) => (
                     <tr key={z.label}>
-                      <td style={td}>{z.label}</td>
-                      <td style={{ ...td, textAlign: 'right' }}>{fmtN(z.total)}</td>
-                      <td style={{ ...td, textAlign: 'right' }}>{fmtN(z.open)}</td>
-                      <td style={{ ...td, textAlign: 'right', color: z.late ? C.bad : undefined, fontWeight: z.late ? 600 : 400 }}>{fmtN(z.late)}</td>
+                      <td>{z.label}</td>
+                      <td className="mono">{fmtN(z.total)}</td>
+                      <td className="mono">{fmtN(z.open)}</td>
+                      <td className="mono" style={{ color: z.late ? '#FF5470' : undefined, fontWeight: z.late ? 700 : 400 }}>{fmtN(z.late)}</td>
+                      <td className="mono">{fmtPct(pctOf(z.total - z.late, z.total) ?? 0)}</td>
                     </tr>
                   ))}
-                  {data.zones.length === 0 && <tr><td colSpan={4} style={{ padding: 8, color: 'var(--mut)' }}>No issues in this period.</td></tr>}
                 </tbody>
               </table>
-            </div>
-            <div style={{ ...card, overflowX: 'auto' }}>
-              <div style={h3}>Top HUBs</div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead><tr>{['HUB', 'Issues', 'Open', 'Past target'].map((h) => <th key={h} style={{ ...th, textAlign: h === 'HUB' ? 'left' : 'right' }}>{h}</th>)}</tr></thead>
+            )}
+          </div>
+          <div className="card" style={{ padding: '12px 8px 8px' }}>
+            <div className="card-h" style={{ padding: '0 12px' }}><div><h2>Top HUBs</h2><small>Top 10 by issues</small></div></div>
+            {data.hubs.length === 0 ? <div className="empty">No issues in this period</div> : (
+              <table>
+                <thead><tr><th>HUB</th><th>Issues</th><th>Open</th><th>Past target</th></tr></thead>
                 <tbody>
                   {data.hubs.map((h) => (
                     <tr key={h.label}>
-                      <td style={td}>{h.label}</td>
-                      <td style={{ ...td, textAlign: 'right' }}>{fmtN(h.total)}</td>
-                      <td style={{ ...td, textAlign: 'right' }}>{fmtN(h.open)}</td>
-                      <td style={{ ...td, textAlign: 'right', color: h.late ? C.bad : undefined, fontWeight: h.late ? 600 : 400 }}>{fmtN(h.late)}</td>
+                      <td>{h.label}</td>
+                      <td className="mono">{fmtN(h.total)}</td>
+                      <td className="mono">{fmtN(h.open)}</td>
+                      <td className="mono" style={{ color: h.late ? '#FF5470' : undefined, fontWeight: h.late ? 700 : 400 }}>{fmtN(h.late)}</td>
                     </tr>
                   ))}
-                  {data.hubs.length === 0 && <tr><td colSpan={4} style={{ padding: 8, color: 'var(--mut)' }}>No issues in this period.</td></tr>}
                 </tbody>
               </table>
-            </div>
-            <div style={card}>
-              <div style={h3}>Top categories</div>
-              <HBars rows={data.categories.map((c) => ({ label: c.label, value: c.value, color: C.picked }))} color={C.picked} />
-            </div>
-          </div>
-          <div className="hint" style={{ marginTop: 8 }}>
-            Past resolution target = open and older than the category resolution days. Ops Status and Validation fill in as the Ops {label} tracker syncs back.
+            )}
           </div>
         </div>
-      )}
+
+        <div className="card mt">
+          <div className="card-h"><div><h2>Attention counts</h2><small>Issues in this period</small></div></div>
+          <div className="grid g4">
+            {[['Past resolution target', data.late], ['Not on the sheet yet', data.not_on_sheet], ['Ops Status not set', opsVal('Not set')], ['Validation not set', valNotSet]].map(([l, v]) => (
+              <div key={l} className="card" style={{ padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}><span className="small">{l}</span><b>{fmtN(v)}</b></div>
+            ))}
+          </div>
+          <p className="note">
+            Past resolution target = open and older than the category resolution days. Ops Status and Validation fill in as the Ops {label} tracker syncs back.
+          </p>
+        </div>
+      </div>
     </section>
+  );
+}
+
+// Donut plus a list of every value with its count, the same layout as the Feedback outcomes card.
+function DonutRows({ total, segs, rows, colorOf }) {
+  if (total === 0) return <div className="empty">No issues in this period</div>;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
+      <Html html={donut({ segments: segs, center: fmtN(total), sub: 'issues', size: 160, stroke: 20 })} />
+      <div className="stack" style={{ gap: 10, flex: '1 1 180px', minWidth: 0 }}>
+        {rows.map((s) => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+            <i style={{ width: 9, height: 9, borderRadius: '50%', background: colorOf(s), flex: '0 0 auto' }} />
+            <span>{s.label}</span>
+            <b style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{fmtN(s.value)}</b>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
