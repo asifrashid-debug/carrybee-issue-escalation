@@ -5,13 +5,12 @@ import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 
 import { navFor } from '../lib/access';
+import { buildSideNav } from '../lib/navGroups.mjs';
+import SideNav from './SideNav';
 import NotificationBell from './NotificationBell';
 import { getMe } from './cw/meClient';
 import { useOpsBadge } from './useOpsBadge';
 import { useTrackerBadge } from './useTrackerBadge';
-
-// Folder icon per tab (demo FOLDER_ICON map). Unknown tabs fall back to the escalation icon.
-const FOLDER_ICON = { overview: 'zone', analytics: 'trend', tracker: 'escalation', hubs: 'hub', teams: 'team', kam_form: 'kam', mx_form: 'mx', admin: 'layers', sync: 'sync', ir_issues: 'ir', central_sort: 'hub', tnl: 'truck' };
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -19,7 +18,7 @@ function initials(name) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 }
 
-// Demo header: logo left, icon buttons and initials-only sign-out on the right, folder tabs under the bar.
+// Demo header: logo left, icon buttons and initials-only sign-out on the right, sidebar on the left (groups open a flyout).
 // Logic is unchanged: theme is saved in localStorage 'cb-theme' (light is the default), sign-out goes through Supabase.
 export default function AppHeader() {
   const path = usePathname() || '/';
@@ -67,6 +66,7 @@ export default function AppHeader() {
 
   const links = me ? navFor(me.role) : [];
   const name = me ? (me.display_name || me.email) : '';
+  const groups = buildSideNav(links);
   const activeTab = (() => {
     if (path === '/') return 'tracker';
     const hit = links.find((l) => l.href !== '/' && (path === l.href || path.startsWith(l.href + '/')));
@@ -98,20 +98,12 @@ export default function AppHeader() {
         </div>
       </header>
 
-      {links.length > 0 && (
-        <nav className="folders" aria-label="Pages">
-          {links.map((n) => {
-            // Tracker shows its own count. Ops-KAM shows the new Ops Issue count, hidden while the tab is open (opening it marks them seen).
-            const count = n.tab === 'tracker' ? trackerCount : (n.tab === 'kam_issues' && activeTab !== 'kam_issues' ? opsCount : 0);
-            return (
-              <Link key={n.href} href={n.href} className={`folder${activeTab === n.tab ? ' on' : ''}`} aria-current={activeTab === n.tab ? 'page' : undefined}>
-                <svg className="ic" viewBox="0 0 24 24" aria-hidden="true"><use href={`#i-${FOLDER_ICON[n.tab] || 'escalation'}`} /></svg>
-                {n.label}
-                {count > 0 && <span className="tab-badge" aria-label={n.tab === 'tracker' ? `${count} Tracker update${count === 1 ? '' : 's'}` : `${count} new Ops Issue${count === 1 ? '' : 's'}`}>{count > 99 ? '99+' : count}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+      {groups.length > 0 && (
+        <SideNav
+          groups={groups}
+          activeTab={activeTab}
+          counts={{ tracker: trackerCount, kam_issues: activeTab !== 'kam_issues' ? opsCount : 0 }}
+        />
       )}
     </>
   );

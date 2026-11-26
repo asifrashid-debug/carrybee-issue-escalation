@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { formatDhaka } from '../lib/time';
 import ErrorBoundary from './ErrorBoundary';
+import RouteAnalytics from './RouteAnalytics';
 import { getMe } from './cw/meClient';
 
 // Same drawer as the tracker: Activity log, KAM feedback and its outcome.
@@ -55,6 +56,7 @@ export default function RouteIssues({ route, label, sheetName }) {
         <button type="button" className="ibtn" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
       </div>
       {err && <div className="err on" role="alert" style={{ margin: '12px 24px' }}>{err}</div>}
+      <RouteAnalytics route={route} label={label} />
       <div style={{ padding: '12px 24px', overflowX: 'auto' }}>
         <div className="hint" style={{ marginBottom: 8 }}>
           {count} {label} issue{count === 1 ? '' : 's'}{count > rows.length ? ` (showing the latest ${rows.length})` : ''}
