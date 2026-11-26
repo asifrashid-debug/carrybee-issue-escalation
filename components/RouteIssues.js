@@ -1,6 +1,12 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { formatDhaka } from '../lib/time';
+import ErrorBoundary from './ErrorBoundary';
+import { getMe } from './cw/meClient';
+
+// Same drawer as the tracker: Activity log, KAM feedback and its outcome.
+const IssueDrawer = dynamic(() => import('./IssueDrawer'), { ssr: false });
 
 // Route tab (Central Sort or TNL): every escalation the KAM ticked for that route, and nothing else.
 // Same pattern as the IR Issues tab. Data: GET /api/escalations?route=central_sort (or tnl).
@@ -12,6 +18,11 @@ export default function RouteIssues({ route, label, sheetName }) {
   const [count, setCount] = useState(0);
   const [err, setErr] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState(null); // issue_id of the open drawer
+  const [me, setMe] = useState(null);
+
+  useEffect(() => { getMe().then(setMe).catch(() => {}); }, []);
+  const user = me || { email: '', role: '—' };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -38,7 +49,7 @@ export default function RouteIssues({ route, label, sheetName }) {
           <div className="kicker">{label}</div>
           <h1>{label} Issues</h1>
           <p className="sub">
-            Issues the KAM sent to {label} ({sheetName} response sheet). Only issues ticked for {label} appear here.
+            Issues the KAM sent to {label} ({sheetName} response sheet). Only issues ticked for {label} appear here. Click an issue to open its log and KAM feedback.
           </p>
         </div>
         <button type="button" className="ibtn" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
@@ -58,7 +69,7 @@ export default function RouteIssues({ route, label, sheetName }) {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.issue_id}>
+              <tr key={r.issue_id} onClick={() => setOpenId(r.issue_id)} style={{ cursor: 'pointer', background: openId === r.issue_id ? 'var(--hover, rgba(0,0,0,.04))' : undefined }}>
                 <td style={td}><b>{r.issue_id}</b></td>
                 <td style={td}>{formatDhaka(r.submitted_at)}</td>
                 <td style={td}>{r.zone || '—'}</td>
@@ -77,6 +88,7 @@ export default function RouteIssues({ route, label, sheetName }) {
           </tbody>
         </table>
       </div>
+      {openId && <ErrorBoundary><IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={load} onOpen={setOpenId} /></ErrorBoundary>}
     </>
   );
 }
