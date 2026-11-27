@@ -96,6 +96,7 @@ tr:last-child td{border-bottom:0}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);font:600 12.5px var(--font);color:var(--mut)}
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .tab-badge{position:static;box-shadow:none;margin-left:2px}
 .chip b{font-variant-numeric:tabular-nums}
 .note{font-size:12px;color:var(--mut);margin-top:16px}
 
