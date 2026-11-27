@@ -4,6 +4,7 @@ import {
   OPS_HEADERS, OPS_FIELDS, COL, L, OPS_LAST_COL, KAM_FEEDBACK_MAX, colLetter,
   buildKamIndex, lookupKam, parseOpsRow, planOpsRow, toDbRecord,
   visibleOpsIssues, canEditKamFeedback, cleanKamFeedback, withHubZone,
+  OPS_HUB_ZONES, OPS_TRACKER_TABS, OPS_TRACKER_SHEET_IDS, OPS_SOURCE_KEYS, tabForSource, tabForSheetId,
 } from '../lib/opsIssues.mjs';
 
 const master = [
@@ -221,4 +222,51 @@ test('withHubZone: zone comes from hub_master by hub name; no hub or unknown hub
   ], hubs);
   assert.deepEqual(out.map((i) => [i.issue_id, i.zone]), [['A', 'ISD'], ['B', 'CTG'], ['C', null], ['D', null]]);
   assert.equal(withHubZone(null, hubs).length, 0);
+});
+
+// Sync sources: the hub zones and the three KAM tracker tabs.
+test('tracker tabs are named exactly as the sheets name them', () => {
+  assert.equal(OPS_TRACKER_TABS.IR, 'IR to KAM');
+  assert.equal(OPS_TRACKER_TABS.TNL, 'TNL To KAM');
+  assert.equal(OPS_TRACKER_TABS.CENTRAL_SORT, 'Sort To KAM');
+});
+
+test('sync sources are the three hub zones then the three tracker tabs', () => {
+  assert.deepEqual(OPS_HUB_ZONES, ['ISD', 'OSD', 'CTG']);
+  assert.deepEqual(OPS_SOURCE_KEYS, ['ISD', 'OSD', 'CTG', 'IR', 'TNL', 'CENTRAL_SORT']);
+});
+
+test('each source reads its own tab: hub zones use Ops Issues, trackers use their tab', () => {
+  assert.equal(tabForSource('ISD'), 'Ops Issues');
+  assert.equal(tabForSource('CTG'), 'Ops Issues');
+  assert.equal(tabForSource('IR'), 'IR to KAM');
+  assert.equal(tabForSource('TNL'), 'TNL To KAM');
+  assert.equal(tabForSource('CENTRAL_SORT'), 'Sort To KAM');
+  assert.equal(tabForSource('NOPE'), null);
+});
+
+test('tracker spreadsheet IDs are set for all three trackers and are distinct', () => {
+  const ids = Object.values(OPS_TRACKER_SHEET_IDS);
+  assert.equal(ids.length, 3);
+  assert.ok(ids.every((id) => /^[A-Za-z0-9_-]{30,}$/.test(id)));
+  assert.equal(new Set(ids).size, 3);
+});
+
+test('tabForSheetId finds the tab for a write-back, and refuses an unknown sheet', () => {
+  const sids = { ISD: 'isd-id', IR: 'ir-id', TNL: 'tnl-id', CENTRAL_SORT: 'cs-id' };
+  assert.equal(tabForSheetId(sids, 'ir-id'), 'IR to KAM');
+  assert.equal(tabForSheetId(sids, 'isd-id'), 'Ops Issues');
+  assert.equal(tabForSheetId(sids, 'other-id'), null);
+  assert.equal(tabForSheetId(sids, ''), null);
+});
+
+test('tracker rows use the same 12-column layout as the hub Ops Issues tab', () => {
+  const row = parseOpsRow(['CB-7', '25-Nov-2026 12:21 PM', '', 'Shopr', 'Pickup Issue', 'Pickup Delay', 'hub note', 'Hub A', 'Ahmed', 'Picked', 'Valid', 'kam note']);
+  assert.equal(row.issue_id, 'CB-7');
+  assert.equal(row.merchant_name, 'Shopr');
+  assert.equal(row.kam_name, 'Ahmed');
+  assert.equal(row.issue_status, 'Picked');
+  assert.equal(row.kam_feedback, 'kam note');
+  assert.equal(L.kam_feedback, 'L');
+  assert.equal(L.kam_name, 'I');
 });
