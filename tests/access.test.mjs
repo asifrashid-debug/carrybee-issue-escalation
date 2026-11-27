@@ -2,30 +2,30 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { tabsFor, canOpenTab, tabForPath, navFor } from '../lib/access.js';
 
-const ALL = ['overview','analytics','tracker','ir_issues','central_sort','tnl','hubs','teams','kam_form','kam_issues','mx_form','admin','sync'];
+const ALL = ['overview','analytics','tracker','ir_issues','central_sort','tnl','hubs','teams','kam_form','kam_issues','kam_analytics','mx_form','admin','sync'];
 
 test('super admin sees every tab', () => {
   assert.deepEqual([...tabsFor('admin')].sort(), [...ALL].sort());
 });
 
 test('CM lead: Overview, Analytics, Tracker, HUB, Team Performance, KAM Form, Ops-KAM', () => {
-  assert.deepEqual([...tabsFor('cm_lead')].sort(), ['overview','analytics','tracker','ir_issues','central_sort','tnl','hubs','teams','kam_form','kam_issues'].sort());
+  assert.deepEqual([...tabsFor('cm_lead')].sort(), ['overview','analytics','tracker','ir_issues','central_sort','tnl','hubs','teams','kam_form','kam_issues','kam_analytics'].sort());
 });
 
 test('team lead: the CM lead tabs plus KAM Feedback', () => {
-  assert.deepEqual([...tabsFor('team_lead')].sort(), ['overview','analytics','tracker','ir_issues','central_sort','tnl','hubs','teams','kam_form','kam_issues'].sort());
+  assert.deepEqual([...tabsFor('team_lead')].sort(), ['overview','analytics','tracker','ir_issues','central_sort','tnl','hubs','teams','kam_form','kam_issues','kam_analytics'].sort());
 });
 
 test('CM members: Tracker, Team Performance, KAM Form, Ops-KAM (no Analytics, no Overview)', () => {
-  assert.deepEqual([...tabsFor('cm_member')].sort(), ['central_sort','ir_issues','kam_form','kam_issues','teams','tnl','tracker']);
+  assert.deepEqual([...tabsFor('cm_member')].sort(), ['central_sort','ir_issues','kam_analytics','kam_form','kam_issues','teams','tnl','tracker']);
 });
 
 test('KAM (requester): Tracker, Team Performance, KAM Form, KAM Feedback', () => {
-  assert.deepEqual([...tabsFor('requester')].sort(), ['central_sort','ir_issues','kam_form','kam_issues','teams','tnl','tracker']);
+  assert.deepEqual([...tabsFor('requester')].sort(), ['central_sort','ir_issues','kam_analytics','kam_form','kam_issues','teams','tnl','tracker']);
 });
 
 test('MX members: Tracker, Team Performance, MX Form, KAM Feedback', () => {
-  assert.deepEqual([...tabsFor('mx')].sort(), ['kam_issues','mx_form','teams','tracker']);
+  assert.deepEqual([...tabsFor('mx')].sort(), ['kam_analytics','kam_issues','mx_form','teams','tracker']);
 });
 
 test('management, regional leads and hub ops have no tracker tabs (hub responses come from the hub response sheet)', () => {
@@ -58,8 +58,8 @@ test('page paths map to tabs', () => {
 });
 
 test('nav is filtered by role', () => {
-  assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['kam_issues','mx_form','teams','tracker']);
-  assert.equal(navFor('admin').length, 13);
+  assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['kam_analytics','kam_issues','mx_form','teams','tracker']);
+  assert.equal(navFor('admin').length, 14);
 });
 
 // IR folder setup page lives under /admin, so only the super admin can open it.

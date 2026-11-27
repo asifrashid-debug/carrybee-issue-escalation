@@ -16,8 +16,8 @@ test('admin sees every page, in the requested order', () => {
   assert.deepEqual(menu.map((m) => m.label), ['Dashboard', 'Reporting', 'KAM-OPS Tracker', 'OPS-KAM Tracker', 'KAM Form', 'MX Form', 'Admin & Masters', 'Sync Health']);
   assert.deepEqual(menu[1].items.map((i) => i.label), ['Analytics', 'HUB Performance', 'Team Performance']);
   assert.deepEqual(menu[2].items.map((i) => i.label), ['Tracker', 'IR Issues', 'Central Sort', 'TNL']);
-  assert.equal(menu[3].type, 'link');
-  assert.equal(menu[3].href, '/kam/issues');
+  assert.equal(menu[3].type, 'group');
+  assert.deepEqual(menu[3].items.map((i) => [i.tab, i.href, i.label]), [['kam_issues', '/kam/issues', 'Tracker'], ['kam_analytics', '/kam/analytics', 'Analytics']]);
   assert.equal(flat(menu).length, TABS.length);
 });
 
