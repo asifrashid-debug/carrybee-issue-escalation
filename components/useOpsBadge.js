@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { raisedIssueIds, unseenCount, seenStorageKey, parseSeen } from '../lib/opsBadge.mjs';
+import { unseenCount, seenStorageKey, parseSeen, nextSeenIds } from '../lib/opsBadge.mjs';
 
 const EVENT = 'cb-ops-seen';
 const POLL_MS = 60000;
@@ -13,18 +13,25 @@ function readSeen(viewer) {
   }
 }
 
-// Called by the Ops-KAM page after a successful load: every issue still at Raised counts as seen.
-// Saved per browser (localStorage). It is not shared across devices.
-export function markOpsIssuesSeen(viewer, issues) {
-  try {
-    localStorage.setItem(seenStorageKey(viewer), JSON.stringify(raisedIssueIds(issues)));
-  } catch (e) {
-    return; // storage unavailable: the badge stays until the next successful save
-  }
-  window.dispatchEvent(new Event(EVENT));
+// Seen ids for this viewer in this browser (localStorage). Not shared across devices.
+export function readOpsSeen(viewer) {
+  return readSeen(viewer);
 }
 
-// Header badge: how many Ops Issues are new (Raised and not yet seen) for the signed-in viewer.
+// Called when a source tab is opened: the Raised issues shown in that tab count as seen. Other tabs keep their seen state.
+// Returns the new seen list and tells the header badge to refresh.
+export function markOpsIssuesSeen(viewer, allIssues, shownIssues) {
+  const next = nextSeenIds(allIssues, readSeen(viewer), shownIssues);
+  try {
+    localStorage.setItem(seenStorageKey(viewer), JSON.stringify(next));
+  } catch (e) {
+    return next; // storage unavailable: the badge stays until the next successful save
+  }
+  window.dispatchEvent(new Event(EVENT));
+  return next;
+}
+
+// Header badge: how many Ops Issues are new (Raised and not yet seen) for the signed-in viewer, across all tabs.
 // Only runs when the viewer can open the Ops-KAM tab. Refreshes every 60 seconds and after markOpsIssuesSeen.
 export function useOpsBadge(enabled) {
   const [count, setCount] = useState(0);

@@ -5,7 +5,9 @@ import { fmtN } from './cw/format';
 import { formatDhaka } from '../lib/time';
 import { VALIDATIONS, CLOSED_STATUSES, dueState } from '../lib/opsLifecycle.mjs';
 import ErrorBoundary from './ErrorBoundary';
-import { markOpsIssuesSeen } from './useOpsBadge';
+import { markOpsIssuesSeen, readOpsSeen } from './useOpsBadge';
+import { OPS_SOURCE_TABS, inOpsSourceTab } from '../lib/opsIssues.mjs';
+import { unseenCount } from '../lib/opsBadge.mjs';
 
 // KAM Feedback tab. Lists only the Ops Issues named to the signed-in KAM (see lib/opsIssues.mjs).
 // Uses the tracker's classes (ph, kpis, chips, qi cards, drawer), so it looks like the rest of the app.
@@ -204,6 +206,9 @@ export default function KamIssues() {
   const [issues, setIssues] = useState(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const [source, setSource] = useState('all');
+  const [viewer, setViewer] = useState('');
+  const [seen, setSeen] = useState(null);
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -224,8 +229,8 @@ export default function KamIssues() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Load failed (${r.status})`);
       setIssues(d.issues || []);
-      // Opening the tab marks the current Raised issues as seen, which clears the header badge.
-      markOpsIssuesSeen(d.viewer, d.issues || []);
+      setViewer(d.viewer || '');
+      setSeen(readOpsSeen(d.viewer));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -235,19 +240,28 @@ export default function KamIssues() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Opening a source tab marks its Raised issues as seen, so that tab's badge clears. The All tab marks nothing.
+  useEffect(() => {
+    if (!issues || !viewer || source === 'all') return;
+    const shownIssues = issues.filter((i) => inOpsSourceTab(i, source));
+    setSeen(markOpsIssuesSeen(viewer, issues, shownIssues));
+  }, [issues, viewer, source]);
+
   function onChange(id, patch) {
     setIssues((list) => (list || []).map((i) => (i.issue_id === id ? { ...i, ...patch } : i)));
   }
 
-  const list = issues || [];
+  const list = useMemo(() => issues || [], [issues]);
+  const tabIssues = useMemo(() => list.filter((i) => inOpsSourceTab(i, source)), [list, source]);
+  const unseenIn = (tab) => (seen ? unseenCount(list.filter((i) => inOpsSourceTab(i, tab)), seen) : 0);
   const clock = now || new Date(0);
   const overdueOf = (i) => !!now && dueState(i, clock).overdue;
-  const toPick = list.filter((i) => i.issue_status === 'Raised').length;
-  const overdue = list.filter(overdueOf).length;
+  const toPick = tabIssues.filter((i) => i.issue_status === 'Raised').length;
+  const overdue = tabIssues.filter(overdueOf).length;
 
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return list.filter((i) => {
+    return tabIssues.filter((i) => {
       if (filter === 'pick' && i.issue_status !== 'Raised') return false;
       if (filter === 'open' && !['Picked', 'In Progress'].includes(i.issue_status)) return false;
       if (filter === 'closed' && !CLOSED_STATUSES.includes(i.issue_status)) return false;
@@ -257,7 +271,7 @@ export default function KamIssues() {
     });
     // overdueOf depends on now; the list is recomputed when now changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list, filter, q, now]);
+  }, [tabIssues, filter, q, now]);
 
   const open = list.find((i) => i.issue_id === openId) || null;
 
@@ -290,9 +304,22 @@ export default function KamIssues() {
       {issues && (
         <>
           <div className="kpis" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-            <div className="kpi"><div className="lab">Named to you</div><div className="num">{fmtN(list.length)}</div></div>
+            <div className="kpi"><div className="lab">Named to you</div><div className="num">{fmtN(tabIssues.length)}</div></div>
             <div className="kpi"><div className="lab">To pick</div><div className="num">{fmtN(toPick)}</div></div>
             <div className="kpi" style={{ borderRight: 0 }}><div className="lab">Overdue</div><div className="num">{fmtN(overdue)}</div></div>
+          </div>
+
+          <div className="chips" role="tablist" aria-label="Issue sources" style={{ marginTop: 16 }}>
+            {OPS_SOURCE_TABS.map((t) => {
+              const n = unseenIn(t.key);
+              const on = source === t.key;
+              return (
+                <button key={t.key} type="button" role="tab" aria-selected={on} className={`chip${on ? ' on' : ''}`} onClick={() => setSource(t.key)}>
+                  {t.label}
+                  {n > 0 && <span className="tab-badge" aria-label={`${n} new`}>{n > 99 ? '99+' : n}</span>}
+                </button>
+              );
+            })}
           </div>
 
           <div className="chips" role="group" aria-label="KAM views" style={{ margin: '16px 0' }}>
@@ -304,7 +331,7 @@ export default function KamIssues() {
           </div>
 
           {shown.length === 0 && (
-            <div className="card muted">{list.length === 0 ? 'No Ops Issues are named to you.' : 'Nothing matches this view.'}</div>
+            <div className="card muted">{list.length === 0 ? 'No Ops Issues are named to you.' : tabIssues.length === 0 ? 'No issues from this source are named to you.' : 'Nothing matches this view.'}</div>
           )}
 
           {shown.map((i) => {
