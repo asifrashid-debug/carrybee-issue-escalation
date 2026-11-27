@@ -180,7 +180,9 @@ const ICONS = [
   {n:'category', t:'Category', u:'Issue category tag', p:'<path d="M4 12.5V5.5a1 1 0 0 1 1-1h7l7.5 7.5-8 8z"/><circle cx="8.5" cy="8.5" r="1.4"/>'},
   {n:'ir', t:'Issue resolution', u:'IR escalations and resolution', p:'<circle cx="10.5" cy="10.5" r="5.5"/><path d="m14.6 14.6 4.4 4.4"/><path d="M8 10.5h5"/>'},
   {n:'trend', t:'Trend wave', u:'Flow and trend charts', p:'<path d="M3 13c2.2-3.2 4.3-3.2 6 0s3.8 3.2 6 0 3.6-3.2 6 0"/>'},
-  {n:'truck', t:'Truck', u:'TNL transport and delivery', p:'<path d="M3 6.5h10.5v9.5H3z"/><path d="M13.5 9.5h3.7l2.8 3.2V16h-6.5"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>'}
+  {n:'truck', t:'Truck', u:'TNL transport and delivery', p:'<path d="M3 6.5h10.5v9.5H3z"/><path d="M13.5 9.5h3.7l2.8 3.2V16h-6.5"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>'},
+  {n:'target', t:'Target', u:'KAM-OPS tracker and targets', p:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2"/>'},
+  {n:'shield', t:'Shield', u:'Ops-KAM and protected items', p:'<path d="M12 3.5 5.5 6v5.2c0 4.4 2.9 7.8 6.5 9.3 3.6-1.5 6.5-4.9 6.5-9.3V6z"/>'},
 ];
 
 function sprite(){
