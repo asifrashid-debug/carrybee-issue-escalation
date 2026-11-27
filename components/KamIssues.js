@@ -6,7 +6,7 @@ import { formatDhaka } from '../lib/time';
 import { VALIDATIONS, CLOSED_STATUSES, dueState } from '../lib/opsLifecycle.mjs';
 import ErrorBoundary from './ErrorBoundary';
 import { markOpsIssuesSeen, readOpsSeen } from './useOpsBadge';
-import { OPS_SOURCE_TABS, inOpsSourceTab } from '../lib/opsIssues.mjs';
+import { OPS_SOURCE_TABS, inOpsSourceTab, OPS_SORT_OPTIONS, sortOpsIssues } from '../lib/opsIssues.mjs';
 import { unseenCount } from '../lib/opsBadge.mjs';
 
 // KAM Feedback tab. Lists only the Ops Issues named to the signed-in KAM (see lib/opsIssues.mjs).
@@ -207,6 +207,7 @@ export default function KamIssues() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [source, setSource] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
   const [viewer, setViewer] = useState('');
   const [seen, setSeen] = useState(null);
   const [q, setQ] = useState('');
@@ -261,7 +262,7 @@ export default function KamIssues() {
 
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return tabIssues.filter((i) => {
+    const matching = tabIssues.filter((i) => {
       if (filter === 'pick' && i.issue_status !== 'Raised') return false;
       if (filter === 'open' && !['Picked', 'In Progress'].includes(i.issue_status)) return false;
       if (filter === 'closed' && !CLOSED_STATUSES.includes(i.issue_status)) return false;
@@ -269,9 +270,10 @@ export default function KamIssues() {
       if (!term) return true;
       return [i.issue_id, i.consignment_id, i.merchant_name].some((v) => String(v || '').toLowerCase().includes(term));
     });
+    return sortOpsIssues(matching, sortOrder);
     // overdueOf depends on now; the list is recomputed when now changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabIssues, filter, q, now]);
+  }, [tabIssues, filter, q, now, sortOrder]);
 
   const open = list.find((i) => i.issue_id === openId) || null;
 
@@ -322,12 +324,20 @@ export default function KamIssues() {
             })}
           </div>
 
-          <div className="chips" role="group" aria-label="KAM views" style={{ margin: '16px 0' }}>
-            {FILTERS.map((f) => (
-              <button key={f.key} type="button" className={`chip${filter === f.key ? ' on' : ''}`} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>
-                {f.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '16px 0' }}>
+            <div className="chips" role="group" aria-label="KAM views">
+              {FILTERS.map((f) => (
+                <button key={f.key} type="button" className={`chip${filter === f.key ? ' on' : ''}`} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto', font: '600 12.5px var(--font)', color: 'var(--mut)' }}>
+              Sort
+              <select aria-label="Sort issues" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} style={{ height: 34, borderRadius: 999, border: '1px solid var(--line)', background: 'var(--card)', color: 'inherit', padding: '0 12px', font: 'inherit' }}>
+                {OPS_SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+              </select>
+            </label>
           </div>
 
           {shown.length === 0 && (
