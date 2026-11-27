@@ -13,9 +13,11 @@ test('every page in the tab list is placed in the sidebar exactly once', () => {
 
 test('admin sees every page, in the requested order', () => {
   const menu = buildSideNav(navFor('admin'));
-  assert.deepEqual(menu.map((m) => m.label), ['Dashboard', 'Reporting', 'Operational Issues', 'KAM Form', 'MX Form', 'Admin & Masters', 'Sync Health']);
+  assert.deepEqual(menu.map((m) => m.label), ['Dashboard', 'Reporting', 'KAM-OPS Tracker', 'OPS-KAM Tracker', 'KAM Form', 'MX Form', 'Admin & Masters', 'Sync Health']);
   assert.deepEqual(menu[1].items.map((i) => i.label), ['Analytics', 'HUB Performance', 'Team Performance']);
-  assert.deepEqual(menu[2].items.map((i) => i.label), ['Tracker', 'IR Issues', 'Central Sort', 'TNL', 'Ops-KAM']);
+  assert.deepEqual(menu[2].items.map((i) => i.label), ['Tracker', 'IR Issues', 'Central Sort', 'TNL']);
+  assert.equal(menu[3].type, 'link');
+  assert.equal(menu[3].href, '/kam/issues');
   assert.equal(flat(menu).length, TABS.length);
 });
 

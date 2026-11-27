@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-// Dark drawer on the left. Pages are grouped (Reporting, Operational Issues open inline with a chevron).
+// Dark drawer on the left. Pages are grouped (Reporting, KAM-OPS Tracker open inline with a chevron).
 // Open/close: the top button collapses the drawer to an icon rail (desktop) or closes the overlay (phone).
 // Sign out and the signed-in user sit at the bottom of the drawer.
 // Data: groups from lib/navGroups.mjs (buildSideNav). The state lives in components/AppHeader.js.
@@ -66,6 +66,7 @@ export default function SideNav({ groups = [], activeTab, counts = {}, user = nu
                 <Link key={g.key} href={g.href} className={`side-head${on ? ' on' : ''}`} aria-current={on ? 'page' : undefined} title={g.label} onClick={onCloseMobile}>
                   {icon(g.icon)}
                   <span className="side-lab">{g.label}</span>
+                  {badge(counts[g.tab] || 0, 'new')}
                 </Link>
               );
             }

@@ -146,8 +146,8 @@ test('only admin keeps per-KAM detail', () => {
   assert.equal(forViewer(r, 'team_lead').total, 1);   // aggregates stay
 });
 
-test('the tracker tab is named Ops-KAM', () => {
+test('the Ops-KAM tab is named OPS-KAM Tracker', () => {
   const tab = TABS.find((t) => t.tab === 'kam_issues');
-  assert.equal(tab.label, 'Ops-KAM');
+  assert.equal(tab.label, 'OPS-KAM Tracker');
   assert.equal(tab.href, '/kam/issues');
 });
