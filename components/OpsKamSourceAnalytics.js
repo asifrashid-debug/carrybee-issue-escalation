@@ -24,7 +24,7 @@ export default function OpsKamSourceAnalytics() {
   const [source, setSource] = useState(sources[0].key);
   const current = sources.find((s) => s.key === source);
   return (
-    <div id="kam-analytics" style={{ padding: '12px 24px 0' }}>
+    <div id="kam-analytics" className="trk-page" style={{ padding: '12px 24px 0' }}>
       <div className="chips" role="tablist" aria-label="Analytics source" style={{ marginBottom: 12 }}>
         {sources.map((s) => (
           <button key={s.key} type="button" role="tab" aria-selected={source === s.key} className={`chip${source === s.key ? ' on' : ''}`} onClick={() => setSource(s.key)}>

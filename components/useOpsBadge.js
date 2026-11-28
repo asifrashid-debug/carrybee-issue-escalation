@@ -39,10 +39,11 @@ export function useOpsBadge(enabled) {
   const load = useCallback(async () => {
     if (!enabled) return;
     try {
-      const r = await fetch('/api/ops-issues', { cache: 'no-store' });
+      // size=1: the badge only needs the Raised references, not a page of issues.
+      const r = await fetch('/api/ops-issues?size=1', { cache: 'no-store' });
       if (!r.ok) return;
       const d = await r.json();
-      setCount(unseenCount(d.issues || [], readSeen(d.viewer)));
+      setCount(unseenCount(d.raised || [], readSeen(d.viewer)));
     } catch (e) {
       /* offline: keep the last count */
     }

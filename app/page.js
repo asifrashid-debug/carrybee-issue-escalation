@@ -450,7 +450,7 @@ export default function Tracker() {
       )}
 
       {view === 'board' ? (
-        <div className="grid g4">
+        <div className="grid g4 trk-page">
           {COLUMNS.map((c) => {
             const col = board?.[c.key];
             return (

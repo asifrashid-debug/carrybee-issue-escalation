@@ -3,7 +3,7 @@ import { supabaseAdmin } from '../../../lib/supabase';
 import { requireUser } from '../../../lib/session';
 import { loadScope } from '../../../lib/visibility';
 import { fetchAll } from '../../../lib/opsIssueSync';
-import { trackerItems, viewerKamNames, KAM_BADGE_ROLES } from '../../../lib/trackerBadge.mjs';
+import { trackerItems, viewerKamNames, KAM_BADGE_ROLES, trackerRowsFilter } from '../../../lib/trackerBadge.mjs';
 import { routeListFilter } from '../../../lib/irEscalation.mjs';
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +43,7 @@ export async function GET() {
         .eq('channel', 'MX')
         .eq('is_archived', false)
         .eq(routeListFilter(null).column, routeListFilter(null).value)
-        .or(ors.join(','))
+        .or(trackerRowsFilter(ors))
         .order('issue_id'));
       items = trackerItems(rows, viewer);
     }

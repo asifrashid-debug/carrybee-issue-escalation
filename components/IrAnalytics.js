@@ -44,7 +44,7 @@ export default function IrAnalytics() {
 
   if (!data) {
     return (
-      <section aria-label="IR analytics" style={{ padding: '12px 24px 0' }}>
+      <section aria-label="IR analytics" className="trk-page" style={{ padding: '12px 24px 0' }}>
         {toolbar}
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </section>
@@ -61,7 +61,7 @@ export default function IrAnalytics() {
   const every = labels.length > 30 ? 7 : labels.length > 14 ? 2 : 1;
 
   return (
-    <section aria-label="IR analytics" style={{ padding: '12px 24px 0' }}>
+    <section aria-label="IR analytics" className="trk-page" style={{ padding: '12px 24px 0' }}>
       {toolbar}
       {error && <div className="card" role="alert" style={{ marginBottom: 12 }}>Could not refresh: {error}</div>}
       <div style={{ opacity: loading ? 0.6 : 1 }}>
