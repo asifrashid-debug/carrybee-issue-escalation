@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { canOpenTab, tabForPath, tabsFor } from './lib/access';
 
-// Everything except the sign-in page, auth endpoints, the sheet webhook (secret-checked) and static assets needs a session.
+// Everything except the sign-in page, auth endpoints, the sheet webhook (secret-checked), the MX CRM API (API-key checked in the route) and static assets needs a session.
 // /api/cron/ routes check their own "Authorization: Bearer CRON_SECRET" (Vercel cron and the Apps Script timer send it, not a session).
-const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/api/webhook/sheet', '/api/import/legacy', '/api/cron/', '/_next/', '/carrybee-logo.png', '/logo-light.png', '/logo-dark.png', '/favicon.ico', '/manifest.webmanifest', '/sw.js', '/icons/'];
+const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/api/webhook/sheet', '/api/mx/', '/api/import/legacy', '/api/cron/', '/_next/', '/carrybee-logo.png', '/logo-light.png', '/logo-dark.png', '/favicon.ico', '/manifest.webmanifest', '/sw.js', '/icons/'];
 // Signed-in users of any role may call these (the header reads /api/me to build the nav).
 const ANY_ROLE_API = ['/api/me'];
 
