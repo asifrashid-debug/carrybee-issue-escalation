@@ -26,8 +26,6 @@ export default function EscalationForm({ channel }) {
   const [biz, setBiz] = useState(null); // { q, found, business_name, kam_name, input_type } for the merchant box
   const [routes, setRoutes] = useState(() => startRoutes(isKam)); // where the issue goes (HUB / IR / Central Sort / TNL), KAM and MX
   const [mailSubject, setMailSubject] = useState(''); // KAM IR: optional mail subject line
-  const [files, setFiles] = useState([]);             // KAM IR: attachments, zipped on the server
-  const [fileKey, setFileKey] = useState(0);          // changes after a submit, so the file picker clears
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -176,9 +174,6 @@ export default function EscalationForm({ channel }) {
   async function submit(e) {
     e.preventDefault(); setErr(null); setMsg(null);
     if (!routes.hub && !routes.ir && !routes.central_sort && !routes.tnl) { setErr('Tick at least one box: HUB, IR, Central Sort or TNL.'); return; }
-    if (files.length && !routes.ir) { setErr('Attachments are only accepted when the IR box is ticked.'); return; }
-    if (files.length > 10) { setErr('Attach at most 10 files.'); return; }
-    if (files.reduce((n, f) => n + f.size, 0) > 20 * 1024 * 1024) { setErr('Attachments are larger than 20 MB in total.'); return; }
     if (!hub) { setErr('Select a Concern Hub from the list.'); return; }
     if (!form.issue_category || !form.issue_sub_category) { setErr('Select an Issue Category and Sub Category.'); return; }
     if (isKam && !form.consignment_id.trim()) { setErr('Consignment ID is required.'); return; }
@@ -189,13 +184,7 @@ export default function EscalationForm({ channel }) {
     if (!isKam) body.merchant_name = form.merchant_name;
     body.route_hub = routes.hub; body.route_ir = routes.ir; body.route_central_sort = routes.central_sort; body.route_tnl = routes.tnl; if (routes.ir) body.mail_subject = mailSubject;
     setBusy(true);
-    let res;
-    if (files.length) {
-      const fd = new FormData(); fd.append('payload', JSON.stringify(body)); files.forEach((f) => fd.append('attachments', f, f.name));
-      res = await fetch('/api/escalations', { method: 'POST', body: fd });
-    } else {
-      res = await fetch('/api/escalations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    }
+    const res = await fetch('/api/escalations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await res.json().catch(() => ({})); setBusy(false);
     if (!res.ok) { setErr(j.error || 'Submit failed'); return; }
     setMsg({ id: j.data.issue_id, warn: j.duplicate_warning, kam: j.data.kam_name, zone: j.data.zone, at: j.data.submitted_at });
@@ -203,7 +192,7 @@ export default function EscalationForm({ channel }) {
     setBiz(null);
     setHubAuto(null); setHubLookup({ state: 'idle', message: '' });
     lastLookup.current = '';
-    setRoutes(startRoutes(isKam)); setMailSubject(''); setFiles([]); setFileKey((k) => k + 1);
+    setRoutes(startRoutes(isKam)); setMailSubject('');
   }
 
   const idBlock = (
@@ -281,13 +270,6 @@ export default function EscalationForm({ channel }) {
                       <label className="flabel" htmlFor="ir-mail-subject">Mail Subject Line <small>(optional)</small></label>
                       <div className="fctl"><input id="ir-mail-subject" value={mailSubject} maxLength={200} onChange={(e) => setMailSubject(e.target.value)} placeholder="Subject for the IR mail" /></div>
                     </div>
-                    {isKam && (
-                    <div>
-                      <label className="flabel" htmlFor="ir-attachments">Attachments <small>(optional. Zipped on save. Up to 10 files, 20 MB total)</small></label>
-                      <input key={fileKey} id="ir-attachments" type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files || []))} />
-                      {files.length > 0 && <div className="hint">{files.length} file{files.length === 1 ? '' : 's'} will be zipped on save.</div>}
-                    </div>
-                    )}
                   </div>
                 )}
               </div>
