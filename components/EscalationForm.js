@@ -13,6 +13,9 @@ import { isIrOnlyRoute } from '../lib/irEscalation.mjs';
 
 const CM = 'CM';
 
+// Routing boxes at the start (and after a submit). MX starts with HUB ticked, which is where MX issues always went before.
+const startRoutes = (kam) => ({ hub: !kam, ir: false, central_sort: false, tnl: false });
+
 // KAM and MX intake form (demo layout). Zone comes from the chosen hub. KAM is looked up from the business (MX only).
 // Priority comes from the sub category, so requesters never choose it. Server stamps time, email and week.
 export default function EscalationForm({ channel }) {
@@ -21,7 +24,7 @@ export default function EscalationForm({ channel }) {
   const [me, setMe] = useState(null);
   const [form, setForm] = useState({ email: '', consignment_id: '', merchant_name: '', concern_hub: '', issue_category: '', issue_sub_category: '', issue_details: '', kam_name: '' });
   const [biz, setBiz] = useState(null); // { q, found, business_name, kam_name, input_type } for the merchant box
-  const [routes, setRoutes] = useState({ hub: false, ir: false, central_sort: false, tnl: false }); // KAM: where the issue goes (HUB / IR / Central Sort / TNL)
+  const [routes, setRoutes] = useState(() => startRoutes(isKam)); // where the issue goes (HUB / IR / Central Sort / TNL), KAM and MX
   const [mailSubject, setMailSubject] = useState(''); // KAM IR: optional mail subject line
   const [files, setFiles] = useState([]);             // KAM IR: attachments, zipped on the server
   const [fileKey, setFileKey] = useState(0);          // changes after a submit, so the file picker clears
@@ -66,7 +69,7 @@ export default function EscalationForm({ channel }) {
   }, [merchantQ, isKam]);
 
   // IR box ticked alone: the IR category list. Otherwise the requester list (HUB, or HUB + IR).
-  const irOnly = isKam && isIrOnlyRoute(routes);
+  const irOnly = isIrOnlyRoute(routes);
   const reqCats = masters.categories.filter((c) => c.side === 'requester');
   const catRows = irOnly ? (masters.ir_categories || []) : reqCats;
   const categoryOptions = useMemo(() => [...new Set(catRows.map((c) => c.category))].sort().map((c) => ({ value: c, label: c })), [masters.categories, masters.ir_categories, irOnly]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -172,10 +175,10 @@ export default function EscalationForm({ channel }) {
 
   async function submit(e) {
     e.preventDefault(); setErr(null); setMsg(null);
-    if (isKam && !routes.hub && !routes.ir && !routes.central_sort && !routes.tnl) { setErr('Tick at least one box: HUB, IR, Central Sort or TNL.'); return; }
-    if (isKam && files.length && !routes.ir) { setErr('Attachments are only accepted when the IR box is ticked.'); return; }
-    if (isKam && files.length > 10) { setErr('Attach at most 10 files.'); return; }
-    if (isKam && files.reduce((n, f) => n + f.size, 0) > 20 * 1024 * 1024) { setErr('Attachments are larger than 20 MB in total.'); return; }
+    if (!routes.hub && !routes.ir && !routes.central_sort && !routes.tnl) { setErr('Tick at least one box: HUB, IR, Central Sort or TNL.'); return; }
+    if (files.length && !routes.ir) { setErr('Attachments are only accepted when the IR box is ticked.'); return; }
+    if (files.length > 10) { setErr('Attach at most 10 files.'); return; }
+    if (files.reduce((n, f) => n + f.size, 0) > 20 * 1024 * 1024) { setErr('Attachments are larger than 20 MB in total.'); return; }
     if (!hub) { setErr('Select a Concern Hub from the list.'); return; }
     if (!form.issue_category || !form.issue_sub_category) { setErr('Select an Issue Category and Sub Category.'); return; }
     if (isKam && !form.consignment_id.trim()) { setErr('Consignment ID is required.'); return; }
@@ -184,7 +187,7 @@ export default function EscalationForm({ channel }) {
     // Zone and KAM are set by the server. The KAM name comes from the signed-in account; MX form sends the merchant only.
     const body = { channel, email: form.email, consignment_id: form.consignment_id, concern_hub: form.concern_hub, issue_category: form.issue_category, issue_sub_category: form.issue_sub_category, issue_details: form.issue_details };
     if (!isKam) body.merchant_name = form.merchant_name;
-    if (isKam) { body.route_hub = routes.hub; body.route_ir = routes.ir; body.route_central_sort = routes.central_sort; body.route_tnl = routes.tnl; if (routes.ir) body.mail_subject = mailSubject; }
+    body.route_hub = routes.hub; body.route_ir = routes.ir; body.route_central_sort = routes.central_sort; body.route_tnl = routes.tnl; if (routes.ir) body.mail_subject = mailSubject;
     setBusy(true);
     let res;
     if (files.length) {
@@ -200,7 +203,7 @@ export default function EscalationForm({ channel }) {
     setBiz(null);
     setHubAuto(null); setHubLookup({ state: 'idle', message: '' });
     lastLookup.current = '';
-    setRoutes({ hub: false, ir: false, central_sort: false, tnl: false }); setMailSubject(''); setFiles([]); setFileKey((k) => k + 1);
+    setRoutes(startRoutes(isKam)); setMailSubject(''); setFiles([]); setFileKey((k) => k + 1);
   }
 
   const idBlock = (
@@ -262,8 +265,7 @@ export default function EscalationForm({ channel }) {
               </div>
             </div>
 
-            {isKam && (
-              <div className="full" style={{ display: 'grid', gap: 10 }}>
+            <div className="full" style={{ display: 'grid', gap: 10 }}>
                 <label className="flabel">Send this issue to * <small>(tick one or more)</small></label>
                 <div role="group" aria-label="Where to send this issue" style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
                   {[['hub', 'HUB'], ['ir', 'IR'], ['central_sort', 'Central Sort'], ['tnl', 'TNL']].map(([k, label]) => (
@@ -279,15 +281,16 @@ export default function EscalationForm({ channel }) {
                       <label className="flabel" htmlFor="ir-mail-subject">Mail Subject Line <small>(optional)</small></label>
                       <div className="fctl"><input id="ir-mail-subject" value={mailSubject} maxLength={200} onChange={(e) => setMailSubject(e.target.value)} placeholder="Subject for the IR mail" /></div>
                     </div>
+                    {isKam && (
                     <div>
                       <label className="flabel" htmlFor="ir-attachments">Attachments <small>(optional. Zipped on save. Up to 10 files, 20 MB total)</small></label>
                       <input key={fileKey} id="ir-attachments" type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files || []))} />
                       {files.length > 0 && <div className="hint">{files.length} file{files.length === 1 ? '' : 's'} will be zipped on save.</div>}
                     </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
 
             <SearchSelect label="Concern Hub (225 master hubs, no free text)" value={form.concern_hub} onChange={(v) => { set('concern_hub', v); setHubAuto(null); setHubLookup({ state: 'idle', message: '' }); }} options={hubOptions} placeholder="Type to search hub…" required emptyText="No hub matches. Try another spelling." />
             <div>
