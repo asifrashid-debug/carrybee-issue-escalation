@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { getMe } from './cw/meClient';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -19,7 +20,7 @@ export default function SendReportButton() {
   const [addErr, setAddErr] = useState(null);
 
   useEffect(() => {
-    fetch('/api/me', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((me) => setIsAdmin(me?.role === 'admin')).catch(() => {});
+    getMe().then((me) => setIsAdmin(me?.role === 'admin')).catch(() => {}); // shared /api/me cache, not a second request
   }, []);
 
   async function openDraft() {
