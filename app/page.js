@@ -9,7 +9,8 @@ import ErrorBoundary from '../components/ErrorBoundary';
 const IssueDrawer = dynamic(() => import('../components/IssueDrawer'), { ssr: false });
 import CopyButton from '../components/CopyButton';
 import EscalateButton from '../components/EscalateButton';
-import { ESCALATED_VIEW, escalatedLabel } from '../lib/escalateTo.mjs';
+import { ESCALATED_VIEW, escalatedLabel, isOnTeamSheet } from '../lib/escalateTo.mjs';
+import RetrySheetButton from '../components/RetrySheetButton';
 import HiveStatus from '../components/HiveStatus';
 import { useAnalytics } from '../components/useAnalytics';
 import { fmtN } from '../components/cw/format';
@@ -599,6 +600,9 @@ export default function Tracker() {
                       <span className="avatar" title="Raised by" aria-label={`Raised by ${who}`}>{who}</span>
                       {!e.escalated_to && (
                         <EscalateButton issueId={e.issue_id} onDone={(r) => { setEscNotice({ text: `${r.issueId} escalated to ${r.team}.${r.warning ? ' ' + r.warning : ''}`, error: !!r.warning }); load(); }} />
+                      )}
+                      {e.escalated_to && !isOnTeamSheet(e) && (
+                        <RetrySheetButton issueId={e.issue_id} team={escalatedLabel(e.escalated_to)} onDone={(r) => { setEscNotice({ text: `${r.issueId} written to the ${r.team} sheet.${r.warning ? ' ' + r.warning : ''}`, error: !!r.warning }); load(); }} />
                       )}
                       <span className="btn primary" style={{ height: 32, fontSize: 12.5 }}>Open</span>
                     </div>

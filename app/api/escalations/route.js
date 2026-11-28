@@ -69,10 +69,9 @@ export async function GET(req) {
   const isIr = searchParams.get('route') === 'ir';
   // Route tabs: only issues ticked for that route. Tracker (no route): issues ticked for HUB, IR, Central Sort or TNL.
   q = applyRouteListFilter(q, searchParams.get('route'));
-  // Escalated filter: only issues escalated to IR, Central Sort or TNL. The main tracker (no route) hides them.
-  // Team tabs (route set) keep showing them.
+  // Escalated filter: only issues escalated to IR, Central Sort or TNL. Escalated issues also stay in the main tracker,
+  // where the card shows the team they were escalated to.
   if (searchParams.get('view') === ESCALATED_VIEW) q = q.not('escalated_to', 'is', null);
-  else if (!searchParams.get('route')) q = q.is('escalated_to', null);
   // Date range (Dhaka days, by submitted date). Empty = all time.
   const rb = rangeBounds(resolveRange({ key: 'custom', from: searchParams.get('from'), to: searchParams.get('to') }));
   if (rb?.start != null) q = q.gte('submitted_at', new Date(rb.start).toISOString());
@@ -107,7 +106,6 @@ export async function GET(req) {
   // Same route and escalated rules as the list above, so the count matches the rows on screen
   rwq = applyRouteListFilter(rwq, searchParams.get('route'));
   if (searchParams.get('view') === ESCALATED_VIEW) rwq = rwq.not('escalated_to', 'is', null);
-  else if (!searchParams.get('route')) rwq = rwq.is('escalated_to', null);
   if (!scope.all) rwq = rwq.or(scopeFilter(scope));
   // Run the list, the resolved count and the category lookup together (one database round trip instead of three)
   const [{ data, error, count }, rw, { data: cats }] = await Promise.all([

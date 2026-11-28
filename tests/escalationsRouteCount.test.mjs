@@ -15,7 +15,10 @@ test('resolved count uses the same route filter as the list', () => {
   assert.match(src, /rwq = applyRouteListFilter\(rwq, searchParams\.get\('route'\)\)/);
 });
 
-test('resolved count applies the escalated rule like the list', () => {
+test('resolved count applies the escalated view rule like the list', () => {
   assert.match(src, /rwq = rwq\.not\('escalated_to', 'is', null\)/);
-  assert.match(src, /rwq = rwq\.is\('escalated_to', null\)/);
+});
+
+test('main tracker list does not hide escalated issues', () => {
+  assert.doesNotMatch(src, /\.is\('escalated_to', null\)/);
 });
