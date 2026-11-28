@@ -1,16 +1,16 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { formatDhaka } from '../lib/time';
 import ErrorBoundary from './ErrorBoundary';
 import RouteAnalytics from './RouteAnalytics';
 import { getMe } from './cw/meClient';
+import TrackerCard from './TrackerCard';
 
 // Same drawer as the tracker: Activity log, KAM feedback and its outcome.
 const IssueDrawer = dynamic(() => import('./IssueDrawer'), { ssr: false });
 
 // Route tab (Central Sort or TNL): every escalation the KAM ticked for that route, and nothing else.
-// Same pattern as the IR Issues tab. Data: GET /api/escalations?route=central_sort (or tnl).
+// Each issue is a tracker card (components/TrackerCard.js), the same card as the main tracker. Data: GET /api/escalations?route=central_sort (or tnl).
 // Visibility follows the same scope rules as the tracker. Ops Status and Validation come from the
 // Ops Issues tracker, which writes them back to the response sheet.
 // route: 'central_sort' | 'tnl'. label: tab title used in the heading.
@@ -39,8 +39,6 @@ export default function RouteIssues({ route, label, sheetName }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const th = { textAlign: 'left', padding: '8px 10px', fontSize: 12, color: 'var(--mut)', borderBottom: '1px solid var(--line, #ddd)', whiteSpace: 'nowrap' };
-  const td = { padding: '8px 10px', fontSize: 13, borderBottom: '1px solid var(--line, #eee)', verticalAlign: 'top' };
   const rowKey = route === 'tnl' ? 'tnl_sheet_row' : 'central_sort_sheet_row';
 
   return (
@@ -61,34 +59,15 @@ export default function RouteIssues({ route, label, sheetName }) {
         <div className="hint" style={{ marginBottom: 8 }}>
           {count} {label} issue{count === 1 ? '' : 's'}{count > rows.length ? ` (showing the latest ${rows.length})` : ''}
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={th}>Issue ID</th><th style={th}>Raised (Dhaka)</th><th style={th}>Zone</th><th style={th}>HUB</th>
-              <th style={th}>Consignment ID</th><th style={th}>Merchant</th><th style={th}>Category</th>
-              <th style={th}>Ops Status</th><th style={th}>Validation</th><th style={th}>Sheet row</th>
-            </tr>
-          </thead>
-          <tbody className="trk-rows">
-            {rows.map((r) => (
-              <tr key={r.issue_id} onClick={() => setOpenId(r.issue_id)} style={{ cursor: 'pointer', background: openId === r.issue_id ? 'var(--hover, rgba(0,0,0,.04))' : undefined }}>
-                <td style={td}><b>{r.issue_id}</b></td>
-                <td style={td}>{formatDhaka(r.submitted_at)}</td>
-                <td style={td}>{r.zone || '—'}</td>
-                <td style={td}>{r.concern_hub || '—'}</td>
-                <td style={td}>{r.consignment_id || '—'}</td>
-                <td style={td}>{r.merchant_name || '—'}</td>
-                <td style={td}>{r.issue_category || '—'}<br /><small>{r.issue_sub_category}</small></td>
-                <td style={td}>{r.ops_status || '—'}</td>
-                <td style={td}>{r.validation || '—'}</td>
-                <td style={td}>{r[rowKey] ?? '—'}</td>
-              </tr>
-            ))}
-            {!loading && rows.length === 0 && !err && (
-              <tr><td style={td} colSpan={10}>No {label} issues yet.</td></tr>
-            )}
-          </tbody>
-        </table>
+        {!loading && rows.length === 0 && !err && <div className="card muted">No {label} issues yet.</div>}
+        {rows.map((r) => (
+          <TrackerCard
+            key={r.issue_id}
+            e={r}
+            onOpen={setOpenId}
+            extraLines={[{ cls: 'muted small', text: `Ops Status: ${r.ops_status || '—'} · Validation: ${r.validation || '—'} · Sheet row: ${r[rowKey] ?? '—'}` }]}
+          />
+        ))}
       </div>
       {openId && <ErrorBoundary><IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={load} onOpen={setOpenId} /></ErrorBoundary>}
     </div>
