@@ -3,11 +3,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { formatDhaka } from '../lib/time';
 import { IR_KAM_STATUSES } from '../lib/irKamStatus.mjs';
 import IrAnalytics from './IrAnalytics';
+import TrackerCard from './TrackerCard';
 
 // IR Issues tab: every escalation the KAM ticked for IR (route_ir), with the IR pick and resolve SLA.
+// Each issue is a tracker card (components/TrackerCard.js), the same card as the main tracker.
 // Click a row to open the drawer. The KAM (raiser), their team lead or an admin sets the KAM Status there.
 // Data: GET /api/escalations?route=ir. Visibility follows the same scope rules as the tracker.
-const SLA_STYLE = { 'Within SLA': 'var(--good)', Breached: 'var(--bad, #c0392b)', Pending: 'var(--mut)', 'No SLA set': 'var(--mut)' };
+const SLA_CLS = { 'Within SLA': 'sla-ok', Breached: 'sla-bad', Pending: 'muted small', 'No SLA set': 'muted small' };
 
 export default function IrIssues() {
   const [rows, setRows] = useState([]);
@@ -30,14 +32,13 @@ export default function IrIssues() {
 
   useEffect(() => { load(); }, [load]);
 
-  const th = { textAlign: 'left', padding: '8px 10px', fontSize: 12, color: 'var(--mut)', borderBottom: '1px solid var(--line, #ddd)', whiteSpace: 'nowrap' };
-  const td = { padding: '8px 10px', fontSize: 13, borderBottom: '1px solid var(--line, #eee)', verticalAlign: 'top' };
   const current = rows.find((r) => r.issue_id === sel) || null;
 
-  // Replace one row after a save, so the table and the drawer show the stored value.
+  // Replace one row after a save, so the card and the drawer show the stored value.
   function onSaved(updated) {
     setRows((list) => list.map((r) => (r.issue_id === updated.issue_id ? { ...r, ...updated } : r)));
   }
+
 
   return (
     <div className="trk-page">
@@ -53,37 +54,21 @@ export default function IrIssues() {
       <IrAnalytics />
       <div style={{ padding: '12px 24px', overflowX: 'auto' }}>
         <div className="hint" style={{ marginBottom: 8 }}>{count} IR issue{count === 1 ? '' : 's'}</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={th}>Issue ID</th><th style={th}>Raised (Dhaka)</th><th style={th}>HUB</th><th style={th}>Zone</th>
-              <th style={th}>Category</th><th style={th}>Mail subject</th><th style={th}>Status from KAM</th>
-              <th style={th}>Assigned IR member</th><th style={th}>IR Status</th><th style={th}>IR Pick SLA</th>
-              <th style={th}>IR Resolve SLA</th><th style={th}>Attachment</th>
-            </tr>
-          </thead>
-          <tbody className="trk-rows">
-            {rows.map((r) => (
-              <tr key={r.issue_id} onClick={() => setSel(r.issue_id)} style={{ cursor: 'pointer', background: sel === r.issue_id ? 'var(--hover, rgba(0,0,0,.04))' : undefined }}>
-                <td style={td}><b>{r.issue_id}</b></td>
-                <td style={td}>{formatDhaka(r.submitted_at)}</td>
-                <td style={td}>{r.concern_hub}</td>
-                <td style={td}>{r.zone}</td>
-                <td style={td}>{r.issue_category}<br /><small>{r.issue_sub_category}</small></td>
-                <td style={td}>{r.mail_subject || '—'}</td>
-                <td style={td}>{r.ir_kam_status || '—'}</td>
-                <td style={td}>{r.ir_assigned_member || '—'}</td>
-                <td style={td}>{r.ir_status || 'Open'}</td>
-                <td style={{ ...td, color: SLA_STYLE[r.ir_pick_sla] || 'inherit', fontWeight: 600 }}>{r.ir_pick_sla || '—'}</td>
-                <td style={{ ...td, color: SLA_STYLE[r.ir_resolve_sla] || 'inherit', fontWeight: 600 }}>{r.ir_resolve_sla || '—'}</td>
-                <td style={td} onClick={(e) => e.stopPropagation()}>{r.drive_link ? <a href={r.drive_link} target="_blank" rel="noreferrer">Open zip</a> : '—'}</td>
-              </tr>
-            ))}
-            {!loading && rows.length === 0 && !err && (
-              <tr><td style={td} colSpan={12}>No IR issues yet.</td></tr>
-            )}
-          </tbody>
-        </table>
+        {!loading && rows.length === 0 && !err && <div className="card muted">No IR issues yet.</div>}
+        {rows.map((r) => (
+          <TrackerCard
+            key={r.issue_id}
+            e={r}
+            onOpen={setSel}
+            extraLines={[
+              { cls: 'muted small', text: `Mail subject: ${r.mail_subject || '—'}` },
+              { cls: 'muted small', text: `KAM status: ${r.ir_kam_status || '—'} · IR status: ${r.ir_status || 'Open'} · Assigned IR member: ${r.ir_assigned_member || '—'}` },
+              { cls: SLA_CLS[r.ir_pick_sla] || 'muted small', text: `IR pick SLA: ${r.ir_pick_sla || '—'}` },
+              { cls: SLA_CLS[r.ir_resolve_sla] || 'muted small', text: `IR resolve SLA: ${r.ir_resolve_sla || '—'}` },
+            ]}
+            footer={r.drive_link ? <a href={r.drive_link} target="_blank" rel="noreferrer">Open zip</a> : null}
+          />
+        ))}
       </div>
       {current && <IrDrawer key={current.issue_id} issue={current} onClose={() => setSel(null)} onSaved={onSaved} />}
     </div>
