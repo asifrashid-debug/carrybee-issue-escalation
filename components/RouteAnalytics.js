@@ -36,7 +36,7 @@ export default function RouteAnalytics({ route, label }) {
 
   if (!data) {
     return (
-      <section aria-label={`${label} analytics`} style={{ padding: '12px 24px 0' }}>
+      <section aria-label={`${label} analytics`} className="trk-page" style={{ padding: '12px 24px 0' }}>
         {toolbar}
         {error ? <div className="box box-bad" role="alert"><b>Could not load data.</b> {error}</div> : <div className="empty">{loading ? 'Loading live data…' : 'Waiting for data'}</div>}
       </section>
@@ -60,7 +60,7 @@ export default function RouteAnalytics({ route, label }) {
   const valSegs = data.validation.filter((s) => s.value > 0).map((s, i) => ({ label: s.label, value: s.value, color: valColor(s, i) }));
 
   return (
-    <section aria-label={`${label} analytics`} style={{ padding: '12px 24px 0' }}>
+    <section aria-label={`${label} analytics`} className="trk-page" style={{ padding: '12px 24px 0' }}>
       {toolbar}
       {error && <div className="card" role="alert" style={{ marginBottom: 12 }}>Could not refresh: {error}</div>}
       <div style={{ opacity: loading ? 0.6 : 1 }}>

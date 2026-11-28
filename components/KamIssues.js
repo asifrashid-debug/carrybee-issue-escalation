@@ -6,7 +6,9 @@ import { formatDhaka } from '../lib/time';
 import { VALIDATIONS, CLOSED_STATUSES, dueState } from '../lib/opsLifecycle.mjs';
 import ErrorBoundary from './ErrorBoundary';
 import { markOpsIssuesSeen, readOpsSeen } from './useOpsBadge';
-import { OPS_SOURCE_TABS, inOpsSourceTab, OPS_SORT_OPTIONS, sortOpsIssues } from '../lib/opsIssues.mjs';
+import { OPS_SOURCE_TABS, OPS_SORT_OPTIONS } from '../lib/opsIssues.mjs';
+import { isOverdue } from '../lib/opsListView.mjs';
+import { useVisibleInterval } from './cw/useVisibleInterval';
 import { unseenCount } from '../lib/opsBadge.mjs';
 
 // KAM Feedback tab. Lists only the Ops Issues named to the signed-in KAM (see lib/opsIssues.mjs).
@@ -23,6 +25,7 @@ const NEXT_ACTIONS = {
   'In Progress': [{ action: 'resolve', label: 'Mark Resolved' }, { action: 'not_resolved', label: 'Mark Not Resolved' }],
 };
 const STEPS = ['Raised', 'Picked', 'In Progress', 'Closed'];
+const OPS_PAGE_SIZE = 100;
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'pick', label: 'To pick' },
@@ -203,11 +206,17 @@ function DetailPanel({ issue, now, onClose, onChange }) {
 }
 
 export default function KamIssues() {
-  const [issues, setIssues] = useState(null);
+  // The page of issues, the counts for every tab, and the Raised references, all from the server.
+  const [view, setView] = useState(null);
+  const [openRow, setOpenRow] = useState(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [source, setSource] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest');
+  // Pages shown so far. Each page is OPS_PAGE_SIZE issues. Only one page is ever rendered or sent over the network.
+  const [pages, setPages] = useState(1);
+  const shownCount = pages * OPS_PAGE_SIZE;
+  const [qd, setQd] = useState('');
   const [viewer, setViewer] = useState('');
   const [seen, setSeen] = useState(null);
   const [q, setQ] = useState('');
@@ -222,14 +231,28 @@ export default function KamIssues() {
     return () => clearInterval(t);
   }, []);
 
+  // Search waits 250 ms after typing stops, so each keystroke does not send a request.
+  useEffect(() => { const t = setTimeout(() => setQd(q), 250); return () => clearTimeout(t); }, [q]);
+
+  // A change of view starts again at the first page.
+  const pickSource = (k) => { setSource(k); setPages(1); };
+  const pickFilter = (k) => { setFilter(k); setPages(1); };
+  const pickSort = (k) => { setSortOrder(k); setPages(1); };
+  const pickQuery = (v) => { setQ(v); setPages(1); };
+
+  const queryString = useMemo(
+    () => new URLSearchParams({ source, filter, sort: sortOrder, q: qd, size: String(shownCount) }).toString(),
+    [source, filter, sortOrder, qd, shownCount],
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const r = await fetch('/api/ops-issues', { cache: 'no-store' });
+      const r = await fetch(`/api/ops-issues?${queryString}`, { cache: 'no-store' });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Load failed (${r.status})`);
-      setIssues(d.issues || []);
+      setView({ issues: d.issues || [], total: d.total || 0, counts: d.counts || {}, raised: d.raised || [] });
       setViewer(d.viewer || '');
       setSeen(readOpsSeen(d.viewer));
     } catch (e) {
@@ -237,45 +260,34 @@ export default function KamIssues() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryString]);
 
   useEffect(() => { load(); }, [load]);
+  // Counts, overdue and badges move with time, so the list refreshes every minute while the tab is visible.
+  useVisibleInterval(() => { load(); }, 60000);
 
   // Opening a source tab marks its Raised issues as seen, so that tab's badge clears. The All tab marks nothing.
   useEffect(() => {
-    if (!issues || !viewer || source === 'all') return;
-    const shownIssues = issues.filter((i) => inOpsSourceTab(i, source));
-    setSeen(markOpsIssuesSeen(viewer, issues, shownIssues));
-  }, [issues, viewer, source]);
+    if (!view || !viewer || source === 'all') return;
+    const tabRaised = view.raised.filter((r) => r.source === source);
+    setSeen(markOpsIssuesSeen(viewer, view.raised, tabRaised));
+  }, [view, viewer, source]);
 
+  // Edits from the drawer update the page and the open row at once, then the counts are reloaded.
   function onChange(id, patch) {
-    setIssues((list) => (list || []).map((i) => (i.issue_id === id ? { ...i, ...patch } : i)));
+    setView((v) => (v ? { ...v, issues: v.issues.map((i) => (i.issue_id === id ? { ...i, ...patch } : i)) } : v));
+    setOpenRow((r) => (r && r.issue_id === id ? { ...r, ...patch } : r));
+    load();
   }
 
-  const list = useMemo(() => issues || [], [issues]);
-  const tabIssues = useMemo(() => list.filter((i) => inOpsSourceTab(i, source)), [list, source]);
-  const unseenIn = (tab) => (seen ? unseenCount(list.filter((i) => inOpsSourceTab(i, tab)), seen) : 0);
-  const clock = now || new Date(0);
-  const overdueOf = (i) => !!now && dueState(i, clock).overdue;
-  const toPick = tabIssues.filter((i) => i.issue_status === 'Raised').length;
-  const overdue = tabIssues.filter(overdueOf).length;
+  const raisedIn = (tab) => (view?.raised || []).filter((r) => tab === 'all' || r.source === tab);
+  const unseenIn = (tab) => (seen && view ? unseenCount(raisedIn(tab), seen) : 0);
+  const counts = view?.counts?.[source] || { named: 0, toPick: 0, overdue: 0 };
+  const allNamed = view?.counts?.all?.named || 0;
+  const overdueOf = (i) => isOverdue(i, now);
 
-  const shown = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    const matching = tabIssues.filter((i) => {
-      if (filter === 'pick' && i.issue_status !== 'Raised') return false;
-      if (filter === 'open' && !['Picked', 'In Progress'].includes(i.issue_status)) return false;
-      if (filter === 'closed' && !CLOSED_STATUSES.includes(i.issue_status)) return false;
-      if (filter === 'overdue' && !overdueOf(i)) return false;
-      if (!term) return true;
-      return [i.issue_id, i.consignment_id, i.merchant_name].some((v) => String(v || '').toLowerCase().includes(term));
-    });
-    return sortOpsIssues(matching, sortOrder);
-    // overdueOf depends on now; the list is recomputed when now changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabIssues, filter, q, now, sortOrder]);
-
-  const open = list.find((i) => i.issue_id === openId) || null;
+  function openIssue(i) { setOpenRow(i); setOpenId(i.issue_id); }
+  const open = openId ? (view?.issues.find((i) => i.issue_id === openId) || (openRow?.issue_id === openId ? openRow : null)) : null;
 
   return (
     <div id="kam-issues">
@@ -286,14 +298,14 @@ export default function KamIssues() {
           <p className="sub">Ops Issues named to you. Pick each one, move it through to closed, validate it, and add your feedback.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <label className="search">
+          <label className="search" style={{ minWidth: 340, flex: '1 1 340px', maxWidth: 460 }}>
             <span aria-hidden="true">⌕</span>
             <input
               type="search"
-              placeholder="Search issue ID, consignment or merchant"
+              placeholder="Search ID, consignment or merchant"
               aria-label="Search issues"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => pickQuery(e.target.value)}
               style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, minWidth: 0, font: 'inherit', color: 'inherit' }}
             />
           </label>
@@ -303,12 +315,12 @@ export default function KamIssues() {
 
       {error && <div className="card" role="alert">{error}</div>}
 
-      {issues && (
+      {view && (
         <>
           <div className="kpis" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-            <div className="kpi"><div className="lab">Named to you</div><div className="num">{fmtN(tabIssues.length)}</div></div>
-            <div className="kpi"><div className="lab">To pick</div><div className="num">{fmtN(toPick)}</div></div>
-            <div className="kpi" style={{ borderRight: 0 }}><div className="lab">Overdue</div><div className="num">{fmtN(overdue)}</div></div>
+            <div className="kpi"><div className="lab">Named to you</div><div className="num">{fmtN(counts.named)}</div></div>
+            <div className="kpi"><div className="lab">To pick</div><div className="num">{fmtN(counts.toPick)}</div></div>
+            <div className="kpi" style={{ borderRight: 0 }}><div className="lab">Overdue</div><div className="num">{fmtN(counts.overdue)}</div></div>
           </div>
 
           <div className="chips" role="tablist" aria-label="Issue sources" style={{ marginTop: 16 }}>
@@ -316,7 +328,7 @@ export default function KamIssues() {
               const n = unseenIn(t.key);
               const on = source === t.key;
               return (
-                <button key={t.key} type="button" role="tab" aria-selected={on} className={`chip${on ? ' on' : ''}`} onClick={() => setSource(t.key)}>
+                <button key={t.key} type="button" role="tab" aria-selected={on} className={`chip${on ? ' on' : ''}`} onClick={() => pickSource(t.key)}>
                   {t.label}
                   {n > 0 && <span className="tab-badge" aria-label={`${n} new`}>{n > 99 ? '99+' : n}</span>}
                 </button>
@@ -327,40 +339,40 @@ export default function KamIssues() {
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '16px 0' }}>
             <div className="chips" role="group" aria-label="KAM views">
               {FILTERS.map((f) => (
-                <button key={f.key} type="button" className={`chip${filter === f.key ? ' on' : ''}`} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>
+                <button key={f.key} type="button" className={`chip${filter === f.key ? ' on' : ''}`} aria-pressed={filter === f.key} onClick={() => pickFilter(f.key)}>
                   {f.label}
                 </button>
               ))}
             </div>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto', font: '600 12.5px var(--font)', color: 'var(--mut)' }}>
               Sort
-              <select aria-label="Sort issues" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} style={{ height: 34, borderRadius: 999, border: '1px solid var(--line)', background: 'var(--card)', color: 'inherit', padding: '0 12px', font: 'inherit' }}>
+              <select aria-label="Sort issues" value={sortOrder} onChange={(e) => pickSort(e.target.value)} style={{ height: 34, minWidth: 150, flexShrink: 0, borderRadius: 999, border: '1px solid var(--line)', background: 'var(--card)', color: 'inherit', padding: '0 12px', font: 'inherit' }}>
                 {OPS_SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
               </select>
             </label>
           </div>
 
-          {shown.length === 0 && (
-            <div className="card muted">{list.length === 0 ? 'No Ops Issues are named to you.' : tabIssues.length === 0 ? 'No issues from this source are named to you.' : 'Nothing matches this view.'}</div>
+          {view && view.total === 0 && (
+            <div className="card muted">{allNamed === 0 ? 'No Ops Issues are named to you.' : counts.named === 0 ? 'No issues from this source are named to you.' : 'Nothing matches this view.'}</div>
           )}
 
-          {shown.map((i) => {
+          {(view?.issues || []).map((i, idx) => {
             const fb = feedbackLine(i);
             const lines = dueLines(i, now);
             return (
               <div
                 key={i.issue_id}
-                className="qi"
+                className={`qi ops-card${idx < 12 ? ' ops-enter' : ''}`}
                 role="button"
                 tabIndex={0}
                 aria-label={`Open issue ${i.issue_id}`}
-                onClick={() => setOpenId(i.issue_id)}
-                onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setOpenId(i.issue_id); } }}
-                style={{ marginBottom: 10 }}
+                onClick={() => openIssue(i)}
+                onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openIssue(i); } }}
+                style={{ marginBottom: 10, animationDelay: `${Math.min(idx, 11) * 45}ms` }}
               >
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span className={`pill ${STATUS_PILL[i.issue_status] || 'p-res'}`}>{i.issue_status || 'No status'}</span>
+                    <span className={`pill ${STATUS_PILL[i.issue_status] || 'p-res'}${i.issue_status === 'Raised' ? ' ops-pulse' : ''}`}>{i.issue_status || 'No status'}</span>
                     <span className={`pill ${VALIDATION_PILL[i.validation] || 'p-res'}`}>{i.validation || 'Validation pending'}</span>
                     {overdueOf(i) && <span className="pill p-breach">Overdue</span>}
                     {i.kam_feedback ? <span className="pill p-ok">Feedback added</span> : i.can_edit ? <span className="pill p-urg">Feedback needed</span> : null}
@@ -389,6 +401,12 @@ export default function KamIssues() {
               </div>
             );
           })}
+          {view && view.total > view.issues.length && (
+            <div className="card muted" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <span>Showing {view.issues.length.toLocaleString()} of {view.total.toLocaleString()}</span>
+              <button type="button" className="btn" onClick={() => setPages((p) => p + 1)}>Show {Math.min(OPS_PAGE_SIZE, view.total - view.issues.length).toLocaleString()} more</button>
+            </div>
+          )}
         </>
       )}
 

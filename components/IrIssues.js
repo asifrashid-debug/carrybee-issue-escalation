@@ -40,7 +40,7 @@ export default function IrIssues() {
   }
 
   return (
-    <>
+    <div className="trk-page">
       <div className="ph">
         <div>
           <div className="kicker">IR</div>
@@ -62,7 +62,7 @@ export default function IrIssues() {
               <th style={th}>IR Resolve SLA</th><th style={th}>Attachment</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="trk-rows">
             {rows.map((r) => (
               <tr key={r.issue_id} onClick={() => setSel(r.issue_id)} style={{ cursor: 'pointer', background: sel === r.issue_id ? 'var(--hover, rgba(0,0,0,.04))' : undefined }}>
                 <td style={td}><b>{r.issue_id}</b></td>
@@ -86,7 +86,7 @@ export default function IrIssues() {
         </table>
       </div>
       {current && <IrDrawer key={current.issue_id} issue={current} onClose={() => setSel(null)} onSaved={onSaved} />}
-    </>
+    </div>
   );
 }
 

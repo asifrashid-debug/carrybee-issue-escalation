@@ -44,7 +44,7 @@ export default function RouteIssues({ route, label, sheetName }) {
   const rowKey = route === 'tnl' ? 'tnl_sheet_row' : 'central_sort_sheet_row';
 
   return (
-    <>
+    <div className="trk-page">
       <div className="ph">
         <div>
           <div className="kicker">{label}</div>
@@ -69,7 +69,7 @@ export default function RouteIssues({ route, label, sheetName }) {
               <th style={th}>Ops Status</th><th style={th}>Validation</th><th style={th}>Sheet row</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="trk-rows">
             {rows.map((r) => (
               <tr key={r.issue_id} onClick={() => setOpenId(r.issue_id)} style={{ cursor: 'pointer', background: openId === r.issue_id ? 'var(--hover, rgba(0,0,0,.04))' : undefined }}>
                 <td style={td}><b>{r.issue_id}</b></td>
@@ -91,6 +91,6 @@ export default function RouteIssues({ route, label, sheetName }) {
         </table>
       </div>
       {openId && <ErrorBoundary><IssueDrawer issueId={openId} user={user} onClose={() => setOpenId(null)} onChanged={load} onOpen={setOpenId} /></ErrorBoundary>}
-    </>
+    </div>
   );
 }
