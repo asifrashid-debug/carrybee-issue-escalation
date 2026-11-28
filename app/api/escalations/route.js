@@ -104,7 +104,10 @@ export async function GET(req) {
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
   let rwq = sb.from('escalations').select('issue_id', { count: 'exact', head: true }).eq('ops_issue_status', 'Resolved').gte('updated_at', weekAgo.toISOString());
   if (searchParams.get('zone')) rwq = rwq.eq('zone', searchParams.get('zone'));
-  rwq = rwq.eq(listRoute.column, listRoute.value);
+  // Same route and escalated rules as the list above, so the count matches the rows on screen
+  rwq = applyRouteListFilter(rwq, searchParams.get('route'));
+  if (searchParams.get('view') === ESCALATED_VIEW) rwq = rwq.not('escalated_to', 'is', null);
+  else if (!searchParams.get('route')) rwq = rwq.is('escalated_to', null);
   if (!scope.all) rwq = rwq.or(scopeFilter(scope));
   // Run the list, the resolved count and the category lookup together (one database round trip instead of three)
   const [{ data, error, count }, rw, { data: cats }] = await Promise.all([
