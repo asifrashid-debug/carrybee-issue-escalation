@@ -1,6 +1,7 @@
 import './cw.css';
 import './cw-live.css';
 import AppHeader from '../components/AppHeader';
+import PageMotion from '../components/PageMotion';
 import InstallApp from '../components/InstallApp';
 import { sprite } from '../components/cw/chartlib';
 
@@ -39,7 +40,7 @@ export default function RootLayout({ children }) {
         <div dangerouslySetInnerHTML={{ __html: sprite() }} />
         <div className="shell">
           <AppHeader />
-          <main className="sheet">{children}</main>
+          <main className="sheet"><PageMotion>{children}</PageMotion></main>
           <footer className="note site-foot">
             <span>CarryBee · Issue ID is the sync key (CB-DD-MM-XXXX) · Times in Asia/Dhaka · Never hard-delete (use Not possible)</span>
             <InstallApp />
