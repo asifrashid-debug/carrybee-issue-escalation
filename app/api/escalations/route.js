@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
-import { pushToSheet, pushRouteToSheet } from '../../../lib/sheets';
-import { sortTnlSheetId } from '../../../lib/sortTnlRoutes.mjs';
+import { pushToSheet } from '../../../lib/sheets';
 import { isoWeek } from '../../../lib/time';
 import { loadScope, scopeFilter } from '../../../lib/visibility';
 import { requireUser } from '../../../lib/session';
@@ -13,9 +12,9 @@ import { pickDeadline, pickJustifyDueFrom, pickPhase } from '../../../lib/pickSl
 import { indexCategories, resolutionCheck } from '../../../lib/categorySla';
 import { notifyNewCmIssue } from '../../../lib/notify';
 import { nextCmOwner } from '../../../lib/cmAssign';
-import { routesFromBody, routeError, attachmentError, cleanMailSubject, irSlaCells, routeListFilter, isIrOnlyRoute } from '../../../lib/irEscalation.mjs';
-import { pushIrRow, irSheetId } from '../../../lib/irSheet';
-import { uploadIrAttachments } from '../../../lib/irAttachments';
+import { routesFromBody, routeError, cleanMailSubject, irSlaCells, applyRouteListFilter, isIrOnlyRoute } from '../../../lib/irEscalation.mjs';
+import { queueIrSync, queueRouteSync } from '../../../lib/escalationSync';
+import { ESCALATED_VIEW } from '../../../lib/escalateTo.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,32 +51,6 @@ async function queueSync(sb, esc, direction='db_to_sheet') {
   }
 }
 
-// IR sheet write for an IR-routed escalation. Same logging as queueSync, to the IR sheet.
-async function queueIrSync(sb, esc) {
-  const { data, error } = await sb.from('sync_log').insert({ direction: 'db_to_sheet', issue_id: esc.issue_id, spreadsheet_id: irSheetId(), status: 'queued', payload: { target: 'ir' } }).select().single();
-  if (error) return;
-  try {
-    const r = await pushIrRow(esc);
-    await sb.from('sync_log').update({ status: 'success', updated_at: new Date().toISOString() }).eq('id', data.id);
-    await sb.from('escalations').update({ last_synced_at: new Date().toISOString(), ir_sheet_row: r.row }).eq('issue_id', esc.issue_id);
-  } catch (e) {
-    await sb.from('sync_log').update({ status: 'failed', error_message: String(e.message || e), retries: 1, updated_at: new Date().toISOString() }).eq('id', data.id);
-  }
-}
-
-// Central Sort / TNL sheet write for a routed escalation. Same logging as queueSync, to that route's sheet.
-const ROUTE_ROW_COL = { central_sort: 'central_sort_sheet_row', tnl: 'tnl_sheet_row' };
-async function queueRouteSync(sb, esc, route) {
-  const { data, error } = await sb.from('sync_log').insert({ direction: 'db_to_sheet', issue_id: esc.issue_id, spreadsheet_id: sortTnlSheetId(route), status: 'queued', payload: { target: route } }).select().single();
-  if (error) return;
-  try {
-    const r = await pushRouteToSheet(esc, route);
-    await sb.from('sync_log').update({ status: 'success', updated_at: new Date().toISOString() }).eq('id', data.id);
-    await sb.from('escalations').update({ last_synced_at: new Date().toISOString(), [ROUTE_ROW_COL[route]]: r.row }).eq('issue_id', esc.issue_id);
-  } catch (e) {
-    await sb.from('sync_log').update({ status: 'failed', error_message: String(e.message || e), retries: 1, updated_at: new Date().toISOString() }).eq('id', data.id);
-  }
-}
 
 export async function GET(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
@@ -94,9 +67,12 @@ export async function GET(req) {
   eq('issue_category','issue_category'); eq('issue_sub_category','issue_sub_category');
   // IR tab: only escalations ticked for IR, with the IR pick and resolve SLA cells added to each row
   const isIr = searchParams.get('route') === 'ir';
-  // Tracker (no route): HUB-ticked issues only. IR-only issues are not shown there.
-  const listRoute = routeListFilter(searchParams.get('route'));
-  q = q.eq(listRoute.column, listRoute.value);
+  // Route tabs: only issues ticked for that route. Tracker (no route): issues ticked for HUB, IR, Central Sort or TNL.
+  q = applyRouteListFilter(q, searchParams.get('route'));
+  // Escalated filter: only issues escalated to IR, Central Sort or TNL. The main tracker (no route) hides them.
+  // Team tabs (route set) keep showing them.
+  if (searchParams.get('view') === ESCALATED_VIEW) q = q.not('escalated_to', 'is', null);
+  else if (!searchParams.get('route')) q = q.is('escalated_to', null);
   // Date range (Dhaka days, by submitted date). Empty = all time.
   const rb = rangeBounds(resolveRange({ key: 'custom', from: searchParams.get('from'), to: searchParams.get('to') }));
   if (rb?.start != null) q = q.gte('submitted_at', new Date(rb.start).toISOString());
@@ -153,12 +129,13 @@ export async function GET(req) {
 export async function POST(req) {
   const auth = await requireUser(); if (auth.response) return auth.response; const session = auth.user;
   const sb = supabaseAdmin();
-  // JSON for every request without files. The KAM IR box can send files as multipart: field "payload" (JSON) and "attachments" (files).
-  let body, files = [];
+  // JSON only. Attachments were removed: an older form that still sends files as multipart is refused, not silently saved without them.
+  let body;
   if ((req.headers.get('content-type') || '').includes('multipart/form-data')) {
     const fd = await req.formData();
+    const hasFiles = fd.getAll('attachments').some((f) => f && typeof f !== 'string' && f.size > 0);
+    if (hasFiles) return NextResponse.json({ error: 'Attachments are no longer accepted. Remove the files and submit again.' }, { status: 400 });
     try { body = JSON.parse(String(fd.get('payload') || '{}')); } catch { return NextResponse.json({ error: 'Form payload is not valid.' }, { status: 400 }); }
-    files = fd.getAll('attachments').filter((f) => f && typeof f !== 'string' && f.size > 0);
   } else {
     body = await req.json();
   }
@@ -176,9 +153,9 @@ export async function POST(req) {
   if (!body.issue_details || body.issue_details.trim().length < 20) {
     return NextResponse.json({ error: 'Issue Details must be at least 20 characters.' }, { status: 400 });
   }
-  // Routing: HUB / IR / Central Sort / TNL boxes (KAM and MX forms). At least one box. Attachments only with IR.
+  // Routing: HUB / IR / Central Sort / TNL boxes (KAM and MX forms). At least one box.
   const routes = routesFromBody(body);
-  const routeErr = routeError(routes) || attachmentError(routes, files);
+  const routeErr = routeError(routes);
   if (routeErr) return NextResponse.json({ error: routeErr }, { status: 400 });
   // Consignment regex (configurable)
   const { data: cfg } = await sb.from('app_config').select('value').eq('key','validation').single();
@@ -229,12 +206,6 @@ export async function POST(req) {
   }
   const { data: idRow, error: idErr } = await sb.rpc('next_issue_id');
   if (idErr) return NextResponse.json({ error: idErr.message }, { status: 500 });
-  // IR attachments: zipped and uploaded to Drive before the row is saved, so a failed upload saves nothing.
-  let attach = { drive_link: null, attachment_name: null };
-  if (files.length) {
-    try { attach = await uploadIrAttachments(idRow, files); }
-    catch (e) { return NextResponse.json({ error: `Attachment upload failed. Nothing was saved. ${e.message}` }, { status: 500 }); }
-  }
   const now = new Date().toISOString();
   const row = {
     issue_id: idRow, submitted_at: now, email: session.email, consignment_id: body.consignment_id?.trim()||null, merchant_name,
@@ -247,7 +218,7 @@ export async function POST(req) {
     regional_lead: hub.regional_lead, division: hub.division, duplicate_of, row_version: 1,
     route_hub: routes.hub, route_ir: routes.ir, route_central_sort: routes.central_sort, route_tnl: routes.tnl,
     mail_subject: routes.ir ? cleanMailSubject(body.mail_subject) : null,
-    drive_link: attach.drive_link, attachment_name: attach.attachment_name,
+    drive_link: null, attachment_name: null, // attachments removed; older rows keep their zip link
     ir_resolve_sla_days: irOnly ? ir_resolve_sla_days : null,
   };
   // Business Pick timing: a normal issue is picked automatically at raise. A CM-assigned issue waits for "CM picked".

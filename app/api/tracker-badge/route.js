@@ -4,7 +4,7 @@ import { requireUser } from '../../../lib/session';
 import { loadScope } from '../../../lib/visibility';
 import { fetchAll } from '../../../lib/opsIssueSync';
 import { trackerItems, viewerKamNames, KAM_BADGE_ROLES, trackerRowsFilter } from '../../../lib/trackerBadge.mjs';
-import { routeListFilter } from '../../../lib/irEscalation.mjs';
+import { TRACKER_ROUTE_OR } from '../../../lib/irEscalation.mjs';
 export const dynamic = 'force-dynamic';
 
 const COLS = 'issue_id,email,channel,kam_name,cm_owner_email,layer1_response,layer2_response,layer3_response';
@@ -42,7 +42,7 @@ export async function GET() {
         .select(COLS)
         .eq('channel', 'MX')
         .eq('is_archived', false)
-        .eq(routeListFilter(null).column, routeListFilter(null).value)
+        .or(TRACKER_ROUTE_OR)
         .or(trackerRowsFilter(ors))
         .order('issue_id'));
       items = trackerItems(rows, viewer);

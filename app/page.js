@@ -8,6 +8,8 @@ import { getMe } from '../components/cw/meClient';
 import ErrorBoundary from '../components/ErrorBoundary';
 const IssueDrawer = dynamic(() => import('../components/IssueDrawer'), { ssr: false });
 import CopyButton from '../components/CopyButton';
+import EscalateButton from '../components/EscalateButton';
+import { ESCALATED_VIEW, escalatedLabel } from '../lib/escalateTo.mjs';
 import HiveStatus from '../components/HiveStatus';
 import { useAnalytics } from '../components/useAnalytics';
 import { fmtN } from '../components/cw/format';
@@ -21,7 +23,7 @@ import { formatDhaka, hoursSince } from '../lib/time';
 
 const PAGE = 20;
 const ZONES = ['ISD', 'OSD', 'CTG'];
-const LIST_VIEWS = ['mine', 'unpicked', 'awaiting', 'resolved_week'];
+const LIST_VIEWS = ['mine', 'unpicked', 'awaiting', 'resolved_week', ESCALATED_VIEW];
 const OPS_STATUSES = ['New', 'Picked', 'In Progress', 'On Hold', 'Resolved', 'Unresolved'];
 const COLUMNS = [
   { key: 'pick', title: 'Needs pick', params: { view: 'unpicked' }, listView: 'unpicked' },
@@ -170,6 +172,7 @@ export default function Tracker() {
   const [selected, setSelected] = useState(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkMsg, setBulkMsg] = useState(null);
+  const [escNotice, setEscNotice] = useState(null); // result of an Escalate to action on a card
   const [review, setReview] = useState(null); // { outcome, will, skipped } from the review step
 
   const user = me || { email: '', role: '—' };
@@ -218,7 +221,7 @@ export default function Tracker() {
   // Counts for the My and Feedback failures chips: count-only requests (pageSize 1), same 30s refresh.
   const loadCounts = useCallback(async () => {
     if (!ready) return;
-    const want = ['mine', ...(canSeeFailures ? ['failures'] : [])];
+    const want = ['mine', ESCALATED_VIEW, ...(canSeeFailures ? ['failures'] : [])];
     const out = {};
     await Promise.all(want.map(async (v) => {
       try {
@@ -331,7 +334,7 @@ export default function Tracker() {
   const zoneOpen = stats ? stats.zones.map((z) => `${z.zone}: ${fmtN(z.open)}`).join(' · ') : '';
   const lastSynced = updated ? formatDhaka(updated.toISOString()) : '—';
   const visibleExtra = OPTIONAL.filter((c) => extraCols[c.key]);
-  const showList = ['all', 'mine', 'unpicked', 'awaiting', 'resolved_week', 'failures', 'pick_failures'].includes(view);
+  const showList = ['all', 'mine', 'unpicked', 'awaiting', 'resolved_week', ESCALATED_VIEW, 'failures', 'pick_failures'].includes(view);
   const total = k?.total || 0;
   const stages = k ? [
     { label: 'Picked', value: k.picked },
@@ -348,6 +351,7 @@ export default function Tracker() {
     { key: 'unpicked', label: 'Unpicked queue', n: k?.unpicked },
     { key: 'awaiting', label: 'Awaiting 1st response', n: k?.awaitingResponse },
     { key: 'resolved_week', label: 'Resolved this week', n: resolvedWeek },
+    { key: ESCALATED_VIEW, label: 'Escalated', n: viewCounts[ESCALATED_VIEW] },
     { key: 'ISD', label: 'ISD zone', n: zoneTotal('ISD') },
     { key: 'OSD', label: 'OSD zone', n: zoneTotal('OSD') },
     ...(canSeeFailures ? [{ key: 'failures', label: 'Feedback failures', n: viewCounts.failures }] : []),
@@ -516,9 +520,10 @@ export default function Tracker() {
               </div>
             )}
             {isLead && bulkMsg && <div className="box" role="status" style={{ marginBottom: 12 }}>{bulkMsg}</div>}
+            {escNotice && <div className={`box ${escNotice.error ? 'box-bad' : ''}`} role="status" style={{ marginBottom: 12 }}>{escNotice.text} <button type="button" className="btn sm" style={{ marginLeft: 8 }} onClick={() => setEscNotice(null)}>Dismiss</button></div>}
             <div className="q" aria-label="Escalation queue">
               {list.rows.length === 0 && !loading && (
-                <div className="card muted">{view === 'failures' ? 'No feedback failures. Every owner is within the window or has given feedback.' : view === 'pick_failures' ? 'No pick failures. Every missed pick is justified or within its window.' : view === 'mine' ? 'No escalations are assigned to you.' : 'No issues match these filters.'}</div>
+                <div className="card muted">{view === ESCALATED_VIEW ? 'No escalated issues. Issues escalated to IR, Central Sort or TNL appear here.' : view === 'failures' ? 'No feedback failures. Every owner is within the window or has given feedback.' : view === 'pick_failures' ? 'No pick failures. Every missed pick is justified or within its window.' : view === 'mine' ? 'No escalations are assigned to you.' : 'No issues match these filters.'}</div>
               )}
               {list.rows.map((e) => {
                 const s = sla(e);
@@ -551,6 +556,7 @@ export default function Tracker() {
                         )}
                         <span className={`pill ${PRI_PILL[e.priority_scale] || 'p-res'}`}>{e.priority_scale || '—'}</span>
                         <span className={`pill ${stCls}`}>{s.state === 'br' ? 'SLA breach' : s.state === 'risk' ? 'Due soon' : s.text === 'Resolved' ? 'Resolved' : 'On track'}</span>
+                        {e.escalated_to && <span className="pill p-wait">Escalated to {escalatedLabel(e.escalated_to)}</span>}
                         {e.kam_feedback_status === 'Resolved' && <span className="pill p-res">Closed</span>}
                         {e.ops_status === 'Completed' && <span className="pill p-res" style={{ fontWeight: 800, color: 'var(--ink)' }}>Completed By Opps</span>}
                         {e.channel && <span className="muted small">{e.channel}</span>}
@@ -590,6 +596,9 @@ export default function Tracker() {
                         <HiveStatus consignmentId={e.consignment_id} />
                       </div>
                       <span className="avatar" title="Raised by" aria-label={`Raised by ${who}`}>{who}</span>
+                      {!e.escalated_to && (
+                        <EscalateButton issueId={e.issue_id} onDone={(r) => { setEscNotice({ text: `${r.issueId} escalated to ${r.team}.${r.warning ? ' ' + r.warning : ''}`, error: !!r.warning }); load(); }} />
+                      )}
                       <span className="btn primary" style={{ height: 32, fontSize: 12.5 }}>Open</span>
                     </div>
                   </div>

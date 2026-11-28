@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  IR_HEADERS, IR_STATUSES, routesFromBody, routeError, attachmentError, cleanMailSubject,
+  IR_HEADERS, IR_STATUSES, routesFromBody, routeError, cleanMailSubject,
   attachmentZipName, irSlaCell, irTargetsFromEnv, irStatusStamps, irRowFromEsc, irSlaCells,
+  applyRouteListFilter, TRACKER_ROUTE_OR,
 } from '../lib/irEscalation.mjs';
 
 test('IR sheet has the 18 headers in the agreed order', () => {
@@ -32,13 +33,37 @@ test('at least one box must be ticked', () => {
   assert.equal(routeError({ hub: true, ir: true, central_sort: false, tnl: false }), null);
 });
 
-test('attachments are only accepted for IR, with a file count and size cap', () => {
-  const small = [{ size: 1000 }];
-  assert.equal(attachmentError({ hub: true, ir: false, central_sort: false, tnl: false }, []), null);
-  assert.match(attachmentError({ hub: true, ir: false, central_sort: false, tnl: false }, small), /only accepted when the IR box/);
-  assert.equal(attachmentError({ hub: false, ir: true, central_sort: false, tnl: false }, small), null);
-  assert.match(attachmentError({ hub: false, ir: true, central_sort: false, tnl: false }, Array(11).fill({ size: 1 })), /at most 10/);
-  assert.match(attachmentError({ hub: false, ir: true, central_sort: false, tnl: false }, [{ size: 21 * 1024 * 1024 }]), /20 MB/);
+// Fake query builder: records the filters it is given, in order.
+function recorder() {
+  const calls = [];
+  const q = {
+    eq: (col, val) => { calls.push(['eq', col, val]); return q; },
+    or: (expr) => { calls.push(['or', expr]); return q; },
+  };
+  return { q, calls };
+}
+
+test('tracker (no route) shows issues ticked for HUB, IR, Central Sort or TNL', () => {
+  for (const route of [null, undefined, '', 'hub', 'anything']) {
+    const { q, calls } = recorder();
+    applyRouteListFilter(q, route);
+    assert.deepEqual(calls, [['or', TRACKER_ROUTE_OR]], `route ${String(route)}`);
+  }
+  assert.equal(TRACKER_ROUTE_OR, 'route_hub.eq.true,route_ir.eq.true,route_central_sort.eq.true,route_tnl.eq.true');
+});
+
+test('route tabs show only issues ticked for that route', () => {
+  const expect = { ir: 'route_ir', central_sort: 'route_central_sort', tnl: 'route_tnl' };
+  for (const [route, col] of Object.entries(expect)) {
+    const { q, calls } = recorder();
+    applyRouteListFilter(q, route);
+    assert.deepEqual(calls, [['eq', col, true]], route);
+  }
+});
+
+test('attachments are removed: the routing check no longer reads files', () => {
+  assert.equal(routeError({ hub: false, ir: true, central_sort: false, tnl: false }), null);
+  assert.match(routeError({ hub: false, ir: false, central_sort: false, tnl: false }), /Tick at least one box/);
 });
 
 test('mail subject is optional, trimmed and capped at 200 characters', () => {
