@@ -583,17 +583,18 @@ html[data-theme=dark] .side-who small{color:#D4D4D8}
 @keyframes pm-scrim{from{opacity:0}to{opacity:1}}
 @keyframes pm-ping{0%{box-shadow:0 0 0 0 rgba(255,84,112,.55)}70%{box-shadow:0 0 0 7px rgba(255,84,112,0)}100%{box-shadow:0 0 0 0 rgba(255,84,112,0)}}
 
-.page-motion{animation:pm-fade .35s cubic-bezier(.2,.8,.2,1) both}
-.page-motion .ph{animation:pm-fade .45s cubic-bezier(.2,.8,.2,1) both}
-.page-motion .card{animation:pm-rise .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes pm-in{from{opacity:0}to{opacity:1}}
+.page-motion{animation:pm-in .35s ease backwards}
+.page-motion .ph{animation:pm-fade .45s cubic-bezier(.2,.8,.2,1) backwards}
+.page-motion .card{animation:pm-rise .55s cubic-bezier(.2,.8,.2,1) backwards}
 .page-motion .card:nth-child(2){animation-delay:.07s}
 .page-motion .card:nth-child(3){animation-delay:.14s}
 .page-motion .card:nth-child(4){animation-delay:.21s}
 .page-motion .card:nth-child(5){animation-delay:.28s}
 .page-motion .card:nth-child(n+6){animation-delay:.35s}
-.page-motion .box{animation:pm-rise .45s cubic-bezier(.2,.8,.2,1) both}
-.page-motion .kpi{animation:pm-rise .5s cubic-bezier(.2,.8,.2,1) both}
-.page-motion .kpi .num{animation:pm-pop .5s cubic-bezier(.2,.8,.2,1) .15s both}
+.page-motion .box{animation:pm-rise .45s cubic-bezier(.2,.8,.2,1) backwards}
+.page-motion .kpi{animation:pm-rise .5s cubic-bezier(.2,.8,.2,1) backwards}
+.page-motion .kpi .num{animation:pm-pop .5s cubic-bezier(.2,.8,.2,1) .15s backwards}
 .page-motion .chip{transition:background .2s ease,color .2s ease,border-color .2s ease,transform .15s ease}
 .page-motion .chip:active{transform:scale(.96)}
 .page-motion .chip.on{animation:pm-pop .32s cubic-bezier(.2,.8,.2,1)}
@@ -603,9 +604,9 @@ html[data-theme=dark] .side-who small{color:#D4D4D8}
 .page-motion .pill.p-urg,.page-motion .pill.p-breach{animation:pm-ping 1.8s ease-out infinite}
 .page-motion input:not([type=checkbox]):not([type=radio]),.page-motion select,.page-motion textarea{transition:border-color .2s ease,box-shadow .2s ease}
 .page-motion input:not([type=checkbox]):not([type=radio]):focus,.page-motion select:focus,.page-motion textarea:focus{box-shadow:0 0 0 3px rgba(232,168,0,.28)}
-.page-motion .chart path{transform-box:fill-box;transform-origin:50% 100%;animation:pm-grow .8s cubic-bezier(.2,.8,.2,1) both}
-.page-motion .pie,.page-motion .donut svg{animation:pm-spin .9s cubic-bezier(.2,.8,.2,1) both}
-.page-motion table tbody tr{animation:pm-row .4s cubic-bezier(.2,.8,.2,1) both}
+.page-motion .chart path{transform-box:fill-box;transform-origin:50% 100%;animation:pm-grow .8s cubic-bezier(.2,.8,.2,1) backwards}
+.page-motion .pie,.page-motion .donut svg{animation:pm-spin .9s cubic-bezier(.2,.8,.2,1) backwards}
+.page-motion table tbody tr{animation:pm-row .4s cubic-bezier(.2,.8,.2,1) backwards}
 .page-motion table tbody tr:nth-child(2){animation-delay:.03s}
 .page-motion table tbody tr:nth-child(3){animation-delay:.06s}
 .page-motion table tbody tr:nth-child(4){animation-delay:.09s}
@@ -618,17 +619,17 @@ html[data-theme=dark] .side-who small{color:#D4D4D8}
 .page-motion table tbody tr:hover{background:rgba(232,168,0,.10)!important;transition:background .15s ease}
 
 /* Drawers slide in from the right and fade the backdrop. */
-.drawer.on{animation:pm-slide .38s cubic-bezier(.2,.8,.2,1) both}
-.side-scrim{animation:pm-scrim .25s ease both}
+.drawer.on{animation:pm-slide .38s cubic-bezier(.2,.8,.2,1) backwards}
+.side-scrim{animation:pm-scrim .25s ease backwards}
 @media (max-width: 900px){ .drawer.on{animation-name:pm-rise} }
 
 /* Sidebar: groups fade in one after another. Header fades down. */
-.side-group{animation:pm-fade .4s cubic-bezier(.2,.8,.2,1) both}
+.side-group{animation:pm-fade .4s cubic-bezier(.2,.8,.2,1) backwards}
 .side-group:nth-of-type(2){animation-delay:.05s}
 .side-group:nth-of-type(3){animation-delay:.1s}
 .side-group:nth-of-type(4){animation-delay:.15s}
 .side-group:nth-of-type(5){animation-delay:.2s}
-.hdr{animation:pm-fade .4s cubic-bezier(.2,.8,.2,1) both}
+.hdr{animation:pm-fade .4s cubic-bezier(.2,.8,.2,1) backwards}
 
 @media (prefers-reduced-motion: reduce){
   .page-motion,.page-motion *,.page-motion *::before,.page-motion *::after,
