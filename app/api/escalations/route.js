@@ -176,8 +176,8 @@ export async function POST(req) {
   if (!body.issue_details || body.issue_details.trim().length < 20) {
     return NextResponse.json({ error: 'Issue Details must be at least 20 characters.' }, { status: 400 });
   }
-  // Routing: HUB / IR / Sort-TNL boxes (KAM). At least one box. Attachments only with IR.
-  const routes = routesFromBody(body, body.channel);
+  // Routing: HUB / IR / Central Sort / TNL boxes (KAM and MX forms). At least one box. Attachments only with IR.
+  const routes = routesFromBody(body);
   const routeErr = routeError(routes) || attachmentError(routes, files);
   if (routeErr) return NextResponse.json({ error: routeErr }, { status: 400 });
   // Consignment regex (configurable)
@@ -191,7 +191,7 @@ export async function POST(req) {
   if (!hub) return NextResponse.json({ error: 'Concern Hub must be selected from Hub Master (no free text).' }, { status: 400 });
   // Category and sub category must be an exact active pair from the requester list
   // IR only (IR ticked, HUB not): the IR category list (ir_category_master). Otherwise the requester list.
-  const irOnly = isIrOnlyRoute(routes); // routesFromBody sets ir=false for MX
+  const irOnly = isIrOnlyRoute(routes);
   let pair = null, ir_resolve_sla_days = null;
   if (irOnly) {
     const { data: irPair } = await sb.from('ir_category_master').select('issue_type, sla_days').eq('is_active', true)

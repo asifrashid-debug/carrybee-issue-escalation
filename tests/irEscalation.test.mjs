@@ -19,10 +19,11 @@ test('IR status list has the four dropdown values', () => {
   assert.deepEqual(IR_STATUSES, ['Open', 'Picked', 'In Progress', 'Resolved']);
 });
 
-test('KAM routing comes from the three boxes; MX always goes to the hub sheet', () => {
-  assert.deepEqual(routesFromBody({ route_hub: true, route_ir: true }, 'KAM'), { hub: true, ir: true, central_sort: false, tnl: false });
-  assert.deepEqual(routesFromBody({}, 'KAM'), { hub: false, ir: false, central_sort: false, tnl: false });
-  assert.deepEqual(routesFromBody({ route_ir: false }, 'MX'), { hub: true, ir: false, central_sort: false, tnl: false });
+test('routing comes from the four boxes for KAM and MX alike', () => {
+  assert.deepEqual(routesFromBody({ route_hub: true, route_ir: true }), { hub: true, ir: true, central_sort: false, tnl: false });
+  assert.deepEqual(routesFromBody({}), { hub: false, ir: false, central_sort: false, tnl: false });
+  assert.deepEqual(routesFromBody({ route_ir: true, route_tnl: true }), { hub: false, ir: true, central_sort: false, tnl: true });
+  assert.deepEqual(routesFromBody({ route_hub: true, route_ir: false, route_central_sort: true }), { hub: true, ir: false, central_sort: true, tnl: false });
 });
 
 test('at least one box must be ticked', () => {

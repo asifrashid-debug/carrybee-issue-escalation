@@ -24,8 +24,8 @@ test('KAM (requester): Tracker, Team Performance, KAM Form, KAM Feedback', () =>
   assert.deepEqual([...tabsFor('requester')].sort(), ['central_sort','ir_issues','kam_analytics','kam_form','kam_issues','teams','tnl','tracker']);
 });
 
-test('MX members: Tracker, Team Performance, MX Form, KAM Feedback', () => {
-  assert.deepEqual([...tabsFor('mx')].sort(), ['kam_analytics','kam_issues','mx_form','teams','tracker']);
+test('MX members: Tracker, IR Issues, Central Sort, TNL, Team Performance, MX Form, KAM Feedback', () => {
+  assert.deepEqual([...tabsFor('mx')].sort(), ['central_sort','ir_issues','kam_analytics','kam_issues','mx_form','teams','tnl','tracker']);
 });
 
 test('management, regional leads and hub ops have no tracker tabs (hub responses come from the hub response sheet)', () => {
@@ -58,7 +58,7 @@ test('page paths map to tabs', () => {
 });
 
 test('nav is filtered by role', () => {
-  assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['kam_analytics','kam_issues','mx_form','teams','tracker']);
+  assert.deepEqual(navFor('mx').map((t) => t.tab).sort(), ['central_sort','ir_issues','kam_analytics','kam_issues','mx_form','teams','tnl','tracker']);
   assert.equal(navFor('admin').length, 14);
 });
 
